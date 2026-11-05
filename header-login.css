@@ -1,0 +1,99 @@
+/*
+Adapted from https://uiverse.io/adamgiebl/curly-wombat-58
+Official archive: https://github.com/uiverse-io/galaxy/blob/main/Buttons/adamgiebl_curly-wombat-58.html
+Copyright - 2026 adamgiebl (Adam Giebl)
+
+MIT License
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+.header-login.header-login {
+  --header-login-ink: #3d4094;
+  --header-login-accent: #f38635;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+  height: 44px;
+  min-width: 94px;
+  padding: 0 24px;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: .025em;
+  white-space: nowrap;
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  color: var(--header-login-ink);
+  z-index: 1;
+  isolation: isolate;
+  transition: color .3s;
+}
+.header-login .header-login__frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: -1;
+  border: 3px solid var(--header-login-ink);
+  pointer-events: none;
+}
+.header-login .header-login__frame::before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 8%;
+  height: 500%;
+  background: var(--header-login-surface, var(--paper, #fcfbf7));
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-60deg);
+  transition: all .3s;
+}
+.header-login.header-login:is(:hover, :focus-visible) .header-login__frame::before {
+  transform: translate(-50%, -50%) rotate(-90deg);
+  width: 100%;
+  background: var(--header-login-ink);
+}
+.header-login.header-login:is(:hover, :focus-visible) { color: white; }
+.header-login.header-login:focus-visible {
+  outline: 3px solid var(--header-login-accent);
+  outline-offset: 4px;
+}
+.header-login.header-login:active .header-login__frame::before {
+  background: var(--header-login-accent);
+}
+.header-login.header-login:active { color: #22234c; }
+html[data-theme="dark"] .header-login.header-login { --header-login-ink: #b6b8ff; }
+html[data-theme="dark"] .header-login.header-login:is(:hover, :focus-visible) { color: #22234c; }
+@media(max-width:600px) {
+  .header-login.header-login { height: 40px; min-width: 82px; padding-inline: 18px; font-size: 12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .header-login.header-login, .header-login .header-login__frame::before { transition: none; }
+}

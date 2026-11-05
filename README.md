@@ -12,6 +12,9 @@ Página de divulgação da iniciação científica estudantil, com fotografias, 
 
 ## Conteúdo
 
+- Logo PNG transparente e cabeçalho responsivo, com tema e Entrar no canto direito.
+- Botões com Montserrat ExtraBold Italic (alias CSS Maximus Interface), hospedada localmente sob SIL OFL 1.1.
+
 - Identidade visual da Escola Máximu’s: índigo `#3d4094` e laranja `#f38635`.
 - 28 fotografias fornecidas para esta publicação, otimizadas em WebP, com miniaturas e textos alternativos.
 - Carrossel com setas de navegação, teclado, gestos, pausa e ampliação; respeito à preferência de movimento reduzido.

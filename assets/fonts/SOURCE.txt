@@ -1,0 +1,17 @@
+Montserrat ExtraBold Italic (800) — button interface font
+
+Distribution: @fontsource/montserrat 5.3.0 (font source version v31).
+Primary project: https://github.com/JulietaUla/Montserrat
+Google Fonts source: https://github.com/google/fonts/tree/main/ofl/montserrat
+Distribution and license information: https://fontsource.org/fonts/montserrat/about
+
+Unmodified WOFF2 assets downloaded from:
+https://cdn.jsdelivr.net/npm/@fontsource/montserrat@5.3.0/files/montserrat-latin-800-italic.woff2
+https://cdn.jsdelivr.net/npm/@fontsource/montserrat@5.3.0/files/montserrat-latin-ext-800-italic.woff2
+License downloaded from:
+https://cdn.jsdelivr.net/npm/@fontsource/montserrat@5.3.0/LICENSE
+
+SIL Open Font License 1.1: see OFL-Montserrat.txt.
+The website's CSS uses the family alias "Maximus Interface".
+The font binaries retain their original Montserrat names and credits.
+No glyphs were redrawn or modified.

@@ -21,3 +21,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Referência funcional do slideshow horizontal (implementação própria): https://www.hashtagtreinamentos.com/carrossel-de-imagens-html-fullstack
+
+Botão Entrar: adamgiebl (Adam Giebl), https://uiverse.io/adamgiebl/curly-wombat-58 — MIT. Copyright 2026 adamgiebl.
+
+Tipografia dos botões: Montserrat ExtraBold Italic, SIL Open Font License 1.1. Fontes e licença em assets/fonts/SOURCE.txt e assets/fonts/OFL-Montserrat.txt. Maximus Interface é um alias CSS; os glifos originais foram preservados.
