@@ -11,13 +11,13 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/logo-mark.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="portal.css?v=20261105-3">
-  <link rel="stylesheet" href="uiverse-components.css?v=20261105-3">
+  <link rel="stylesheet" href="portal.css?v=20261105-5">
+  <link rel="stylesheet" href="uiverse-components.css?v=20261105-5">
   <script src="theme.js?v=20261105-3" defer></script>
   <script src="pwa.js" defer></script>
   <script src="experience.js?v=20261105-3" defer></script>
-  <script src="portal.js?v=20261105-4" type="module"></script>
-<link rel="stylesheet" href="experience.css?v=20261105-3"></head>
+  <script src="portal.js?v=20261105-5" type="module"></script>
+<link rel="stylesheet" href="experience.css?v=20261105-5"></head>
 <body>
   <a href="#main" class="skip-link">Pular para o conteúdo</a>
   <div id="connection-banner" class="connection-banner" hidden role="status"></div>
@@ -25,10 +25,10 @@
     <div class="auth-story">
       <a href="index.html" class="auth-logo"><img src="assets/logo-maximus.png" width="220" height="65" alt="Escola Máximu’s"></a>
       <div class="auth-story-copy"><p class="eyebrow">INIC 2027 · ESCOLA MÁXIMU’S</p><h1>Grupos.<br>Entregas.<br><em>Mensagens.</em></h1><p>Cadastre seu grupo, escolha um orientador e acompanhe os prazos do artigo e do banner.</p><div class="story-pills"><span>Grupos</span><span>Cronograma</span><span>Mensagens</span></div></div>
-      <a class="story-back" href="index.html">← Conheça as pesquisas da Máximu’s</a>
+      <a class="story-back" href="index.html">Conheça as pesquisas da Máximu’s</a>
     </div>
     <main class="auth-main" id="main">
-      <div class="auth-top"><a href="conformidade.html">Termo de compromisso →</a><button type="button" data-theme-toggle class="icon-button" aria-label="Alternar modo claro e escuro">◐</button></div>
+      <div class="auth-top"><a href="conformidade.html">Termo de compromisso</a><button type="button" data-theme-toggle class="icon-button" aria-label="Alternar modo claro e escuro">◐</button></div>
       <div class="auth-card">
         <p class="eyebrow">MEU INIC · MÁXIMU’S</p>
         <h2 id="auth-heading">Entrar no Meu INIC</h2><p class="auth-subtitle">Acesse seus grupos, entregas e mensagens.</p>
@@ -39,7 +39,7 @@
           <label class="field">E-mail<input name="email" type="email" autocomplete="username" placeholder="seuemail@exemplo.com" required maxlength="254"></label>
           <label class="field">Senha<span class="password-field"><input id="login-password" name="password" type="password" autocomplete="current-password" required minlength="6"><button type="button" class="show-password" data-password="login-password" aria-label="Mostrar senha">Mostrar</button></span></label>
           <button type="button" id="forgot-password" class="text-button forgot">Esqueci minha senha</button>
-          <button type="submit" class="button primary full">Entrar no Meu INIC <span aria-hidden="true">→</span></button>
+          <button type="submit" class="button primary full">Entrar no Meu INIC</button>
         </form>
         <form id="register-form" role="tabpanel" aria-labelledby="register-tab" hidden>
           <label class="field">Nome completo<input name="name" autocomplete="name" required minlength="2" maxlength="100" placeholder="Como você se chama?"></label>
@@ -47,7 +47,7 @@
           <label class="field">Senha<span class="password-field"><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="6" required><button type="button" class="show-password" data-password="register-password" aria-label="Mostrar senha">Mostrar</button></span><small>Use pelo menos 6 caracteres.</small></label>
           <div class="field-row"><label class="field">Eu sou<select name="requestedRole" id="register-role"><option value="student">Estudante</option><option value="advisor">Professor(a) orientador(a)</option></select></label><label class="field" id="register-year-field">Série<select name="year"><option value="1º ano">1º ano</option><option value="2º ano">2º ano</option><option value="3º ano">3º ano</option></select></label></div>
           <p id="advisor-approval-note" class="form-note" hidden>O acesso como orientador será liberado pela coordenação. Você poderá entrar na sua conta enquanto aguarda.</p>
-          <button type="submit" class="button primary full">Criar minha conta <span aria-hidden="true">→</span></button>
+          <button type="submit" class="button primary full">Criar minha conta</button>
         </form>
         <div id="auth-status" class="auth-status is-loading" role="status" aria-live="polite" aria-busy="true"><div class="book-loader" aria-hidden="true"><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div><div class="book-loader__box box"></div></div><span>Conectando ao serviço de acesso…</span></div>
         <p class="auth-bottom">Já recebeu um convite? Entre com o mesmo e-mail informado pelo seu grupo ou orientador.</p>
@@ -61,8 +61,8 @@
       <a class="sidebar-brand" href="index.html" aria-label="Site promocional Máximu’s"><img src="assets/logo-maximus.png" width="188" height="55" alt="Escola Máximu’s"></a>
       <div class="app-label"><span class="mini-dot"></span> MEU INIC</div>
       <nav class="app-nav"><a href="#inicio" data-route="dashboard"><span class="nav-symbol" aria-hidden="true">◫</span><span>Visão geral</span></a><a href="#grupos" data-route="groups"><span class="nav-symbol" aria-hidden="true">♧</span><span>Meus grupos</span></a><a href="#convites" data-route="invitations"><span class="nav-symbol" aria-hidden="true">✉</span><span>Convites</span><b id="invite-badge" class="nav-badge" hidden>0</b></a><a href="#calendario" data-route="calendar"><span class="nav-symbol" aria-hidden="true">▦</span><span>Calendário</span></a><a href="#coordenacao" data-route="admin" id="admin-nav" hidden><span class="nav-symbol" aria-hidden="true">◎</span><span>Coordenação</span></a></nav>
-      <div class="sidebar-note"><span>INIC 2027</span><p>Grupos, entregas e mensagens com seu orientador.</p><a href="conformidade.html">Ler o termo de compromisso →</a></div>
-      <div class="sidebar-bottom"><button class="button secondary compact" type="button" data-install-app hidden>Instalar aplicativo ↓</button><a href="instalar.html">Como instalar no celular</a><a href="index.html">← Voltar ao site</a></div>
+      <div class="sidebar-note"><span>INIC 2027</span><p>Grupos, entregas e mensagens com seu orientador.</p><a href="conformidade.html">Ler o termo de compromisso</a></div>
+      <div class="sidebar-bottom"><button class="button secondary compact" type="button" data-install-app hidden>Instalar aplicativo</button><a href="instalar.html">Como instalar no celular</a><a href="index.html">Voltar ao site</a></div>
     </aside>
     <div class="workspace">
       <header class="app-header"><div><p id="view-kicker" class="eyebrow">SEU ESPAÇO DE PESQUISA</p><h1 id="view-title">Visão geral</h1></div><div class="account-actions"><button type="button" data-theme-toggle class="icon-button" aria-label="Alternar modo claro e escuro">◐</button><button type="button" id="profile-button" class="profile-button" aria-label="Editar meu perfil"><span id="user-avatar" class="avatar">M</span><span class="account-copy"><strong id="user-name">Minha conta</strong><small id="user-role">Estudante</small></span></button><button type="button" id="logout" class="text-button logout-button">Sair</button></div></header>

@@ -364,7 +364,7 @@ function groupCard(group) {
   const card=node('article','group-card');const top=node('div','card-top');top.append(node('span','badge',`INIC ${group.year || 2027}`),node('span','count-label',`${Object.values(group.members || {}).filter(Boolean).length} integrante(s)`));
   card.append(top,node('h3','',group.name),node('p','group-topic',group.topic || 'Tema em definição'),node('p','advisor-line',`Orientação: ${advisorName(group)}`));
   if(groupData.has(group.id))card.append(progressBlock(tasks));else card.append(node('p','loading-task','Carregando entregas…'));
-  const footer=node('div','card-footer');footer.append(node('span','',tasks.length ? `${tasks.filter(t=>t.completed).length} de ${tasks.length} etapas` : 'Organize as próximas etapas'),link('Abrir grupo →',routeHref('group',group.id)));card.append(footer);return card;
+  const footer=node('div','card-footer');footer.append(node('span','',tasks.length ? `${tasks.filter(t=>t.completed).length} de ${tasks.length} etapas` : 'Organize as próximas etapas'),link('Abrir grupo',routeHref('group',group.id)));card.append(footer);return card;
 }
 function taskPreview(task) {
   const row=node('div','task-preview');const date=parseDate(task.dueDate);const tile=node('div','date-tile');tile.append(node('strong','',date?date.getDate():'—'),node('span','',date?new Intl.DateTimeFormat('pt-BR',{month:'short'}).format(date).replace('.',''):'prazo'));
@@ -372,26 +372,26 @@ function taskPreview(task) {
   const status=statusOf(task);row.append(tile,main,node('span',`badge ${status.className}`,status.text));return row;
 }
 function supportCard() {
-  const card=node('div','support-card');const copy=node('div');copy.append(node('h3','','Compromisso com a pesquisa, combinado em família.'),node('p','','Leia o termo, preencha os dados e leve a versão impressa à coordenação para as assinaturas. Valores e datas do evento em 2027 ainda serão confirmados.'));card.append(copy,link('Acessar o termo →','conformidade.html','button secondary'));return card;
+  const card=node('div','support-card');const copy=node('div');copy.append(node('h3','','Compromisso com a pesquisa, combinado em família.'),node('p','','Leia o termo, preencha os dados e leve a versão impressa à coordenação para as assinaturas. Valores e datas do evento em 2027 ainda serão confirmados.'));card.append(copy,link('Acessar o termo','conformidade.html','button secondary'));return card;
 }
 function renderDashboard() {
   const fragment=document.createDocumentFragment();
   const welcome=node('section','welcome');const copy=node('div');copy.append(node('p','eyebrow','O PRÓXIMO PASSO DA SUA PESQUISA'),node('h2','',`Olá, ${myName().split(' ')[0]}. Vamos construir conhecimento?`),node('p','',state.role==='coordinator'?'Acompanhe grupos, orientadores e entregas em um só lugar.':'Seu grupo, seu orientador e as próximas entregas estão aqui. Comece por um pequeno passo.'));welcome.append(copy);
-  if(canCreateGroup())welcome.append(button('Criar um grupo →','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas →','index.html#artigos','button orange'));
+  if(canCreateGroup())welcome.append(button('Criar um grupo','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas','index.html#artigos','button orange'));
   fragment.append(welcome);
   const tasks=allTasks();const complete=tasks.filter(t=>t.completed).length;const late=tasks.filter(t=>statusOf(t).key==='late').length;
   const stats=node('div','stats-grid');
   [[state.role==='coordinator'?'Grupos da escola':'Meus grupos',state.groups.length,'Cada pesquisa tem seu espaço'],['Etapas concluídas',`${complete}/${tasks.length}`,'Atualizadas pelo grupo'],['Entregas em atraso',late,'Prazos do planejamento interno'],['Convites recebidos',pendingInvitations().length,'Aguardando sua resposta']].forEach(([label,value,detail])=>{const stat=node('div','stat');stat.append(node('span','',label),node('strong','',value),node('p','',detail));stats.append(stat);});
   fragment.append(stats);
-  const columns=node('div','two-columns');const nextPanel=node('section','panel');const nextHead=node('div','panel-heading');nextHead.append(node('h3','','Próximas entregas'),link('Ver calendário →','#calendario'));nextPanel.append(nextHead);
+  const columns=node('div','two-columns');const nextPanel=node('section','panel');const nextHead=node('div','panel-heading');nextHead.append(node('h3','','Próximas entregas'),link('Ver calendário','#calendario'));nextPanel.append(nextHead);
   const next=tasks.filter(t=>!t.completed).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,4);
   nextPanel.append(...(next.length?next.map(taskPreview):[node('p','empty-small','Nenhuma entrega pendente. Crie um grupo ou organize as etapas da sua pesquisa.')]));
-  const invitePanel=node('section','panel');const inviteHead=node('div','panel-heading');inviteHead.append(node('h3','','Seu próximo encontro'),link('Ver convites →','#convites'));invitePanel.append(inviteHead);
+  const invitePanel=node('section','panel');const inviteHead=node('div','panel-heading');inviteHead.append(node('h3','','Seu próximo encontro'),link('Ver convites','#convites'));invitePanel.append(inviteHead);
   const incoming=pendingInvitations().slice(0,3);
-  if(incoming.length)incoming.forEach(invite=>{const row=node('div','mini-invite');row.append(node('h4','',invite.groupName||groupName(invite.groupId)),node('p','',`${invite.senderName||'Um participante'} convidou você como ${invite.type==='advisor'?'orientador(a)':'integrante'}.`),link('Responder convite →','#convites'));invitePanel.append(row);});
+  if(incoming.length)incoming.forEach(invite=>{const row=node('div','mini-invite');row.append(node('h4','',invite.groupName||groupName(invite.groupId)),node('p','',`${invite.senderName||'Um participante'} convidou você como ${invite.type==='advisor'?'orientador(a)':'integrante'}.`),link('Responder convite','#convites'));invitePanel.append(row);});
   else invitePanel.append(node('p','empty-small','Você está em dia com os convites. Quando alguém convidar você para um grupo, o convite aparecerá aqui.'));
   columns.append(nextPanel,invitePanel);fragment.append(columns);
-  const groupsHead=heading(state.role==='coordinator'?'Pesquisas da escola':'Seus grupos','Abra um grupo para conversar e acompanhar as entregas.',[link('Ver todos →','#grupos','text-button')]);groupsHead.classList.add('mt-24');fragment.append(groupsHead);
+  const groupsHead=heading(state.role==='coordinator'?'Pesquisas da escola':'Seus grupos','Abra um grupo para conversar e acompanhar as entregas.',[link('Ver todos','#grupos','text-button')]);groupsHead.classList.add('mt-24');fragment.append(groupsHead);
   if(state.groups.length){const grid=node('div','group-grid');grid.append(...state.groups.slice(0,3).map(groupCard));fragment.append(grid);}else fragment.append(emptyState('Sua pesquisa começa por aqui','Crie um grupo com seu tema e convide o orientador. Se já recebeu um convite, abra a área de convites.',[...(canCreateGroup()?[button('Criar grupo','button primary',showCreateGroup)]:[]),link('Ver convites','#convites','button secondary')]));
   fragment.append(supportCard());return fragment;
 }
@@ -453,7 +453,7 @@ function renderGroup() {
   if(!group){$('#view-content').replaceChildren(emptyState('Este grupo não está disponível','Você precisa fazer parte do grupo, orientá-lo ou ter acesso da coordenação. Se acabou de aceitar um convite, aguarde a sincronização.',[link('Meus grupos','#grupos','button secondary'),link('Ver convites','#convites','button primary')]));renderedKey='';return;}
   const key=`group/${group.id}/${currentRoute.tab}`;
   if(renderedKey!==key){
-    const fragment=document.createDocumentFragment();fragment.append(link('← Voltar aos grupos','#grupos','back-link'));
+    const fragment=document.createDocumentFragment();fragment.append(link('Voltar aos grupos','#grupos','back-link'));
     const head=node('div','group-detail-header');const copy=node('div');copy.append(node('span','badge',`INIC ${group.year||2027}`),node('h2','',group.name),node('p','',group.topic||'Tema em definição'));copy.id='group-heading-copy';
     const meta=node('div','group-summary-meta');meta.id='group-meta';copy.append(meta);head.append(copy);
     const actions=node('div','actions');actions.id='group-header-actions';head.append(actions);fragment.append(head);
@@ -486,7 +486,7 @@ function renderGroupOverview(group,tasks) {
   columns.append(about,team);
   const fragment=document.createDocumentFragment();fragment.append(columns);
   const next=tasks.filter(t=>!t.completed).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,3);
-  const nextPanel=node('section','panel mt-24');const head=node('div','panel-heading');head.append(node('h3','','Próximos passos'),link('Todas as entregas →',routeHref('group',group.id,'tasks')));nextPanel.append(head);
+  const nextPanel=node('section','panel mt-24');const head=node('div','panel-heading');head.append(node('h3','','Próximos passos'),link('Todas as entregas',routeHref('group',group.id,'tasks')));nextPanel.append(head);
   if(next.length)nextPanel.append(...next.map(t=>taskPreview({...t,groupId:group.id,groupName:group.name})));else nextPanel.append(node('p','empty-small',tasks.length?'Todas as etapas deste grupo foram concluídas.':'O cronograma ainda não tem etapas. Abra “Entregas” para começar.'));
   fragment.append(nextPanel,supportCard());$('#group-panel').replaceChildren(fragment);
 }
@@ -522,7 +522,7 @@ function showTaskForm(group,task) {
 function buildMessagesView(group) {
   const panel=node('section','panel message-panel');const head=node('div','message-panel-head');const copy=node('div');copy.append(node('h3','','Conversa do grupo'),node('p','','Recados e orientações, no mesmo lugar.'));head.append(copy,node('span','badge','Em tempo real'));panel.append(head);
   const messages=node('div','messages');messages.id='messages-list';messages.setAttribute('role','log');messages.setAttribute('aria-label','Mensagens do grupo');messages.setAttribute('aria-live','polite');messages.setAttribute('aria-relevant','additions');panel.append(messages);
-  const form=node('form','message-compose');const label=node('label','field','Sua mensagem');const textarea=node('textarea');textarea.id='message-draft';textarea.name='message';textarea.maxLength=2000;textarea.required=true;textarea.placeholder='Escreva uma pergunta ou compartilhe o próximo passo…';textarea.rows=2;label.append(textarea);const send=node('button','button primary','Enviar →');send.type='submit';form.append(label,send);panel.append(form,node('p','compose-footer','Máximo de 2.000 caracteres. Ctrl + Enter também envia. Mensagens ficam visíveis aos integrantes, ao orientador e à coordenação.'));
+  const form=node('form','message-compose');const label=node('label','field','Sua mensagem');const textarea=node('textarea');textarea.id='message-draft';textarea.name='message';textarea.maxLength=2000;textarea.required=true;textarea.placeholder='Escreva uma pergunta ou compartilhe o próximo passo…';textarea.rows=2;label.append(textarea);const send=node('button','button primary','Enviar');send.type='submit';form.append(label,send);panel.append(form,node('p','compose-footer','Máximo de 2.000 caracteres. Ctrl + Enter também envia. Mensagens ficam visíveis aos integrantes, ao orientador e à coordenação.'));
   form.addEventListener('submit',async event=>{
     event.preventDefault();const text=textarea.value.trim();if(!text)return;
     const ok=await action(send,()=>service.sendMessage(group.id,text));if(ok){textarea.value='';textarea.focus();}
@@ -583,9 +583,9 @@ function renderInvitations() {
 function renderCalendar() {
   if(calendarGroup!=='all'&&!state.groups.some(g=>g.id===calendarGroup))calendarGroup='all';
   const fragment=document.createDocumentFragment();fragment.append(heading('Um calendário para não perder o próximo passo','As entregas dos grupos aparecem aqui automaticamente.'));
-  const toolbar=node('div','calendar-toolbar');const monthNav=node('div','calendar-nav');const previous=button('←','icon-button',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()-1,1,12);render();});previous.setAttribute('aria-label','Mês anterior');const next=button('→','icon-button',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+1,1,12);render();});next.setAttribute('aria-label','Próximo mês');monthNav.append(previous,node('h3','',new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(calendarDate)),next);toolbar.append(monthNav);
+  const toolbar=node('div','calendar-toolbar');const monthNav=node('div','calendar-nav');const previous=button('Anterior','icon-button calendar-step',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()-1,1,12);render();});previous.setAttribute('aria-label','Mês anterior');const next=button('Próximo','icon-button calendar-step',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+1,1,12);render();});next.setAttribute('aria-label','Próximo mês');monthNav.append(previous,node('h3','',new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(calendarDate)),next);toolbar.append(monthNav);
   const actions=node('div','actions');const select=node('select','calendar-group-filter');select.setAttribute('aria-label','Filtrar calendário por grupo');[{id:'all',name:'Todos os meus grupos'},...state.groups].forEach(g=>{const option=node('option','',g.name);option.value=g.id;select.append(option);});select.value=calendarGroup;select.addEventListener('change',event=>{calendarGroup=event.target.value;render();});
-  actions.append(button('Hoje','button secondary compact',()=>{const now=new Date();calendarDate=new Date(now.getFullYear(),now.getMonth(),1,12);calendarSelected=true;render();}),button('Exportar agenda ↓','button secondary compact',exportCalendar));toolbar.append(actions);fragment.append(toolbar,select);select.style.marginBottom='20px';
+  actions.append(button('Hoje','button secondary compact',()=>{const now=new Date();calendarDate=new Date(now.getFullYear(),now.getMonth(),1,12);calendarSelected=true;render();}),button('Exportar agenda','button secondary compact',exportCalendar));toolbar.append(actions);fragment.append(toolbar,select);select.style.marginBottom='20px';
   const tasks=allTasks().filter(t=>calendarGroup==='all'||t.groupId===calendarGroup);
   const first=new Date(calendarDate.getFullYear(),calendarDate.getMonth(),1,12);const start=new Date(first);start.setDate(first.getDate()-first.getDay());
   const grid=node('div','calendar-grid');grid.setAttribute('aria-label','Calendário mensal de entregas');['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(day=>grid.append(node('div','weekday',day)));

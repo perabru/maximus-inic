@@ -1,8 +1,8 @@
 # Máximu’s no INIC
 
-Site público com 49 artigos oficiais (8 de 2024 e 41 de 2025), galeria de 28 fotos e acesso à plataforma de grupos INIC 2027. O catálogo permite filtrar ano, nome e instituição; cards abrem os PDFs da Univap. O carrossel 3D usa as fotos em resolução completa, preserva o enquadramento e permite arraste com mouse/toque, pausa, miniaturas e ampliação. Preferência de movimento reduzido troca a animação por uma faixa de fotos.
+Site público com 49 artigos oficiais (8 de 2024 e 41 de 2025), galeria de 28 fotos e acesso à plataforma de grupos INIC 2027. O catálogo permite filtrar ano, nome e instituição; cards abrem os PDFs da Univap. O carrossel mostra uma foto por vez em resolução completa, com transição horizontal, setas laterais, gestos, pausa, miniaturas e ampliação. Preferência de movimento reduzido troca a animação por uma faixa de fotos.
 
-Componentes adaptados das referências Uiverse fornecidas pelo usuário: artigos, convites, carregamento, tema, botões e carrossel. Créditos e licença em `THIRD_PARTY_NOTICES.md` e `uiverse-components.css`. A abertura usa a marca do banner enviado.
+Componentes adaptados das referências Uiverse fornecidas pelo usuário: artigos, convites, carregamento, tema e botões. O slideshow horizontal segue a referência funcional da Hashtag Treinamentos, com implementação própria. Créditos e licença em `THIRD_PARTY_NOTICES.md` e `uiverse-components.css`. A abertura usa a marca do banner enviado.
 
 Pesquisas complementares e limites de cobertura ficam em `research/sources.json`. Pessoas com nomes semelhantes são exibidas com nome completo e instituição. Menções somente em bibliografias não entram no catálogo. Os anais de 2026 ainda não estavam acessíveis na consulta de 05/11/2026; pôsteres nas fotografias não são apresentados como PDFs publicados.
 
@@ -14,7 +14,7 @@ Página de divulgação da iniciação científica estudantil, com fotografias, 
 
 - Identidade visual da Escola Máximu’s: índigo `#3d4094` e laranja `#f38635`.
 - 28 fotografias fornecidas para esta publicação, otimizadas em WebP, com miniaturas e textos alternativos.
-- Carrossel sem botões de seta, com teclado, arraste, pausa e ampliação; respeito à preferência de movimento reduzido.
+- Carrossel com setas de navegação, teclado, gestos, pausa e ampliação; respeito à preferência de movimento reduzido.
 - Biblioteca com pesquisa por tema, título, estudante, professor, instituição e ano.
 - Instituição e relação com os professores identificadas em cada registro, incluindo eventuais divergências de cadastro.
 - Links externos para os PDFs oficiais, sem copiar os artigos para este repositório.

@@ -19,3 +19,7 @@ html[data-theme="dark"]{color-scheme:dark;--primary:#a7aaff;--primary-hover:#c6c
 .invitation-card__actions>.button{font-size:11px;padding:9px 14px}
 .invitation-card__actions>.button.primary:not(.uiverse-button){background:#f38635;color:#201c46}
 .invitation-card__actions>.button.secondary:not(.uiverse-button){background:transparent;color:#ffe2ca;border-color:#f38635}
+
+/* Calendar navigation uses explicit labels; decorative button arrows are omitted. */
+.calendar-nav .calendar-step{width:auto;min-width:62px;padding-inline:9px;flex-shrink:0;font-size:11px}
+@media(max-width:480px){.calendar-nav{gap:6px}.calendar-nav .calendar-step{min-width:56px;padding-inline:7px}.calendar-nav h3{font-size:15px;line-height:1.4}}

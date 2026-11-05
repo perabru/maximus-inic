@@ -904,24 +904,3 @@ html[data-theme="dark"] .invitation-card{background:#292b5b;box-shadow:1px 5px 2
 html[data-theme="dark"] .invitation-card .uiverse-button.uiverse-button{--uiverse-color:#f38635;color:#ffe2ca}
 html[data-theme="dark"] .invitation-card .uiverse-button.uiverse-button:is(:hover,:focus-visible){color:#201c46}
 @media(max-width:600px){.invitation-card{min-height:300px;padding-inline:20px}.invitation-card__name{font-size:19px}.invitation-card__actions{gap:9px}.invitation-card .uiverse-button.uiverse-button{font-size:11px}}
-
-/*
-3D carousel: Copyright - 2026 ilkhoeri (ilkhoeri).
-Source: https://uiverse.io/ilkhoeri/swift-panda-38
-Original visible HTML/CSS retrieved from Uiverse on 2026-11-05.
-MIT License; the full permission and warranty notice at this file's header applies.
-Original ring geometry and rotation retained; dimensions/radius scaled for real photos.
-*/
-.photo-orbit{width:100%;height:440px;position:relative;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;touch-action:pan-y;border-radius:18px;background:radial-gradient(ellipse at 50% 85%,#3d409418,transparent 65%)}
-.photo-orbit__inner{--w:130px;--h:185px;--quantity:25;--translateZ:calc(var(--w) * var(--quantity) / 6.283185 + 28px);--rotateX:-15deg;--perspective:1600px;--rotation:0deg;--orbit-duration:45s;position:absolute;width:var(--w);height:var(--h);top:25%;left:calc(50% - (var(--w) / 2) - 2.5px);z-index:2;transform-style:preserve-3d;transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(var(--rotation));animation:maximus-orbit-rotating var(--orbit-duration) linear infinite;will-change:transform}
-@keyframes maximus-orbit-rotating{from{transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(var(--rotation))}to{transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(calc(var(--rotation) + 1turn))}}
-.photo-orbit__card{--color-card:61,64,148;position:absolute;border:2px solid rgb(var(--color-card));border-radius:12px;overflow:hidden;inset:0;margin:0;padding:0;appearance:none;background:#20213f;cursor:pointer;transform:rotateY(calc((360deg / var(--quantity)) * var(--index))) translateZ(var(--translateZ));backface-visibility:hidden;box-shadow:0 6px 22px #17193825}
-.photo-orbit__image{display:block;width:100%;height:100%;object-fit:cover;background:#0000 radial-gradient(circle,rgba(var(--color-card),.2) 0%,rgba(var(--color-card),.6) 80%,rgba(var(--color-card),.9) 100%);pointer-events:none}
-.photo-orbit:hover .photo-orbit__inner,.photo-orbit:focus-within .photo-orbit__inner,.photo-orbit.is-paused .photo-orbit__inner{animation-play-state:paused}
-.photo-orbit.is-manual .photo-orbit__inner{animation:none;transition:transform .55s ease}
-.photo-orbit__card:is(:hover,:focus-visible,.is-selected){border-color:#f38635;box-shadow:0 0 0 2px #f38635,0 12px 28px #17193840}
-.photo-orbit__card:focus-visible{outline:3px solid #fff;outline-offset:-7px}
-html[data-theme="dark"] .photo-orbit{background:radial-gradient(ellipse at 50% 85%,#8588ef28,transparent 65%)}
-@media(max-width:600px){.photo-orbit{height:365px}.photo-orbit__inner{--w:102px;--h:153px;--perspective:1400px;top:24%}}
-/* Static strip keeps every photo keyboard/touch reachable when motion is reduced. */
-@media(prefers-reduced-motion:reduce){.photo-orbit{height:auto;min-height:210px;overflow:visible}.photo-orbit__inner{position:relative;top:auto;left:auto;width:100%;height:auto;display:flex;gap:14px;padding:16px 8px 24px;overflow-x:auto;scroll-snap-type:x proximity;transform:none!important;animation:none!important;transition:none!important;will-change:auto;perspective:none}.photo-orbit__card{position:relative;inset:auto;flex:0 0 150px;height:215px;transform:none;scroll-snap-align:center;backface-visibility:visible}.photo-orbit__image{object-fit:cover}}
