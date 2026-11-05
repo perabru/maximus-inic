@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3d4094">
+  <title>Máximu’s no INIC | Ciência que começa na escola</title>
+  <meta name="description" content="Conheça a participação da Máximu’s no INIC: registros dos estudantes, iniciação científica e artigos para ler em família.">
+  <meta property="og:title" content="Máximu’s no INIC — ideias que vão além da sala de aula">
+  <meta property="og:description" content="Fotos, descobertas e uma biblioteca de pesquisas para as famílias.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://perabru.github.io/maximus-inic/assets/photos/photo-10.webp">
+  <link rel="icon" href="assets/logo-mark.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" href="#inicio" aria-label="Máximu’s no INIC — início"><img src="assets/logo-maximus.png" width="200" height="59" alt="Escola Máximu’s — Ensino Técnico Profissionalizante"></a>
+    <nav aria-label="Navegação principal"><a href="#encontro">O encontro</a><a href="#momentos">Nossos momentos</a><a href="#artigos">Artigos</a></nav>
+    <a href="#artigos" class="nav-cta">Para ler em família <span aria-hidden="true">→</span></a>
+  </div>
+</header>
+<main id="conteudo">
+  <section class="hero container" id="inicio">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="dot"></span> MÁXIMU’S NO INIC <span class="year-label">2025 / 2026</span></p>
+      <h1>O futuro começa<br>com uma <em>pergunta.</em></h1>
+      <p class="hero-description">Da curiosidade à pesquisa. Da sala de aula ao encontro científico. Nossos estudantes têm ideias para compartilhar com o mundo.</p>
+      <div class="hero-actions"><a class="button primary" href="#artigos">Explore as pesquisas <span aria-hidden="true">→</span></a><a class="text-link" href="#momentos">Veja os momentos <span aria-hidden="true">↓</span></a></div>
+      <div class="hero-signature"><span class="signature-line"></span><span>Pesquisa de estudante.<br><strong>Orgulho de toda a família.</strong></span></div>
+    </div>
+    <div class="hero-visual">
+      <div class="photo-topline"><span>CONHECIMENTO EM MOVIMENTO</span><span aria-hidden="true">✳︎</span></div>
+      <img class="hero-photo" src="assets/photos/photo-10.webp" width="1280" height="960" fetchpriority="high" alt="Grupo de participantes diante de um pôster sobre coleta de resíduos eletrônicos no INIC.">
+      <div class="photo-bottomline"><span>Ideias que vão além da sala de aula.</span><a href="#momentos" aria-label="Conheça a galeria de fotos">→</a></div>
+      <span class="hero-stamp" aria-hidden="true">Mentes<br>curiosas.<br><b>Futuros<br>possíveis.</b></span>
+    </div>
+  </section>
+  <div class="intro-band"><div class="container"><span>INVESTIGAR <i>✳︎</i> CRIAR <i>✳︎</i> COMPARTILHAR</span><p>A ciência também se aprende fazendo.</p></div></div>
+
+  <section id="encontro" class="about container section">
+    <div><p class="eyebrow">UM ENCONTRO COM A CIÊNCIA</p><h2>Mais do que apresentar.<br>É descobrir do que<br>se é capaz.</h2></div>
+    <div class="about-content"><p class="lead">O INIC é o Encontro Latino-Americano de Iniciação Científica da Univap: um espaço para apresentar pesquisas e trocar conhecimentos.</p><p>Ao investigar um problema, organizar dados e conversar sobre resultados, o estudante exercita o pensamento crítico, a comunicação e o trabalho em equipe. Cada apresentação é uma oportunidade de aprender e ganhar confiança.</p><a class="text-link" href="https://www.univap.br/inic/" target="_blank" rel="noopener noreferrer">Conheça o evento na Univap <span aria-hidden="true">→</span><span class="sr-only"> (abre em nova aba)</span></a></div>
+    <div class="learning"><article><span>01 / CURIOSIDADE</span><h3>Uma boa pergunta</h3><p>Olhar para o cotidiano e encontrar algo que merece ser investigado.</p></article><article><span>02 / INVESTIGAÇÃO</span><h3>Ideias em prática</h3><p>Pesquisar, testar caminhos e aprender com os resultados.</p></article><article><span>03 / PARTILHA</span><h3>Voz para a descoberta</h3><p>Apresentar o trabalho, ouvir perguntas e construir novos conhecimentos.</p></article></div>
+  </section>
+
+  <section id="momentos" class="gallery-section section">
+    <div class="container">
+      <div class="section-heading"><div><p class="eyebrow">NOSSO ÁLBUM</p><h2>O conhecimento tem<br>esses rostos.</h2></div><p>Um registro das apresentações,<br>das equipes e das conquistas.<br><span class="muted-light">12 fotografias para celebrar.</span></p></div>
+      <div class="gallery" role="region" aria-roledescription="carrossel" aria-label="Fotografias do INIC" tabindex="0">
+        <div class="gallery-stage"><img id="gallery-image" src="assets/photos/photo-01.webp" width="1280" height="963" loading="lazy" alt="Duas estudantes ao lado do pôster sobre classificação de alterações foliares com aprendizagem de máquina."><button id="expand-photo" class="expand" aria-label="Ampliar fotografia">⤢ <span>Ampliar</span></button></div>
+        <div class="gallery-footer"><div><p id="gallery-detail" class="eyebrow">EcoPlant · aprendizagem de máquina</p><h3 id="gallery-caption">Ideias que ganham espaço na ciência</h3></div><div class="gallery-controls"><button id="play" aria-label="Pausar troca automática de fotos" aria-pressed="true">Ⅱ</button><span id="photo-counter" aria-live="polite" aria-atomic="true">01 / 12</span><button id="previous" aria-label="Foto anterior">←</button><button id="next" aria-label="Próxima foto">→</button></div></div>
+        <div id="thumbnails" class="thumbnails" aria-label="Escolher fotografia"></div>
+      </div>
+      <p class="gallery-note">Use as setas, deslize no celular ou toque nas miniaturas. Toque em “Ampliar” para ver a foto inteira.</p>
+    </div>
+  </section>
+
+  <section id="artigos" class="library-section section container">
+    <div class="section-heading"><div><p class="eyebrow">BIBLIOTECA DE PESQUISAS</p><h2>Descobertas para<br>ler em família.</h2></div><p>Encontre um tema, conheça os autores<br>e abra o artigo nos anais oficiais.<br><strong>Leitura livre. Sem cadastro.</strong></p></div>
+    <div class="catalog-intro"><div class="catalog-number"><strong id="total-count">24</strong><span>artigos localizados<br>nos anais de 2025</span></div><p>Trabalhos com <strong>Taynara Alves</strong> ou <strong>Bruno Michel Pera</strong> na autoria, na orientação ou em menções identificadas no texto. A seleção inclui a Máximu’s e outras instituições, identificadas em cada publicação.</p></div>
+    <aside class="status-note"><span class="status-icon" aria-hidden="true">i</span><div><strong>Sobre os artigos de 2026</strong><p>Até 5 de novembro de 2026, os anais desta edição ainda não foram localizados no portal oficial. As fotos registram as apresentações; consulte o portal oficial para acompanhar a disponibilização dos artigos.</p><a href="https://www.univap.br/inic/anais_congresso.php" target="_blank" rel="noopener noreferrer">Consultar o portal de anais <span aria-hidden="true">→</span></a></div></aside>
+    <form id="filters" class="filters" role="search" aria-label="Pesquisar artigos">
+      <label class="search-label" for="search"><span aria-hidden="true">⌕</span><input id="search" aria-label="Buscar artigos por tema, título ou estudante" type="search" placeholder="Busque por tema, título ou estudante" autocomplete="off"></label>
+      <div class="selects"><label for="year">Edição<select id="year"><option value="all">Todas as edições</option><option value="2025">2025</option><option value="2026">2026</option></select></label><label for="advisor">Professor(a)<select id="advisor"><option value="all">Taynara e Bruno</option><option value="Taynara">Taynara Alves</option><option value="Bruno">Bruno Michel Pera</option></select></label><label for="school">Instituição<select id="school"><option value="all">Todas as instituições</option><option value="maximus">Escola Máximu’s</option><option value="other">Outras instituições</option></select></label></div>
+    </form>
+    <div class="results-top"><p id="results-count" role="status" aria-live="polite">Carregando biblioteca…</p><button class="reset" id="clear-filters" type="button">Limpar filtros <span aria-hidden="true">×</span></button></div>
+    <div id="articles" class="article-grid"></div>
+    <div id="empty" class="empty" hidden><span aria-hidden="true">⌕</span><h3 id="empty-title">Nenhum artigo com esses filtros</h3><p id="empty-text">Tente outro tema ou limpe os filtros para explorar a biblioteca.</p><button class="button primary" id="empty-reset">Ver todos os artigos <span aria-hidden="true">→</span></button></div>
+    <div class="more-wrap"><button id="load-more" class="button secondary" hidden>Mostrar mais artigos <span aria-hidden="true">↓</span></button></div>
+    <noscript><p>Ative o JavaScript para pesquisar os artigos. Você também pode acessar a <a href="https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php">lista completa dos anais oficiais de 2025</a>.</p></noscript>
+    <details class="research-details"><summary>Fontes e critérios desta biblioteca <span aria-hidden="true">+</span></summary><div><p>A seleção foi conferida em 05/11/2026. Foram pesquisadas as variantes “Taynara Alves”, “Taynara Alves de Carvalho”, “Bruno Michel Pera”, “Bruno Michel Pêra” e “Bruno Michael Pera” nos registros oficiais. Cada artigo da lista tem um PDF oficial verificado.</p><p id="method-note">A identificação considera autoria, orientação e menções explícitas nos documentos, com a relação indicada junto ao trabalho. Divergências entre o cadastro e o PDF são indicadas junto ao trabalho. Os resumos desta página são apresentações breves do tema; consulte o artigo para ler métodos e resultados.</p><p>Os trabalhos de outras instituições estão incluídos por terem os professores pesquisados na autoria, na orientação ou em menções identificadas no texto. Eles não são apresentados como produção da Máximu’s.</p><div class="source-links"><a href="https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php" target="_blank" rel="noopener noreferrer">Índice oficial 2025 →</a><a href="https://www.univap.br/inic/anais_congresso.php" target="_blank" rel="noopener noreferrer">Portal de anais 2026 →</a><a href="research/sources.json" target="_blank" rel="noopener noreferrer">Dados e verificação →</a></div></div></details>
+  </section>
+
+  <section class="family-section"><div class="container family-inner"><div><p class="eyebrow">ESCOLA + FAMÍLIA</p><h2>Leia. Pergunte.<br>Converse sobre as descobertas.</h2><p>Escolha um artigo com seu filho e comece por uma pergunta:<br>“O que fez você querer pesquisar esse assunto?”</p></div><div class="family-action"><span aria-hidden="true">✳︎</span><button class="button white" id="share">Compartilhar esta página <span aria-hidden="true">→</span></button><p id="share-status" role="status" aria-live="polite">Leve essas histórias para mais famílias.</p></div></div></section>
+</main>
+<footer class="footer container"><div><img src="assets/logo-maximus.png" width="174" height="51" loading="lazy" alt="Escola Máximu’s"><p>Curiosidade que aprende.<br>Conhecimento que transforma.</p></div><div><strong>Máximu’s no INIC</strong><p>Página de divulgação da participação estudantil.<br>Artigos hospedados nos anais oficiais da Univap.</p><a href="https://escolamaximus.com.br/" target="_blank" rel="noopener noreferrer">Conheça a escola →</a><a href="https://www.univap.br/inic/" target="_blank" rel="noopener noreferrer">Portal do INIC →</a></div><div class="footer-bottom"><span>Ciência, educação e novas possibilidades.</span><span>Acervo consultado em 05.11.2026</span></div></footer>
+<dialog id="lightbox" aria-label="Fotografia ampliada"><button id="close-lightbox" class="lightbox-close" aria-label="Fechar fotografia ampliada">×</button><figure><img id="lightbox-image" alt=""><figcaption id="lightbox-caption"></figcaption></figure><div class="lightbox-controls"><button id="lightbox-prev" aria-label="Foto anterior ampliada">←</button><span id="lightbox-counter">01 / 12</span><button id="lightbox-next" aria-label="Próxima foto ampliada">→</button></div></dialog>
+</body>
+</html>

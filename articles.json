@@ -1,0 +1,883 @@
+{
+  "year": 2025,
+  "checkedAt": "2026-11-05",
+  "count": 24,
+  "maximusCount": 11,
+  "articles": [
+    {
+      "id": "2025-RE_0424_0158_01",
+      "year": 2025,
+      "title": "A IMPORTÂNCIA DA ALIMENTAÇÃO NA SAÚDE MENTAL",
+      "indexTitle": "A IMPORTÂNCIA DA ALIMENTAÇÃO NA SAÚDE MENTAL",
+      "students": "Ana Karolina Venancio Guedes, Nicole Beatriz Vieira",
+      "authors": [
+        "Ana Karolina Venâncio Guedes",
+        "Nicole Beatriz Vieira",
+        "Alexsander Patry"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Investiga a relação entre hábitos alimentares e saúde mental de estudantes e apresenta um e-book educativo.",
+      "keywords": "Alimentação Saudável , Saude Mental, Transtornos Mentais, Nutrientes",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0424_0158_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0424_0158_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 294305,
+      "note": "Bruno Michel Pera consta como orientador no índice oficial; não consta na linha de autoria do PDF.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0664_1172_01",
+      "year": 2025,
+      "title": "ANÁLISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
+      "indexTitle": "ANALISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
+      "students": "Cauê Brandão dos Santos, Ester de Abreu Teotônio, Matheus Henrique Ferreira e Silva",
+      "authors": [
+        "Bruno Michel Pera",
+        "Cauê Brandão dos Santos",
+        "Ester de Abreu Teotônio",
+        "Matheus Henrique Ferreira e Silva"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Apresenta um sistema com sensor de cor e ESP32 para observar características da pele.",
+      "keywords": "Microcontroladores , Derme, Sensores",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 231688,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0627_0069_01",
+      "year": 2025,
+      "title": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
+      "indexTitle": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
+      "students": "Rebeka Fernandes Rebeque, Luis Miguel de Sousa Gois, Matheus Gonçalves Oliveira",
+      "authors": [
+        "Bruno Michel Pera",
+        "Luis Miguel de Sousa Gois",
+        "Matheus Gonçalves Oliveira",
+        "Rebeka Fernandes Rebeque"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Propõe um aplicativo que reúne acompanhamento do ciclo menstrual, gráficos e recomendações nutricionais.",
+      "keywords": "ciclo menstrual, inteligência artificial, nutrição personalizada, saúde feminina, aplicativo mobile.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 248311,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0979_0754_01",
+      "year": 2025,
+      "title": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
+      "indexTitle": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
+      "students": "João Felipe Spada dos Santos Frangioni, Vitor Hugo dos Santos Inácio, João Vitor dos Santos Vieira",
+      "authors": [
+        "João Felipe Spada dos Santos Frangioni",
+        "Vitor Hugo dos Santos Inácio",
+        "João Vitor dos Santos Vieira",
+        "Silas Macacari de Matos",
+        "Bruno Michel Pêra"
+      ],
+      "advisors": [
+        "Bruno Michel Pêra"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Robótica e engenharia",
+      "description": "Integra sensores e armazenamento de dados em aeronaves não tripuladas para apoiar a análise de voos.",
+      "keywords": "VANTs, Sensores embarcados, ESP32, Telemetria, Aquisição de dados",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 363058,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_1153_1106_01",
+      "year": 2025,
+      "title": "ATIVIDADE E EXERCÍCIO FÍSICO COMO PREVENÇÃO E REDUÇÃO DE SINTOMAS DE DEPRESSÃO E ANSIEDADE EM ADOLESCENTES",
+      "indexTitle": "ATIVIDADE E EXERCÍCIO FÍSICO COMO PREVENÇÃO E REDUÇÃO DE SINTOMAS DE DEPRESSÃO E ANSIEDADE EM ADOLESCENTES",
+      "students": "Giovana Fontoura de Ataíde, Caroline Fusco de Abreu",
+      "authors": [
+        "Caroline Fusco de Abreu",
+        "Giovana Fontoura de Ataíde",
+        "Cláudio Pereira Veneziani"
+      ],
+      "advisors": [
+        "Bruno Michel Pera",
+        "Cláudio Pereira Veneziani"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera",
+        "Cláudio Pereira Veneziani"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Ouve estudantes sobre atividade física e discute sua relação com ansiedade, estresse e bem-estar emocional.",
+      "keywords": "Atividade física, Saúde mental, Alunos, Escola",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1153_1106_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1153_1106_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 262354,
+      "note": "Bruno Michel Pera consta como orientador no índice oficial; não consta na linha de autoria do PDF.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0294_0297_01",
+      "year": 2025,
+      "title": "BURNOUT NA ERA DIGITAL: UMA REVISÃO DE LITERATURA SOBRE O IMPACTO NOS JOVENS TRABALHADORES",
+      "indexTitle": "BURNOUT NA ERA DIGITAL: COMO OS JOVENS JÁ TÊM INGRESSADO NA ÁREA CO TENDÊNCIA A SÍNDROME",
+      "students": "Kelly Cristina Siqueira Nogueira Macedo, Láisa Alves Rodrigues Nóbrega Viola",
+      "authors": [
+        "Kelly Cristina Siqueira Nogueira Macedo",
+        "Láisa Alves Rodrigues Nóbrega Viola",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michael Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Analisa como a hiperconexão e as exigências de desempenho se relacionam ao burnout entre jovens trabalhadores.",
+      "keywords": "Esgotamento precoce, exaustão emocional , burnout , jovens trabalhadores",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0294_0297_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0294_0297_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 438271,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0504_0048_01",
+      "year": 2025,
+      "title": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
+      "indexTitle": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
+      "students": "Cássia de Oliveira Washington Santos, Isabelly de Oliveira, Steffany Felix Lourenço",
+      "authors": [
+        "Bruno Michel Pera",
+        "Cássia de Oliveira Washington Santos",
+        "Isabelly de Oliveira",
+        "Steffany Felix Lourenço"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e educação",
+      "description": "Propõe um calendário com inteligência artificial para organizar compromissos e apoiar o planejamento dos estudos.",
+      "keywords": "Aplicativo educacional , organização , integração de IA",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 241137,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0419_1035_01",
+      "year": 2025,
+      "title": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
+      "indexTitle": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
+      "students": "Ana Julia Souza Rodrigues, Douglas Bacelar Mourão, Isaac Gabriel dos Santos Barbosa",
+      "authors": [
+        "Ana Julia Souza Rodrigues",
+        "Douglas Bacelar Mourão",
+        "Isaac Gabriel dos Santos Barbosa",
+        "Bruno Michael Pera"
+      ],
+      "advisors": [
+        "Bruno Michael Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Apresenta uma proposta de monitoramento da dilatação cervical com sensores, ESP32 e transmissão de dados.",
+      "keywords": "Parto humanizado, Monitoramento obstétrico, Sensor, Tecnologia médica",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 345470,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0423_0551_01",
+      "year": 2025,
+      "title": "EDUCAÇÃO AMBIENTAL: RECICLAGEM DE PAPEL COMO PRÁTICA NA ESCOLA MÁXIMU’S",
+      "indexTitle": "EDUCAÇÃO AMBIENTAL: RECICLAGEM DE PAPEL COMO PRÁTICA NA ESCOLA MÁXIMU’S",
+      "students": "Lauren Pires de Paula",
+      "authors": [
+        "Lauren Pires de Paula",
+        "Taynara Alves de Carvalho"
+      ],
+      "advisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "supervisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Mostra uma prática de reciclagem de papel na escola como atividade de química ambiental e conscientização.",
+      "keywords": "Reciclagem, Química Ambiental, Sustentabilidade",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0423_0551_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0423_0551_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 320692,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Taynara"
+      ]
+    },
+    {
+      "id": "2025-RE_0423_0315_01",
+      "year": 2025,
+      "title": "EFEITO DOPPLER E O DESENVOLVIMENTO DE UM DOPPLERTRACK",
+      "indexTitle": "EFEITO DOPPLER E O DESENVOLVIMENTO DE UM DOPPLERTRACK",
+      "students": "Maria Eduarda Yoshida Viana, Gabrielly Mayumi Félix Sugino",
+      "authors": [
+        "Gabrielly Mayumi Felix Sugino",
+        "Maria Eduarda Yoshida Viana",
+        "Taynara Alves de Carvalho"
+      ],
+      "advisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "supervisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Ciência e educação",
+      "description": "Apresenta o DopplerTrack, um dispositivo com Arduino para aproximar o estudo do efeito Doppler da prática.",
+      "keywords": "Ensino de Física, Efeito Doppler-Fizeau, DopplerTrack",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0423_0315_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0423_0315_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 261479,
+      "award": "2º lugar — área Técnico — INIC 2025",
+      "awardSource": "https://www.inicepg.univap.br/cd/INIC_2025/anais/melhores_trabalhos.php",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Taynara"
+      ]
+    },
+    {
+      "id": "2025-RE_0405_0601_01",
+      "year": 2025,
+      "title": "ESPORTE E PRODUÇÃO CINEMATOGRÁFICA: INFLUÊNCIA CULTURAL E COMPORTAMENTAL",
+      "indexTitle": "ESPORTE E PRODUÇÃO CINEMATOGRÁFICA: INFLUÊNCIA CULTURAL E COMPORTAMENTAL",
+      "students": "Beatriz Landim Marcelino de Almeida, Bianca da Silva Cruz Ferreira, Sophia Patrice Santana de Oliveira, Vitor Hugo Ferreira Rabello",
+      "authors": [
+        "Beatriz Landim Marcelino de Almeida",
+        "Bianca da Silva Cruz Ferreira",
+        "Sophia Patrice Santana Oliveira",
+        "Vitor Hugo Ferreira Rabello",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Sociedade e comunicação",
+      "description": "Discute como esporte e cinema influenciam emoções, hábitos e identidade cultural entre os jovens.",
+      "keywords": "Esporte, Cinema, Cultura midiática, Influência, Comportamento",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0405_0601_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0405_0601_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 304926,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0413_0768_01",
+      "year": 2025,
+      "title": "ESTUDO DAS REAÇÕES DE OXIRREDUÇÃO NO TESTE DO BAFÔMETRO",
+      "indexTitle": "ESTUDO DAS REAÇÕES DE OXIRREDUÇÃO NO TESTE DO BAFÔMETRO",
+      "students": "Ana Luisa Ramos de Oliveira, Nicole Evellyn Marques Pereira da Silva, Rebecca Galvez Baptista Castilho, Ana Luísa Sonnewend Ferreira",
+      "authors": [
+        "Ana Luisa Sonnewend Ferreira",
+        "Nicole Evellyn Marques Pereira da Silva",
+        "Rebecca Galvez Baptista Castilho",
+        "Taynara Alves de Carvalho"
+      ],
+      "advisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "supervisors": [
+        "Taynara Alves de Carvalho"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Ciência e educação",
+      "description": "Explica as reações de oxirredução do bafômetro e sua importância para a segurança no trânsito.",
+      "keywords": "Reações Químicas , Bafômetro, Oxirredução",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0413_0768_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0413_0768_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 288571,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Taynara"
+      ]
+    },
+    {
+      "id": "2025-RE_0898_0394_01",
+      "year": 2025,
+      "title": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
+      "indexTitle": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
+      "students": "Giovana Ferreira Núbile, Eloah Maria Rodrigues Rocha, Ana Julia Tenório Pedroso",
+      "authors": [
+        "Ana Julia Tenorio Pedroso",
+        "Eloah Maria Rodrigues Rocha",
+        "Giovana Ferreira Núbile",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e negócios",
+      "description": "Descreve uma loja virtual de moda infantil com organização de pedidos e experiência de compra acessível.",
+      "keywords": "E-commerce, Moda Infantil, Compra Intuitiva , Site de Loja",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 328754,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0403_0292_01",
+      "year": 2025,
+      "title": "INFLUÊNCIA DA GENÉTICA NO DESENVOLVIMENTO DE VÍCIOS",
+      "indexTitle": "INFLUÊNCIA DA GENÉTICA NO DESENVOLVIMENTO DE VICÍOS",
+      "students": "Maria Clara Silva e Gomes, Rafaela Peixoto Moreira",
+      "authors": [
+        "Maria Clara Silva e Gomes",
+        "Rafaela Peixoto Moreira",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Investiga a interação entre fatores genéticos e ambientais na predisposição ao desenvolvimento de vícios.",
+      "keywords": "genética, vicíos, predisposição hereditária",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0403_0292_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0403_0292_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 269158,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0363_0493_01",
+      "year": 2025,
+      "title": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
+      "indexTitle": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
+      "students": "Kamilly Cristina Ladislau Pinto, Sofia da Gloria Crescini Lessa",
+      "authors": [
+        "Kamilly Cristina Ladislau Pinto",
+        "Sofia da Gloria Crescini Lessa",
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "advisors": [
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Descreve uma mesa experimental de desinfecção controlada por ESP32 e aplicativo Android.",
+      "keywords": "Biossegurança, Biofotônica, ESP 32, Desinfecção, Aplicativo android",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 279380,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0615_0541_01",
+      "year": 2025,
+      "title": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
+      "indexTitle": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
+      "students": "João Otavio de Lima, Lionel Mario Venturino",
+      "authors": [
+        "Lionel Mario Venturino",
+        "João Otavio de Lima",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e bem-estar",
+      "description": "Desenvolve um aplicativo para registrar exercícios, organizar rotinas e acompanhar planos de musculação.",
+      "keywords": "Aplicativo, Musculação, Android, Anotação",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 289448,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0407_0217_01",
+      "year": 2025,
+      "title": "NEUROMARKETING: UMA INVESTIGAÇÃO DAS CAMPANHAS PUBLICITÁRIAS DA COCA-COLA",
+      "indexTitle": "NEUROMARKETING: UMA INVESTIGAÇÃO DAS CAMPANHAS PUBLICITÁRIAS DA COCA-COLA",
+      "students": "Agatha Drapack Clemente, Jamilly Soares Santos",
+      "authors": [
+        "Agatha Drapack Clemente",
+        "Jamilly Soares Santos",
+        "Bruno Michel Pera",
+        "Jhoneyrval Siqueira",
+        "Taynara Alves Carvalho"
+      ],
+      "advisors": [
+        "Bruno Michel Pera",
+        "Taynara Alves"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera",
+        "Taynara Alves de Carvalho"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Sociedade e comunicação",
+      "description": "Investiga como sons e estímulos de campanhas da Coca-Cola se relacionam a emoções e decisões de consumo.",
+      "keywords": "Neuromarketing, Coca-Cola, Audio Branding, Comportamento do consumidor., Marketing sensorial.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0407_0217_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0407_0217_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 267458,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno",
+        "Taynara"
+      ]
+    },
+    {
+      "id": "2025-RE_0405_0599_01",
+      "year": 2025,
+      "title": "PROBLEMAS EM COMBUSTÍVEIS DE FOGUETE",
+      "indexTitle": "PROBLEMAS EM COMBUSTÍVEIS DE FOGUETE",
+      "students": "Beatriz Landim Marcelino de Almeida, Bianca da Silva Cruz Ferreira, Sophia Patrice Santana de Oliveira, Vitor Hugo Ferreira Rabello",
+      "authors": [
+        "Vitor Hugo Ferreira Rabello",
+        "Sophia Patrice Santana Oliveira",
+        "Beatriz Landim Marcelino de Almeida",
+        "Bianca da Silva Cruz Ferreira",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Robótica e engenharia",
+      "description": "Discute riscos e desafios de combustíveis de foguetes a partir de revisão científica e experiências acadêmicas.",
+      "keywords": "Combustíveis de foguete, Acidentes, Segurança",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0405_0599_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0405_0599_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 241506,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0927_0751_02",
+      "year": 2025,
+      "title": "ROVER PARA DETECTAR DOENÇAS EM PLANTAÇÕES DE SOJA USANDO VISÃO COMPUTACIONAL E INTELIGÊNCIA ARTIFICIAL",
+      "indexTitle": "ROVER PARA DETECTAR DOENÇAS EM PLANTAÇÕES DE SOJA USANDO VISÃO COMPUTACIONAL E INTELIGÊNCIA ARTIFICIAL",
+      "students": "Matheus Consiglio Monqueiro, Daniel Henrique de Andrade, Gabriel Sebastião dos Santos Bezerra",
+      "authors": [
+        "Daniel Henrique de Andrade",
+        "Gabriel Sebastião dos Santos Bezerra",
+        "Matheus Consiglio Monqueiro",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Descreve um rover com câmera e controle por Wi-Fi como base para o monitoramento de plantações de soja.",
+      "keywords": "Agricultura, Robótica, Automação, Sistemas embarcados, ESP-32",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0927_0751_02.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0927_0751_02.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 350914,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0750_0216_01",
+      "year": 2025,
+      "title": "SISTEMA DE ESTOQUE DE ACESSO REMOTO PARA EMPRESAS DE COMÉRCIO DE ALIMENTOS DE PEQUENO E MÉDIO PORTE",
+      "indexTitle": "SISTEMA DE ESTOQUE DE ACESSO REMOTO PARA EMPRESAS DE COMÉRCIO DE ALIMENTOS DE PEQUENO E MÉDIO PORTE",
+      "students": "Cauê Morais da Silva, Roger de Faria Soares Ribeiro, Luiz Eduardo Gonçalo Sakai",
+      "authors": [
+        "Bruno Michel Pera",
+        "Cauê Morais da Silva",
+        "Luiz Eduardo Gonçalo Sakai",
+        "Roger de Faria Soares Ribeiro"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e negócios",
+      "description": "Apresenta um aplicativo móvel para organizar e acompanhar estoques de pequenos e médios comércios alimentícios.",
+      "keywords": "estoque, segura, organizar, eficiência",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0750_0216_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0750_0216_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 266275,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-1186_0555_01",
+      "year": 2025,
+      "title": "SISTEMA PARA ANÁLISE DE DESEMPENHO DE AERONAVES NÃO TRIPULADAS A PARTIR DE DADOS COLETADOS POR ENSAIOS EM VOO.",
+      "indexTitle": "SISTEMA PARA ANÁLISE DE DESEMPENHO DE AERONAVES NÃO TRIPULADAS A PARTIR DE DADOS COLETADOS POR ENSAIOS EM VOO.",
+      "students": "Lucas Aguilar da Silva Nascimento, Lukas Macacari de Matos, Gabriel Luiz Freire Gomes",
+      "authors": [
+        "Bruno Michel Pêra",
+        "Gabriel Luiz Freire Gomes",
+        "Lucas Aguilar da Silva Nascimento",
+        "Lukas Macacari de Matos"
+      ],
+      "advisors": [
+        "Bruno Michel Pêra"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Robótica e engenharia",
+      "description": "Apresenta um software em Python para visualizar e analisar dados coletados em voos de aeronaves não tripuladas.",
+      "keywords": "Vant, Análise de desempenho, Python, Software",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1186_0555_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1186_0555_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 462830,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_1113_0566_01",
+      "year": 2025,
+      "title": "SISTEMA WEB DE CUSTOMIZAÇÃO DE CAMISETAS",
+      "indexTitle": "SISTEMA WEB DE CUSTOMIZAÇÃO DE CAMISETAS",
+      "students": "Felipe Nathan Morais Corrêa, Luís Gustavo Arantes da Costa, Pedro Selicani Sundfeld",
+      "authors": [
+        "Felipe Nathan Morais Corrêa",
+        "Luís Gustavo Arantes da Costa",
+        "Pedro Selicani Sundfeld",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e negócios",
+      "description": "Apresenta um sistema web que permite simular e organizar a personalização de camisetas.",
+      "keywords": "Customização, Web, Camisetas",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1113_0566_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1113_0566_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 345614,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0245_0574_01",
+      "year": 2025,
+      "title": "SUPORTE DE TELESCÓPIO AUTOMATIZADO",
+      "indexTitle": "SUPORTE DE TELESCÓPIO AUTOMATIZADO",
+      "students": "Cauan Vitor Pedroso Prado, Kelly Roberta Osses, Luana Reis Boattini de Melo",
+      "authors": [
+        "Cauan Vitor Pedroso",
+        "Kelly Roberta Osses",
+        "Luana Reis Boattini de Melo"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Robótica e engenharia",
+      "description": "Propõe um suporte de telescópio automatizado e uma interface web para acompanhar astros no céu.",
+      "keywords": "Telescópio automatizado, localização de astros, rastreamento em tempo real, controle via site.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0245_0574_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0245_0574_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 380470,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0417_0264_01",
+      "year": 2025,
+      "title": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
+      "indexTitle": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
+      "students": "Sarah Danielly Pavanelo, Bruna Westin Ferreira e Fiorini",
+      "authors": [
+        "Bruna Westin Ferreira e Fiorini",
+        "Sarah Danielly Pavanelo",
+        "Jéssica de Almeida Marques"
+      ],
+      "advisors": [
+        "Jéssica de Almeida Marques"
+      ],
+      "supervisors": [
+        "Jéssica de Almeida Marques"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Investiga pressões acadêmicas e apoio psicológico entre estudantes e apresenta um e-book de autocuidado.",
+      "keywords": "Saúde mental, Bem-estar estudantil, Apoio psicológico",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 300967,
+      "relationship": "acknowledgement",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "note": "Bruno Michel Pera é mencionado nos agradecimentos; não consta como autor ou orientador deste artigo.",
+      "matchContext": " disponivel em:\nhttps://www.educacao.sp.gov.br. acesso em: 18 jun. 2025.\n\nagradecimentos\n    agradecemos a orientadora jessica de almeida marques, ao professor bruno michel pera e ao\ninstituto educacional ribeiro goulart – escola maximu’s pelo apoio. o trabalho contou com\nfinanciamento da capes – codigo 001.\n\n\n\n\nxix encontro latino ame"
+    }
+  ],
+  "method": {
+    "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+    "rowsScanned": 1092,
+    "strategy": "Índice geral integral examinado por autoria/orientação, com variantes dos nomes. PDFs baixados e texto extraído com pdftotext. Os 23 resultados do índice foram conferidos na primeira página; a varredura ampliada busca também menções no corpo, agradecimentos e referências, classificadas separadamente.",
+    "variants": [
+      "Bruno Michel Pera",
+      "Bruno Michel Pêra",
+      "Bruno Michael Pera",
+      "Taynara Alves",
+      "Taynara Alves de Carvalho",
+      "Taynara Alves Carvalho"
+    ],
+    "limits": "Cobertura do índice geral publicado e dos PDFs efetivamente examinados. A contagem de PDFs examinados indica o avanço da varredura; arquivos pendentes/falhas não são tratados como ausência de menções. Nomes/títulos cadastrados podem diferir do PDF final; o JSON preserva indexTitle e autoria do PDF separadamente.",
+    "pdfsExamined": 423,
+    "pdfsRemaining": 669,
+    "pdfsFailed": 0,
+    "scanInProgress": true,
+    "failures": []
+  },
+  "sources": [
+    "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+    "https://www.inicepg.univap.br/cd/INIC_2025/anais/trabalhos_tecnico.php",
+    "https://www.inicepg.univap.br/cd/INIC_2025/anais/melhores_trabalhos.php"
+  ],
+  "relationshipCounts": {
+    "authorship_or_advising": 23,
+    "acknowledgement": 1
+  }
+}

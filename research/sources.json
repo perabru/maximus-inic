@@ -1,0 +1,127 @@
+{
+  "checkedAt": "2026-11-05",
+  "catalogue2025": {
+    "year": 2025,
+    "checkedAt": "2026-11-05",
+    "count": 24,
+    "maximusCount": 11,
+    "method": {
+      "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "rowsScanned": 1092,
+      "strategy": "Índice geral integral examinado por autoria/orientação, com variantes dos nomes. PDFs baixados e texto extraído com pdftotext. Os 23 resultados do índice foram conferidos na primeira página; a varredura ampliada busca também menções no corpo, agradecimentos e referências, classificadas separadamente.",
+      "variants": [
+        "Bruno Michel Pera",
+        "Bruno Michel Pêra",
+        "Bruno Michael Pera",
+        "Taynara Alves",
+        "Taynara Alves de Carvalho",
+        "Taynara Alves Carvalho"
+      ],
+      "limits": "Cobertura do índice geral publicado e dos PDFs efetivamente examinados. A contagem de PDFs examinados indica o avanço da varredura; arquivos pendentes/falhas não são tratados como ausência de menções. Nomes/títulos cadastrados podem diferir do PDF final; o JSON preserva indexTitle e autoria do PDF separadamente.",
+      "pdfsExamined": 423,
+      "pdfsRemaining": 669,
+      "pdfsFailed": 0,
+      "scanInProgress": true,
+      "failures": []
+    },
+    "sources": [
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/trabalhos_tecnico.php",
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/melhores_trabalhos.php"
+    ],
+    "relationshipCounts": {
+      "authorship_or_advising": 23,
+      "acknowledgement": 1
+    }
+  },
+  "edition2026": {
+    "year": 2026,
+    "checked_at": "2026-11-05",
+    "status": "anais_publicos_nao_localizados",
+    "display_status": "Anais de 2026 ainda não localizados no portal oficial. Consulte a página do INIC para acompanhar a disponibilização.",
+    "articles": [],
+    "confirmed_article_count": 0,
+    "criteria": "Taynara Alves (incluindo Taynara Alves de Carvalho e Taynara Alves Carvalho) OU Bruno Michel Pera em autores/orientadores.",
+    "scope_limit": "Sem um índice ou coleção pública de 2026 acessível, não é possível enumerar nem confirmar todos os artigos e coautores de 2026. A ausência de resultados não significa ausência de trabalhos apresentados.",
+    "official_links": [
+      {
+        "title": "Portal oficial INIC 2026",
+        "url": "https://www.univap.br/inic/",
+        "status": "200 OK; programa e descrição do evento; sem link funcional a coleção de artigos de 2026 encontrado no HTML"
+      },
+      {
+        "title": "Edições anteriores do INIC",
+        "url": "https://www.univap.br/univap/pesquisa/inic/edicoes-anteriores",
+        "status": "200 OK; último ano listado 2025, além de 2024 e anteriores"
+      },
+      {
+        "title": "Página Anais do Congresso",
+        "url": "https://www.univap.br/inic/anais_congresso.php",
+        "status": "200 OK; título Anais do Congresso / INIC 2026; HTML contém links resumos/anais_qualivitae_2026.pdf e anos anteriores, mas o arquivo de 2026 retorna 404"
+      },
+      {
+        "title": "Programa oficial de apresentações de pôsteres de 2026",
+        "url": "https://www.univap.br/inic/modelos/sessao_poster_presencial.pdf",
+        "status": "PDF acessível, 34 páginas; não é artigo completo nem índice de coautores"
+      }
+    ],
+    "program_only_matches": [
+      {
+        "year": 2026,
+        "title": "DESENVOLVIMENTO DE UM PROTÓTIPO WEB PARA ACESSO E CONTROLE REMOTO DE COMPUTADORES",
+        "presenting_author": "BRUNO MICHEL PERA",
+        "category": "Técnico",
+        "panel": "147",
+        "date": "2026-10-28",
+        "time": "19:30–21:30",
+        "source_url": "https://www.univap.br/inic/modelos/sessao_poster_presencial.pdf#page=10",
+        "source_page": 10,
+        "note": "Apenas programação oficial; autoria completa e PDF do artigo não localizados."
+      },
+      {
+        "year": 2026,
+        "title": "ECOPLANT: APLICATIVO EDUCACIONAL PARA CLASSIFICAÇÃO DE FOLHAS COM INTELIGÊNCIA ARTIFICIAL",
+        "presenting_author": "BRUNO MICHEL PERA",
+        "category": "Técnico",
+        "panel": "159",
+        "date": "2026-10-28",
+        "time": "19:30–21:30",
+        "source_url": "https://www.univap.br/inic/modelos/sessao_poster_presencial.pdf#page=11",
+        "source_page": 11,
+        "note": "Apenas programação oficial; autoria completa e PDF do artigo não localizados."
+      }
+    ],
+    "http_not_found": [
+      "https://www.inicepg.univap.br/cd/INIC_2026/",
+      "https://www.inicepg.univap.br/cd/INIC_2026/anais/lista_geral_trabalhos.php",
+      "https://www.inicepg.univap.br/cd/INIC_2026/anais/trabalhos_tecnico.php",
+      "https://www.univap.br/inic/resumos/anais_qualivitae_2026.pdf",
+      "https://www.univap.br/inic/resumos/anais_2026.pdf",
+      "https://www.univap.br/inic/anais/",
+      "https://www.univap.br/inic/anais/lista_geral_trabalhos.php"
+    ],
+    "method": [
+      "Buscas em dois mecanismos nos domínios oficiais por INIC_2026, lista_geral_trabalhos e pelos nomes exatos e abreviados; nenhum PDF de artigo 2026 localizado.",
+      "Leitura do portal atual 2026, página oficial de edições anteriores e página intitulada Anais do Congresso.",
+      "Inspeção do HTML original da página de anais e testes HTTP diretos via urllib para links nela encontrados e rotas de anais convencionais.",
+      "Leitura e busca por Pera e Taynara no PDF oficial da sessão de pôsteres. Dois registros com Bruno Michel Pera como autor/apresentador; nenhum Taynara no campo de autor do programa. Programa lista somente um autor por trabalho, logo não serve para enumerar orientações.",
+      "Não inferir autoria a partir de fotos ou de títulos parecidos; não incluir programação como PDF de artigo."
+    ],
+    "web_refs": {
+      "portal": "turn7view3",
+      "edicoes": "turn12view1",
+      "anais_page": "turn5view0",
+      "programa": "turn8view1",
+      "programa_bruno": "turn9view1"
+    }
+  },
+  "branding": {
+    "school": "Escola Máximu’s",
+    "officialSite": "https://escolamaximus.com.br/",
+    "logo": "https://escolamaximus.com.br/wp-content/uploads/2019/12/logo_com_tec-png.png",
+    "colors": [
+      "#3d4094",
+      "#f38635"
+    ]
+  }
+}
