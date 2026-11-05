@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "sdkVersion": "13.2.0",
+  "root": "maximusInic",
+  "roles": [
+    "coordinator",
+    "advisor",
+    "student"
+  ],
+  "exports": {
+    "onSession(callback)": "Unsubscribe; callback recebe Firebase User|null",
+    "register({name,email,password,requestedRole,year})": "Promise<User>; requestedRole student/advisor; year série em texto",
+    "login(email,password)": "Promise<User>",
+    "loginGoogle()": "Promise<User> ou início de redirecionamento no modo instalado",
+    "logout()": "Promise<void>",
+    "resetPassword(email)": "Promise<void>",
+    "subscribeApp(user,callback)": "Unsubscribe; callback recebe {profile,role,users,advisors,groups,invitations,error?}; todas as coleções são arrays com id; users apenas coordenação",
+    "subscribeGroup(groupId,callback)": "Unsubscribe; callback recebe {tasks,messages,error?}",
+    "saveProfile(patch)": "Promise<void>; name,year,requestedRole",
+    "approveAdvisor(uid)": "Promise<void>; cria role advisor e diretório",
+    "setUserRole(uid,role)": "Promise<void>; exclusivo coordenação",
+    "createGroup({name,topic,description,year,advisorId})": "Promise<groupId>; orientador sugerido recebe convite, exceto professor aprovado que cria para si; grupo+índice privados atômicos",
+    "updateGroup(groupId,patch)": "Promise<void>; campos do tema; coordenador/orientador pode alterar membros",
+    "removeMember(groupId,uid)": "Promise<void>; coordenador/orientador",
+    "invite({groupId,toEmail,toUid,type})": "Promise<inviteId>; type member/advisor; uma modalidade de destinatário",
+    "respondInvitation(inviteId,accept)": "Promise<void>; somente destinatário; ingresso e vínculo validados nas regras",
+    "createDefaultSchedule(groupId,year)": "Promise<void>; oito marcos internos, idempotente",
+    "addTask(groupId,{title,dueDate,weight})": "Promise<taskId>",
+    "updateTask(groupId,taskId,patch)": "Promise<void>; aluno muda só completed/completedBy; gestor muda prazo e título",
+    "deleteTask(groupId,taskId)": "Promise<void>; gestor",
+    "sendMessage(groupId,text)": "Promise<void>",
+    "getProgress(tasks)": "number percentual ponderado de tarefas completas (0..100)",
+    "friendlyError(error)": "string em português",
+    "sendVerification()": "Promise<void>; envia confirmação ao próprio usuário",
+    "refreshSession()": "Promise<User>; atualiza emailVerified e token",
+    "currentUser()": "Firebase User|null"
+  },
+  "schema": {
+    "users/{uid}": {
+      "name": "string",
+      "email": "string",
+      "requestedRole": "student|advisor",
+      "year": "série texto",
+      "createdAt": "epoch ms"
+    },
+    "roles/{uid}": "coordinator|advisor|student; apenas coordenação escreve",
+    "advisorDirectory/{uid}": {
+      "name": "string; leitura autenticada",
+      "uid": "UID"
+    },
+    "groups/{gid}": {
+      "name": "string",
+      "topic": "string",
+      "description": "string",
+      "year": "edição numérica",
+      "advisorId": "UID ou string vazia",
+      "members": {
+        "UID": true
+      },
+      "memberNames": {
+        "UID": "nome"
+      },
+      "createdBy": "UID",
+      "createdAt": "epoch ms",
+      "status": "active"
+    },
+    "invitations/{id}": {
+      "groupId": "gid",
+      "groupName": "string",
+      "toEmail": "email ou vazio",
+      "toUid": "UID ou vazio",
+      "type": "member|advisor",
+      "senderId": "UID",
+      "senderName": "string",
+      "status": "pending|accepted|declined|cancelled",
+      "createdAt": "epoch ms"
+    },
+    "tasks/{gid}/{id}": {
+      "title": "string",
+      "dueDate": "YYYY-MM-DD",
+      "completed": false,
+      "weight": 1,
+      "createdAt": "epoch ms",
+      "createdBy": "UID",
+      "completedBy": "UID ou vazio"
+    },
+    "messages/{gid}/{id}": {
+      "text": "string sem HTML",
+      "senderId": "UID",
+      "senderName": "string",
+      "createdAt": "epoch ms"
+    },
+    "admissions/{gid}/{uid}": "ID de convite válido, etapa privada de aceite para validação de ingresso",
+    "userGroups/{uid}/{gid}": "true; índice privado de participação do próprio aluno"
+  },
+  "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
+  "securityNotice": "Convites por e-mail exigem e-mail verificado. Solicitar perfil orientador não concede papel: liberação pela coordenação.",
+  "verification": {
+    "sdkCDN": "13.2.0 respondeu HTTP200 em 05/11/2026",
+    "securityTests": 58,
+    "engine": "Firebase Realtime Database Emulator 4.11.2",
+    "cli": "Firebase CLI 15.35.0",
+    "result": "Todos os 58 cenários passaram"
+  }
+}

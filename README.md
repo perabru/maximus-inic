@@ -26,3 +26,28 @@ Site estático sem dependências de build. No GitHub Pages, selecione **Deploy f
 Para testar localmente, sirva esta pasta em um servidor HTTP. A biblioteca e a galeria carregam seus dados por `fetch`, portanto abrir `index.html` diretamente em `file://` não é suficiente.
 
 O código da página é separado dos direitos sobre as fotografias, a marca da escola e os artigos, que permanecem com seus respectivos titulares.
+
+
+## Plataforma de acompanhamento (INIC 2027)
+
+- `portal.html`: login/cadastro, grupos, convites, cronograma, mensagens, calendário e coordenação.
+- `conformidade.html`: termo com preenchimento local e impressão; PDF em branco em `documentos/`.
+- `instalar.html`: instruções Android e iOS.
+- `manifest.webmanifest`, `pwa.js`, `sw.js`: instalação e cache público. Autenticação e dados privados exigem conexão e não entram no cache do service worker.
+- `theme.js`: tema claro/escuro; guarda apenas a preferência de aparência no navegador.
+
+### Autenticação e autorização
+
+Projeto Firebase informado para este aplicativo. Email/Password e Google habilitados, com domínio GitHub Pages autorizado. Dados do app em `maximusInic`; o nó legado `items` foi mantido com suas permissões anteriores. Contas administrativas iniciais foram criadas diretamente no Auth e seus papéis foram atribuídos no banco. Nenhuma senha ou token está no código.
+
+Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam acesso de orientação no cadastro e aguardam aprovação da coordenação. Convites para alunos exigem confirmação do próprio endereço de e-mail; o login Google já fornece um e-mail verificado. O convite aparece dentro da plataforma: não há disparo automático de e-mail de convite.
+
+As regras do servidor controlam os papéis, a entrada em grupos e o acesso aos dados. Ser coordenador na interface não depende de uma comparação de email no JavaScript. Os coordenadores veem todos os grupos e orientadores; cada orientador vê as equipes sob sua orientação. Consulte `service-contract.json` e `database.rules.json`.
+
+### Cronograma e calendário
+
+Ao criar um grupo, oito marcos de planejamento são gerados para o ano escolhido. Datas do INIC 2027 e valores do termo continuam sujeitos à confirmação oficial. Orientadores/coordenadores ajustam os prazos; o progresso ponderado e a situação de atraso são calculados a partir das entregas. A exportação ICS permite importar o calendário nos aplicativos de agenda. Mensagens e convites sincronizam em tempo real enquanto a plataforma está aberta e conectada.
+
+### Validação
+
+58 cenários aprovados no Firebase Realtime Database Emulator, incluindo isolamento de aluno/orientador, papéis protegidos, aceite atômico dos convites, validação de dados e revogação de acesso. Instruções reproduzíveis em `tests/README.md`. Verificação adicional das permissões no banco publicado: visitantes impedidos de ler perfis/grupos e ambos os coordenadores com acesso autorizado. Não há notificações push em segundo plano; os recados são internos ao aplicativo.

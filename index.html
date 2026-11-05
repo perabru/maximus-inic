@@ -11,7 +11,13 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://perabru.github.io/maximus-inic/assets/photos/photo-10.webp">
   <link rel="icon" href="assets/logo-mark.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="public-platform.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Máximu’s INIC">
+  <script src="theme.js"></script>
+  <script src="pwa.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -19,8 +25,8 @@
 <header class="header">
   <div class="container header-inner">
     <a class="brand" href="#inicio" aria-label="Máximu’s no INIC — início"><img src="assets/logo-maximus.png" width="200" height="59" alt="Escola Máximu’s — Ensino Técnico Profissionalizante"></a>
-    <nav aria-label="Navegação principal"><a href="#encontro">O encontro</a><a href="#momentos">Nossos momentos</a><a href="#artigos">Artigos</a></nav>
-    <a href="#artigos" class="nav-cta">Para ler em família <span aria-hidden="true">→</span></a>
+    <nav aria-label="Navegação principal"><a href="#encontro">O encontro</a><a href="#momentos">Fotos</a><a href="#artigos">Artigos</a><a href="conformidade.html">Termo 2027</a><a href="portal.html">Entrar</a></nav>
+    <button class="theme-toggle" data-theme-toggle>Modo noturno</button>
   </div>
 </header>
 <main id="conteudo">
@@ -49,16 +55,17 @@
 
   <section id="momentos" class="gallery-section section">
     <div class="container">
-      <div class="section-heading"><div><p class="eyebrow">NOSSO ÁLBUM</p><h2>O conhecimento tem<br>esses rostos.</h2></div><p>Um registro das apresentações,<br>das equipes e das conquistas.<br><span class="muted-light">12 fotografias para celebrar.</span></p></div>
+      <div class="section-heading"><div><p class="eyebrow">NOSSO ÁLBUM</p><h2>O conhecimento tem<br>esses rostos.</h2></div><p>Um registro das apresentações,<br>das equipes e das conquistas.<br><span class="muted-light">25 fotografias para celebrar.</span></p></div>
       <div class="gallery" role="region" aria-roledescription="carrossel" aria-label="Fotografias do INIC" tabindex="0">
         <div class="gallery-stage"><img id="gallery-image" src="assets/photos/photo-01.webp" width="1280" height="963" loading="lazy" alt="Duas estudantes ao lado do pôster sobre classificação de alterações foliares com aprendizagem de máquina."><button id="expand-photo" class="expand" aria-label="Ampliar fotografia">⤢ <span>Ampliar</span></button></div>
-        <div class="gallery-footer"><div><p id="gallery-detail" class="eyebrow">EcoPlant · aprendizagem de máquina</p><h3 id="gallery-caption">Ideias que ganham espaço na ciência</h3></div><div class="gallery-controls"><button id="play" aria-label="Pausar troca automática de fotos" aria-pressed="true">Ⅱ</button><span id="photo-counter" aria-live="polite" aria-atomic="true">01 / 12</span><button id="previous" aria-label="Foto anterior">←</button><button id="next" aria-label="Próxima foto">→</button></div></div>
+        <div class="gallery-footer"><div><p id="gallery-detail" class="eyebrow">EcoPlant · aprendizagem de máquina</p><h3 id="gallery-caption">Ideias que ganham espaço na ciência</h3></div><div class="gallery-controls"><button id="play" aria-label="Pausar troca automática de fotos" aria-pressed="true">Ⅱ</button><span id="photo-counter" aria-live="polite" aria-atomic="true">01 / 25</span><button id="previous" aria-label="Foto anterior">←</button><button id="next" aria-label="Próxima foto">→</button></div></div>
         <div id="thumbnails" class="thumbnails" aria-label="Escolher fotografia"></div>
       </div>
       <p class="gallery-note">Use as setas, deslize no celular ou toque nas miniaturas. Toque em “Ampliar” para ver a foto inteira.</p>
     </div>
   </section>
 
+<section class="platform-promo container section" id="plataforma"><div><p class="eyebrow">PLATAFORMA INIC 2027</p><h2>Seu grupo.<br>Um próximo passo de cada vez.</h2><p>Alunos, orientadores e coordenação acompanham o tema, as entregas e as conversas no mesmo lugar.</p><div class="hero-actions"><a href="portal.html" class="button primary">Entrar ou criar conta →</a><a href="conformidade.html" class="text-link">Preencher e imprimir o termo →</a></div></div><div class="platform-features"><article><span>01</span><div><h3>Grupos e convites</h3><p>Cadastre o tema, escolha seu orientador e acompanhe o aceite dos convites.</p></div></article><article><span>02</span><div><h3>Entregas e calendário</h3><p>Um cronograma inicial organiza o ano. O orientador ajusta as datas e cada conclusão atualiza o progresso.</p></div></article><article><span>03</span><div><h3>Conversa por grupo</h3><p>Mensagens e recados ficam junto ao projeto, com acesso apenas à equipe e à coordenação.</p></div></article><a href="instalar.html" class="text-link">Instalar no Android ou iPhone →</a></div></section>
   <section id="artigos" class="library-section section container">
     <div class="section-heading"><div><p class="eyebrow">BIBLIOTECA DE PESQUISAS</p><h2>Descobertas para<br>ler em família.</h2></div><p>Encontre um tema, conheça os autores<br>e abra o artigo nos anais oficiais.<br><strong>Leitura livre. Sem cadastro.</strong></p></div>
     <div class="catalog-intro"><div class="catalog-number"><strong id="total-count">24</strong><span>artigos localizados<br>nos anais de 2025</span></div><p>Trabalhos com <strong>Taynara Alves</strong> ou <strong>Bruno Michel Pera</strong> na autoria, na orientação ou em menções identificadas no texto. A seleção inclui a Máximu’s e outras instituições, identificadas em cada publicação.</p></div>
@@ -78,6 +85,6 @@
   <section class="family-section"><div class="container family-inner"><div><p class="eyebrow">ESCOLA + FAMÍLIA</p><h2>Leia. Pergunte.<br>Converse sobre as descobertas.</h2><p>Escolha um artigo com seu filho e comece por uma pergunta:<br>“O que fez você querer pesquisar esse assunto?”</p></div><div class="family-action"><span aria-hidden="true">✳︎</span><button class="button white" id="share">Compartilhar esta página <span aria-hidden="true">→</span></button><p id="share-status" role="status" aria-live="polite">Leve essas histórias para mais famílias.</p></div></div></section>
 </main>
 <footer class="footer container"><div><img src="assets/logo-maximus.png" width="174" height="51" loading="lazy" alt="Escola Máximu’s"><p>Curiosidade que aprende.<br>Conhecimento que transforma.</p></div><div><strong>Máximu’s no INIC</strong><p>Página de divulgação da participação estudantil.<br>Artigos hospedados nos anais oficiais da Univap.</p><a href="https://escolamaximus.com.br/" target="_blank" rel="noopener noreferrer">Conheça a escola →</a><a href="https://www.univap.br/inic/" target="_blank" rel="noopener noreferrer">Portal do INIC →</a></div><div class="footer-bottom"><span>Ciência, educação e novas possibilidades.</span><span>Acervo consultado em 05.11.2026</span></div></footer>
-<dialog id="lightbox" aria-label="Fotografia ampliada"><button id="close-lightbox" class="lightbox-close" aria-label="Fechar fotografia ampliada">×</button><figure><img id="lightbox-image" alt=""><figcaption id="lightbox-caption"></figcaption></figure><div class="lightbox-controls"><button id="lightbox-prev" aria-label="Foto anterior ampliada">←</button><span id="lightbox-counter">01 / 12</span><button id="lightbox-next" aria-label="Próxima foto ampliada">→</button></div></dialog>
+<dialog id="lightbox" aria-label="Fotografia ampliada"><button id="close-lightbox" class="lightbox-close" aria-label="Fechar fotografia ampliada">×</button><figure><img id="lightbox-image" alt=""><figcaption id="lightbox-caption"></figcaption></figure><div class="lightbox-controls"><button id="lightbox-prev" aria-label="Foto anterior ampliada">←</button><span id="lightbox-counter">01 / 25</span><button id="lightbox-next" aria-label="Próxima foto ampliada">→</button></div></dialog>
 </body>
 </html>

@@ -855,7 +855,7 @@
   "method": {
     "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
     "rowsScanned": 1092,
-    "strategy": "Índice geral integral examinado por autoria/orientação, com variantes dos nomes. PDFs baixados e texto extraído com pdftotext. Os 23 resultados do índice foram conferidos na primeira página; a varredura ampliada busca também menções no corpo, agradecimentos e referências, classificadas separadamente.",
+    "strategy": "Índice geral integral (1.092 artigos únicos) examinado por autoria/orientação com variantes dos nomes. Todos os 1.092 PDFs oficiais foram baixados e tiveram seu texto integral extraído com pdftotext. Os 23 resultados de autoria/orientação do índice foram conferidos na primeira página dos PDFs. A busca no texto integral dos demais 1.069 PDFs revelou uma menção adicional nos agradecimentos. Menções em agradecimentos e referências são classificadas separadamente; uma segunda passagem tolerante a marcadores numéricos e quebras de linha não revelou novos resultados.",
     "variants": [
       "Bruno Michel Pera",
       "Bruno Michel Pêra",
@@ -864,12 +864,14 @@
       "Taynara Alves de Carvalho",
       "Taynara Alves Carvalho"
     ],
-    "limits": "Cobertura do índice geral publicado e dos PDFs efetivamente examinados. A contagem de PDFs examinados indica o avanço da varredura; arquivos pendentes/falhas não são tratados como ausência de menções. Nomes/títulos cadastrados podem diferir do PDF final; o JSON preserva indexTitle e autoria do PDF separadamente.",
-    "pdfsExamined": 423,
-    "pdfsRemaining": 669,
+    "limits": "Cobertura integral dos 1.092 PDFs vinculados pelo índice geral oficial de 2025, sem falhas de download/conversão e sem arquivos sem texto pesquisável. Não cobre arquivos que não constem desse índice. Nomes/títulos cadastrados podem diferir do PDF final; o JSON preserva indexTitle e autoria do PDF separadamente. Dois resultados registram Bruno como orientador apenas no índice oficial, conforme notas individuais.",
+    "pdfsExamined": 1092,
+    "pdfsRemaining": 0,
     "pdfsFailed": 0,
-    "scanInProgress": true,
-    "failures": []
+    "scanInProgress": false,
+    "failures": [],
+    "looseNameAuditExtraMatches": [],
+    "lowTextFiles": []
   },
   "sources": [
     "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
@@ -878,6 +880,7 @@
   ],
   "relationshipCounts": {
     "authorship_or_advising": 23,
-    "acknowledgement": 1
+    "acknowledgement": 1,
+    "reference": 0
   }
 }
