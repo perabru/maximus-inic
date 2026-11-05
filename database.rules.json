@@ -357,9 +357,9 @@
         "$year": {
           ".read": "auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')",
           "$uid": {
-            ".read": "auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'))",
+            ".read": "(auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'))) || (auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true && root.child('maximusInic/agreementReviews').child($year).child($uid).child('status').val() === 'approved' && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === '')))",
             ".write": "auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && auth.uid === $uid && newData.exists() && (($year.matches(/^20(2[7-9]|[3-9][0-9])$/) || $year === '2100')) && root.child('maximusInic/users').child(auth.uid).child('requestedRole').val() === 'student' && root.child('maximusInic/users').child(auth.uid).child('onboardingRequired').val() !== true && root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/roles').child(auth.uid).val() !== 'coordinator')",
-            ".validate": "newData.hasChildren(['uid','year','filename','size','contentType','ownerName','uploadedAt']) && newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).exists() && newData.child('size').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('size').val() && newData.child('contentType').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('contentType').val() && newData.child('uploadedAt').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('uploadedAt').val() && newData.child('uploadedAt').val() === now",
+            ".validate": "newData.hasChildren(['uid','year','filename','size','contentType','ownerName','uploadedAt']) && newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).exists() && newData.child('size').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('size').val() && newData.child('contentType').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('contentType').val() && newData.child('uploadedAt').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('uploadedAt').val() && newData.child('uploadedAt').val() === now && newData.hasChild('uploadVersion') && newData.child('uploadVersion').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('uploadVersion').val() && (!data.exists() || (newData.child('uploadedAt').val() > data.child('uploadedAt').val() && newData.child('uploadVersion').val() !== data.child('uploadVersion').val())) && newData.hasChild('documentSha256') && newData.child('documentSha256').val() === newData.parent().parent().parent().child('agreementFiles').child($year).child($uid).child('documentSha256').val()",
             "uid": {
               ".validate": "newData.val() === $uid"
             },
@@ -383,6 +383,12 @@
             },
             "$other": {
               ".validate": false
+            },
+            "uploadVersion": {
+              ".validate": "newData.isString() && newData.val().length >= 10 && newData.val().length <= 100 && newData.val().matches(/^[A-Za-z0-9_-]+$/)"
+            },
+            "documentSha256": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
             }
           }
         }
@@ -390,9 +396,9 @@
       "agreementFiles": {
         "$year": {
           "$uid": {
-            ".read": "auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'))",
+            ".read": "(auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'))) || (auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true && root.child('maximusInic/agreementReviews').child($year).child($uid).child('status').val() === 'approved' && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === '')))",
             ".write": "auth != null && (root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true) && (auth != null && auth.uid === $uid && newData.exists() && (($year.matches(/^20(2[7-9]|[3-9][0-9])$/) || $year === '2100')) && root.child('maximusInic/users').child(auth.uid).child('requestedRole').val() === 'student' && root.child('maximusInic/users').child(auth.uid).child('onboardingRequired').val() !== true && root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/roles').child(auth.uid).val() !== 'coordinator')",
-            ".validate": "newData.hasChildren(['base64','size','contentType','uploadedAt']) && newData.parent().parent().parent().child('agreements').child($year).child($uid).exists() && newData.child('size').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('size').val() && newData.child('contentType').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('contentType').val() && newData.child('uploadedAt').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('uploadedAt').val() && newData.child('uploadedAt').val() === now",
+            ".validate": "newData.hasChildren(['base64','size','contentType','uploadedAt']) && newData.parent().parent().parent().child('agreements').child($year).child($uid).exists() && newData.child('size').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('size').val() && newData.child('contentType').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('contentType').val() && newData.child('uploadedAt').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('uploadedAt').val() && newData.child('uploadedAt').val() === now && newData.hasChild('uploadVersion') && newData.child('uploadVersion').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('uploadVersion').val() && (!data.exists() || (newData.child('uploadedAt').val() > data.child('uploadedAt').val() && newData.child('uploadVersion').val() !== data.child('uploadVersion').val())) && newData.hasChild('documentSha256') && newData.child('documentSha256').val() === newData.parent().parent().parent().child('agreements').child($year).child($uid).child('documentSha256').val()",
             "base64": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 4194304 && newData.val().length === ((newData.parent().child('size').val()+2-(newData.parent().child('size').val()+2)%3)/3)*4 && newData.val().matches(/^([A-Za-z0-9+\\/]{4})*([A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$/)"
             },
@@ -407,6 +413,12 @@
             },
             "$other": {
               ".validate": false
+            },
+            "uploadVersion": {
+              ".validate": "newData.isString() && newData.val().length >= 10 && newData.val().length <= 100 && newData.val().matches(/^[A-Za-z0-9_-]+$/)"
+            },
+            "documentSha256": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
             }
           }
         }
@@ -509,6 +521,106 @@
           },
           "$other": {
             ".validate": false
+          }
+        }
+      },
+      "agreementReviews": {
+        "$year": {
+          ".read": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'",
+          "$uid": {
+            ".read": "(auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')) || (auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true && root.child('maximusInic/agreementReviews').child($year).child($uid).child('status').val() === 'approved' && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === '')))",
+            ".write": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' && newData.exists() && ($year.matches(/^20(2[7-9]|[3-9][0-9])$/) || $year === '2100')",
+            ".validate": "newData.hasChildren(['status', 'reason', 'reviewerUid', 'reviewerName', 'reviewedAt', 'uploadVersion', 'uploadedAt', 'previousReviewedAt']) && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementFiles').child($year).child($uid).exists() && root.child('maximusInic/agreementFiles').child($year).child($uid).child('base64').isString() && root.child('maximusInic/agreementFiles').child($year).child($uid).child('base64').val().length > 0 && root.child('maximusInic/agreements').child($year).child($uid).child('size').val() === root.child('maximusInic/agreementFiles').child($year).child($uid).child('size').val() && root.child('maximusInic/agreements').child($year).child($uid).child('contentType').val() === root.child('maximusInic/agreementFiles').child($year).child($uid).child('contentType').val() && root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreementFiles').child($year).child($uid).child('uploadedAt').val() && root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreementFiles').child($year).child($uid).child('uploadVersion').val() && root.child('maximusInic/agreements').child($year).child($uid).child('uid').val() === $uid && root.child('maximusInic/agreements').child($year).child($uid).child('year').val() + '' === $year && newData.child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (newData.child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && newData.child('uploadVersion').val() === '')) && (((data.exists() && data.child('uploadedAt').val() === newData.child('uploadedAt').val() && data.child('uploadVersion').val() === newData.child('uploadVersion').val()) && newData.child('previousReviewedAt').val() === data.child('reviewedAt').val()) || (!(data.exists() && data.child('uploadedAt').val() === newData.child('uploadedAt').val() && data.child('uploadVersion').val() === newData.child('uploadVersion').val()) && newData.child('previousReviewedAt').val() === 0))",
+            "status": {
+              ".validate": "newData.val() === 'approved' || newData.val() === 'returned'",
+              ".read": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true"
+            },
+            "reason": {
+              ".validate": "newData.isString() && ((newData.parent().child('status').val() === 'approved' && newData.val() === '') || (newData.parent().child('status').val() === 'returned' && newData.val().length >= 3 && newData.val().length <= 2000 && newData.val().replace(' ', '').replace('\\t', '').replace('\\r', '').replace('\\n', '').length > 0))"
+            },
+            "reviewerUid": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "reviewerName": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100 && newData.val() === root.child('maximusInic/users').child(auth.uid).child('name').val()"
+            },
+            "reviewedAt": {
+              ".validate": "newData.isNumber() && newData.val() === now && newData.val() > newData.parent().child('previousReviewedAt').val()",
+              ".read": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true"
+            },
+            "uploadVersion": {
+              ".validate": "newData.isString() && (newData.val() === '' || (newData.val().length >= 10 && newData.val().length <= 100 && newData.val().matches(/^[A-Za-z0-9_-]+$/)))"
+            },
+            "uploadedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+            },
+            "previousReviewedAt": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "agreementAdvisorAccess": {
+        "$year": {
+          "$uid": {
+            "$advisorUid": {
+              ".read": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (auth.uid === $advisorUid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')",
+              ".write": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && auth.uid === $advisorUid && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && (!newData.exists() || (newData.isString() && root.child('maximusInic/groups').child(newData.val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(newData.val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(newData.val()).child('members').child($uid).val() === true))",
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
+            }
+          }
+        }
+      },
+      "agreementSignatures": {
+        "$year": {
+          ".read": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator'",
+          "$uid": {
+            ".read": "(auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')) || (auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).isString() && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(root.child('maximusInic/agreementAdvisorAccess').child($year).child($uid).child(auth.uid).val()).child('members').child($uid).val() === true && root.child('maximusInic/agreementReviews').child($year).child($uid).child('status').val() === 'approved' && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === '')))",
+            "$role": {
+              "$signerUid": {
+                ".write": "auth != null && root.child('maximusInic/notificationWorkers').child(auth.uid).val() !== true && auth.uid === $signerUid && newData.exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('status').val() === 'approved' && root.child('maximusInic/agreements').child($year).child($uid).exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && (root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').val() || (!root.child('maximusInic/agreements').child($year).child($uid).child('uploadVersion').exists() && root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() === '')) && (($role === 'coordinator' && root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' && newData.child('groupId').val() === '') || ($role === 'advisor' && (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('status').val() === 'active' && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('advisorId').val() === auth.uid && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('members').child($uid).val() === true))",
+                ".validate": "newData.hasChildren(['role','signerUid','signerName','signedAt','uploadVersion','uploadedAt','reviewedAt','documentSha256','signaturePng','consent','groupId']) && newData.child('uploadedAt').val() === root.child('maximusInic/agreements').child($year).child($uid).child('uploadedAt').val() && newData.child('uploadVersion').val() === root.child('maximusInic/agreementReviews').child($year).child($uid).child('uploadVersion').val() && newData.child('reviewedAt').val() === root.child('maximusInic/agreementReviews').child($year).child($uid).child('reviewedAt').val() && (!root.child('maximusInic/agreements').child($year).child($uid).child('documentSha256').exists() || newData.child('documentSha256').val() === root.child('maximusInic/agreements').child($year).child($uid).child('documentSha256').val()) && (!data.exists() || data.child('uploadedAt').val() !== newData.child('uploadedAt').val() || data.child('uploadVersion').val() !== newData.child('uploadVersion').val() || data.child('reviewedAt').val() !== newData.child('reviewedAt').val())",
+                "role": {
+                  ".validate": "newData.val() === $role && (newData.val() === 'advisor' || newData.val() === 'coordinator')"
+                },
+                "signerUid": {
+                  ".validate": "newData.val() === auth.uid && newData.val() === $signerUid"
+                },
+                "signerName": {
+                  ".validate": "newData.isString() && newData.val() === root.child('maximusInic/users').child(auth.uid).child('name').val() && newData.val().length >= 1 && newData.val().length <= 100"
+                },
+                "signedAt": {
+                  ".validate": "newData.isNumber() && newData.val() === now"
+                },
+                "uploadVersion": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "uploadedAt": {
+                  ".validate": "newData.isNumber() && newData.val() > 0"
+                },
+                "reviewedAt": {
+                  ".validate": "newData.isNumber() && newData.val() > 0"
+                },
+                "documentSha256": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+                },
+                "signaturePng": {
+                  ".validate": "newData.isString() && (newData.val() === '' || (newData.val().length <= 180000 && newData.val().matches(/^data:image\\/png;base64,iVBORw0KGgo[A-Za-z0-9+\\/]*={0,2}$/)))"
+                },
+                "consent": {
+                  ".validate": "newData.val() === true"
+                },
+                "groupId": {
+                  ".validate": "newData.isString() && newData.val().length <= 128"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            }
           }
         }
       }

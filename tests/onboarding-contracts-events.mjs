@@ -1,5 +1,6 @@
 import {ref,set,get,update,query,orderByChild,equalTo,serverTimestamp,onValue} from 'firebase/database';
 import {loadService} from './service-runtime.mjs';
+import {createHash} from 'node:crypto';
 
 export async function runOnboardingContractEventTests({env,db,ok,no,count}) {
  const expect=condition=>{if(!condition)throw new Error('Feature assertion failed');};
@@ -58,7 +59,8 @@ export async function runOnboardingContractEventTests({env,db,ok,no,count}) {
  await no('student cannot delete file leaving stale metadata',set(ref(db('s2'),'maximusInic/agreementFiles/2027/s2'),null));
  await no('student cannot delete both contract records through ancestor bypass',update(ref(db('s2'),'maximusInic'),{'agreements/2027/s2':null,'agreementFiles/2027/s2':null}));
  await no('file required field cannot be deleted',set(ref(db('s2'),'maximusInic/agreementFiles/2027/s2/base64'),null));
- const agreement=(target,content=pdf,type='application/pdf')=>({['agreements/2027/'+target]:{uid:target,year:2027,filename:'Documento.pdf',size:content.length,contentType:type,ownerName:'Aluno 2',uploadedAt:serverTimestamp()},['agreementFiles/2027/'+target]:{size:content.length,contentType:type,base64:content.toString('base64'),uploadedAt:serverTimestamp()}});
+ let uploadSequence=0;
+ const agreement=(target,content=pdf,type='application/pdf')=>{const uploadVersion=`fixture-${Date.now()}-${++uploadSequence}`,documentSha256=createHash('sha256').update(content).digest('hex');return {['agreements/2027/'+target]:{uid:target,year:2027,filename:'Documento.pdf',size:content.length,contentType:type,ownerName:'Aluno 2',uploadedAt:serverTimestamp(),uploadVersion,documentSha256},['agreementFiles/2027/'+target]:{size:content.length,contentType:type,base64:content.toString('base64'),uploadedAt:serverTimestamp(),uploadVersion,documentSha256}};};
  const badBase64=agreement('s2');badBase64['agreementFiles/2027/s2'].base64='?'.repeat(pdf.toString('base64').length);
  await no('server rejects malformed base64 alphabet',update(ref(db('s2'),'maximusInic'),badBase64));
  const wrongSize=agreement('s2');wrongSize['agreementFiles/2027/s2'].size=wrongSize['agreements/2027/s2'].size=pdf.length+4;

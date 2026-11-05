@@ -30,3 +30,5 @@ Copyright - 2026 stlyash (Yashasvi).
 Adaptado às cores da Máximu’s, aos modos claro/escuro e a mensagens reais da plataforma. A licença MIT acima se aplica a este componente.
 
 Tipografia dos botões: Montserrat ExtraBold Italic, SIL Open Font License 1.1. Fontes e licença em assets/fonts/SOURCE.txt e assets/fonts/OFL-Montserrat.txt. Maximus Interface é um alias CSS; os glifos originais foram preservados.
+
+Geração dos PDFs com assinaturas: pdf-lib 1.17.1, MIT. Copyright Andrew Dillon. Código hospedado em assets/vendor/pdf-lib-1.17.1.esm.min.js; licença integral em assets/vendor/pdf-lib-1.17.1.LICENSE.md. Projeto: https://github.com/Hopding/pdf-lib.

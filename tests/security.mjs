@@ -3,6 +3,8 @@ import {loadService} from './service-runtime.mjs';
 import {runOnboardingContractEventTests} from './onboarding-contracts-events.mjs';
 import {runMandatoryTermProposalTests} from './mandatory-term-proposal.test.mjs';
 import {runMemberProposalTests} from './member-proposal.test.mjs';
+import {runAgreementReviewTests} from './agreement-review.test.mjs';
+import {runAgreementSignatureTests} from './agreement-signatures.test.mjs';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
 import {ref,set,get,update,query,orderByChild,equalTo,serverTimestamp} from 'firebase/database';
 const env=await initializeTestEnvironment({projectId:'demo-maximus-inic',database:{host:'127.0.0.1',port:9000,rules:readFileSync(new URL('../database.rules.json', import.meta.url),'utf8')}});
@@ -217,5 +219,7 @@ try{
  await runOnboardingContractEventTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runMandatoryTermProposalTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runMemberProposalTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runAgreementReviewTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runAgreementSignatureTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  console.log(`SECURITY TESTS PASSED: ${passed}`);
 }finally{await env.cleanup();}

@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 import * as databaseSdk from 'firebase/database';
 
 // Execute the actual browser service against an authenticated emulator client.
@@ -8,7 +9,7 @@ export function loadService(database,uid,{beforeUpdate,onWatch,authUser,authOver
   const emulatorUrl=new URL(databaseSdk.ref(database).toString());
   if(!['127.0.0.1','localhost'].includes(emulatorUrl.hostname)||emulatorUrl.port!=='9000'||database.app.options.projectId!=='demo-maximus-inic'||(emulatorUrl.searchParams.has('ns')&&emulatorUrl.searchParams.get('ns')!=='demo-maximus-inic'))throw new Error('Service tests require only the local demo-maximus-inic emulator; production is forbidden.');
   const user={uid,email:`${uid}@example.com`,displayName:uid,emailVerified:true,providerData:[],...authUser};
-  const context={...databaseSdk,console,Blob,btoa,atob,
+  const context={...databaseSdk,console,Blob,btoa,atob,crypto:webcrypto,
     onAuthStateChanged:(_,callback)=>{queueMicrotask(()=>callback(user));return()=>{};},
     signInWithPopup:async()=>({user}),signInWithRedirect:async()=>{},
     updateProfile:async(_,patch)=>Object.assign(user,patch),

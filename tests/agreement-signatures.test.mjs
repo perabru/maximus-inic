@@ -1,0 +1,147 @@
+import assert from 'node:assert/strict';
+import {createHash,webcrypto} from 'node:crypto';
+import {ref,get,set,update,serverTimestamp} from 'firebase/database';
+import {loadService} from './service-runtime.mjs';
+
+export async function runAgreementSignatureTests({env,db,ok,no,count}) {
+ const root='maximusInic',year=2027,stamp=Date.now();
+ const ids={student:'esstudent',pending:'espending',race:'esrace',dual:'esdual',other:'esother',advisor:'esadvisor',foreign:'esforeign',coord:'escoord',coord2:'escoordtwo',worker:'esworker',legacy:'eslegacy'};
+ const pdf=Buffer.from('%PDF-1.7\nSynthetic account signature fixture\n%%EOF');
+ const digest=createHash('sha256').update(pdf).digest('hex');
+ const file=()=>({name:'Termo.pdf',type:'application/pdf',size:pdf.length,arrayBuffer:async()=>pdf.buffer.slice(pdf.byteOffset,pdf.byteOffset+pdf.byteLength)});
+ const changes={};
+ for(const uid of Object.values(ids))changes[`users/${uid}`]={name:uid,email:`${uid}@example.com`,requestedRole:['esadvisor','esforeign','escoord','escoordtwo'].includes(uid)?'advisor':'student',year:'2º ano',createdAt:stamp};
+ for(const uid of [ids.advisor,ids.foreign]){changes[`roles/${uid}`]='advisor';changes[`advisorDirectory/${uid}`]={uid,name:uid};}
+ for(const uid of [ids.coord,ids.coord2]){changes[`roles/${uid}`]='coordinator';changes[`advisorDirectory/${uid}`]={uid,name:uid};}
+ changes[`notificationWorkers/${ids.worker}`]=true;
+ const makeGroup=(name,advisor,members)=>({name,topic:'Pesquisa de TCC',description:'',year,advisorId:advisor,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:members[0],createdAt:stamp,status:'active'});
+ changes['groups/esgroup']=makeGroup('Grupo de assinatura',ids.advisor,[ids.student,ids.pending,ids.race]);
+ changes['groups/esdualgroup']=makeGroup('Grupo coordenador orientador',ids.coord,[ids.dual]);
+ const legacyMeta={uid:ids.legacy,year,filename:'Legado.pdf',ownerName:ids.legacy,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp-1000};
+ changes[`agreements/${year}/${ids.legacy}`]=legacyMeta;changes[`agreementFiles/${year}/${ids.legacy}`]={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp-1000};
+ await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),changes));
+ const admin=async operation=>env.withSecurityRulesDisabled(async context=>operation(context.database()));
+ const value=async path=>{let result;await admin(async database=>{result=(await get(ref(database,`${root}/${path}`))).val();});return result;};
+ const check=(name,condition)=>{assert.ok(condition,name);count(`electronic signature: ${name}`);};
+ const rejects=async(name,operation)=>{let rejected=false;try{await operation();}catch{rejected=true;}check(name,rejected);};
+ const at=(uid,path)=>ref(db(uid),`${root}/${path}`);
+ const sigPath=(uid,role,signer)=>`agreementSignatures/${year}/${uid}/${role}/${signer}`;
+ const meta=uid=>value(`agreements/${year}/${uid}`),review=uid=>value(`agreementReviews/${year}/${uid}`);
+ const coordinator=loadService(db(ids.coord),ids.coord),teacher=loadService(db(ids.advisor),ids.advisor),student=loadService(db(ids.student),ids.student);
+ const approve=async uid=>{const metadata=await meta(uid),previous=await review(uid),current=previous&&previous.uploadVersion===(metadata.uploadVersion||'')&&previous.uploadedAt===metadata.uploadedAt?previous.reviewedAt:0;await coordinator('reviewAgreement',uid,{year,status:'approved',expectedUploadVersion:metadata.uploadVersion||'',expectedUploadedAt:metadata.uploadedAt,expectedReviewedAt:current});return {metadata,review:await review(uid)};};
+ const signing=(state,role='coordinator',groupId='')=>({year,role,groupId,consent:true,signatureImage:'',expectedUploadVersion:state.metadata.uploadVersion||'',expectedUploadedAt:state.metadata.uploadedAt,expectedReviewedAt:state.review.reviewedAt});
+ const waitOwn=(service,predicate)=>new Promise((resolve,reject)=>{let stop=()=>{},done=false;const timer=setTimeout(()=>{stop();reject(new Error('Signature subscription timed out'));},7000);stop=service('subscribeAgreements',year,state=>{if(done)return;if(state.error){done=true;clearTimeout(timer);stop();reject(state.error);return;}if(predicate(state)){done=true;clearTimeout(timer);queueMicrotask(()=>stop());resolve(state);}});});
+ await ok('electronic signature: student uploads content with SHA256 anchor',student('uploadAgreement',file(),{year}));
+ const initial=await meta(ids.student),initialFile=await value(`agreementFiles/${year}/${ids.student}`);
+ check('upload metadata and private payload contain actual byte SHA256',initial.documentSha256===digest&&initialFile.documentSha256===digest);
+ await rejects('coordinator cannot sign before receipt approval',()=>coordinator('signAgreement',ids.student,{year,role:'coordinator',consent:true,expectedUploadVersion:initial.uploadVersion,expectedUploadedAt:initial.uploadedAt,expectedReviewedAt:1}));
+ await rejects('student cannot download signing copy before coordination approval',()=>student('downloadSigningAgreement',ids.student,{year,role:'student'}));
+ const approved=await approve(ids.student);
+ await rejects('signature requires explicit consent',()=>coordinator('signAgreement',ids.student,{...signing(approved),consent:false}));
+ await rejects('student cannot occupy coordination signature field',()=>student('signAgreement',ids.student,signing(approved)));
+ await rejects('professor cannot occupy coordination signature field',()=>teacher('signAgreement',ids.student,signing(approved)));
+ await rejects('unknown student signature role is rejected',()=>student('signAgreement',ids.student,{...signing(approved),role:'student'}));
+ await rejects('foreign professor cannot obtain signing document',()=>loadService(db(ids.foreign),ids.foreign)('downloadSigningAgreement',ids.student,{year,role:'advisor',groupId:'esgroup'}));
+ await rejects('coordination cannot impersonate professor of another group',()=>coordinator('signAgreement',ids.student,signing(approved,'advisor','esgroup')));
+ await no('electronic signature: foreign advisor cannot forge an access proof',set(at(ids.foreign,`agreementAdvisorAccess/${year}/${ids.student}/${ids.foreign}`),'esgroup'));
+ await no('electronic signature: student cannot manufacture teacher access proof',set(at(ids.student,`agreementAdvisorAccess/${year}/${ids.student}/${ids.advisor}`),'esgroup'));
+ const teacherCopy=await teacher('downloadSigningAgreement',ids.student,{year,role:'advisor',groupId:'esgroup'});
+ check('assigned professor gets only approved own-group file with verified digest',teacherCopy.documentSha256===digest&&teacherCopy.metadata.uid===ids.student&&Buffer.from(await teacherCopy.blob.arrayBuffer()).equals(pdf));
+ check('teacher access proof is bound to actual assigned group',(await value(`agreementAdvisorAccess/${year}/${ids.student}/${ids.advisor}`))==='esgroup');
+ await no('electronic signature: professor cannot bulk list all student metadata',get(at(ids.advisor,`agreements/${year}`)));
+ await no('electronic signature: professor cannot bulk list private file bytes',get(at(ids.advisor,`agreementFiles/${year}`)));
+ await no('electronic signature: professor still cannot review approved student term',set(at(ids.advisor,`agreementReviews/${year}/${ids.student}/status`),'returned'));
+ await ok('electronic signature: assigned teacher records account-bound consent signature',teacher('signAgreement',ids.student,signing(approved,'advisor','esgroup')));
+ const teacherSignature=await value(sigPath(ids.student,'advisor',ids.advisor));
+ check('teacher signature binds identity role group upload approval digest and audit',teacherSignature.signerUid===ids.advisor&&teacherSignature.signerName===ids.advisor&&teacherSignature.role==='advisor'&&teacherSignature.groupId==='esgroup'&&teacherSignature.consent===true&&teacherSignature.signaturePng===''&&teacherSignature.documentSha256===digest&&teacherSignature.uploadVersion===initial.uploadVersion&&teacherSignature.reviewedAt===approved.review.reviewedAt&&typeof teacherSignature.signedAt==='number');
+ await rejects('same teacher cannot silently overwrite signature on same approved version',()=>teacher('signAgreement',ids.student,signing(approved,'advisor','esgroup')));
+ await no('electronic signature: raw teacher overwrite is denied',set(at(ids.advisor,sigPath(ids.student,'advisor',ids.advisor)),{...teacherSignature,signedAt:serverTimestamp(),signaturePng:''}));
+ const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9xkAAAAASUVORK5CYII=';
+ await ok('electronic signature: coordination may attach optional PNG drawing with consent',coordinator('signAgreement',ids.student,{...signing(approved),signatureImage:png}));
+ const coordSignature=await value(sigPath(ids.student,'coordinator',ids.coord));
+ check('coordination PNG remains attached to its own audited signature',coordSignature.signaturePng===png&&coordSignature.signerUid===ids.coord&&coordSignature.role==='coordinator'&&coordSignature.groupId==='');
+ const signed=await waitOwn(student,state=>state.signatureReady===true&&state.agreements.some(item=>item.id===ids.student&&item.signatures?.length===2));
+ check('owner sees both current authenticated signatures',signed.agreements[0].signatures.some(item=>item.role==='advisor')&&signed.agreements[0].signatures.some(item=>item.role==='coordinator'));
+ const studentCopy=await student('downloadSigningAgreement',ids.student,{year,role:'student'});
+ check('owner downloads exact approved original plus current signature records',studentCopy.signatures.length===2&&studentCopy.documentSha256===digest&&Buffer.from(await studentCopy.blob.arrayBuffer()).equals(pdf));
+ await no('electronic signature: another student cannot read signature records',get(at(ids.other,`agreementSignatures/${year}/${ids.student}`)));
+ await no('electronic signature: foreign professor cannot read signature records',get(at(ids.foreign,`agreementSignatures/${year}/${ids.student}`)));
+ await no('electronic signature: notification worker cannot inspect signature records',get(at(ids.worker,`agreementSignatures/${year}/${ids.student}`)));
+ await no('electronic signature: student cannot remove signed audit',set(at(ids.student,sigPath(ids.student,'advisor',ids.advisor)),null));
+ await no('electronic signature: author cannot erase signed audit',set(at(ids.advisor,sigPath(ids.student,'advisor',ids.advisor)),null));
+ const coord2=loadService(db(ids.coord2),ids.coord2);
+ await rejects('oversized signature PNG is rejected before storage',()=>coord2('signAgreement',ids.student,{...signing(approved),signatureImage:'x'.repeat(180001)}));
+ await rejects('SVG or HTML cannot masquerade as signature image',()=>coord2('signAgreement',ids.student,{...signing(approved),signatureImage:'data:image/svg+xml;base64,PHN2Zz4='}));
+ await rejects('PNG header must match actual encoded bytes',()=>coord2('signAgreement',ids.student,{...signing(approved),signatureImage:'data:image/png;base64,PHNjcmlwdD4='}));
+ const raw={role:'coordinator',signerUid:ids.coord2,signerName:ids.coord2,signedAt:serverTimestamp(),uploadVersion:initial.uploadVersion,uploadedAt:initial.uploadedAt,reviewedAt:approved.review.reviewedAt,documentSha256:digest,signaturePng:'',consent:true,groupId:''};
+ for(const [label,patch] of [['forged signer',{signerUid:ids.coord}],['forged display name',{signerName:'Outra pessoa'}],['wrong role',{role:'advisor'}],['forged digest',{documentSha256:'0'.repeat(64)}],['no consent',{consent:false}],['old approval',{reviewedAt:approved.review.reviewedAt-1}],['stale upload',{uploadVersion:'stale-version-12345'}],['missing audit',{signedAt:null}],['public URL field',{publicUrl:'https://example.com/signature'}],['SVG bytes',{signaturePng:'data:image/svg+xml;base64,PHN2Zz4='}]])await no(`electronic signature: server rejects ${label}`,set(at(ids.coord2,sigPath(ids.student,'coordinator',ids.coord2)),{...raw,...patch}));
+ await no('electronic signature: student cannot forge coordinator consent record',set(at(ids.student,sigPath(ids.student,'coordinator',ids.student)),{...raw,signerUid:ids.student,signerName:ids.student}));
+ await no('electronic signature: professor cannot forge coordination record',set(at(ids.advisor,sigPath(ids.student,'coordinator',ids.advisor)),{...raw,signerUid:ids.advisor,signerName:ids.advisor}));
+ const pendingStudent=loadService(db(ids.pending),ids.pending);
+ await ok('electronic signature: second group student uploads pending term',pendingStudent('uploadAgreement',file(),{year}));
+ await no('electronic signature: assigned teacher cannot read unapproved file',get(at(ids.advisor,`agreementFiles/${year}/${ids.pending}`)));
+ await rejects('assigned teacher signing copy requires approval even for own member',()=>teacher('downloadSigningAgreement',ids.pending,{year,role:'advisor',groupId:'esgroup'}));
+ await no('electronic signature: access proof alone cannot reveal pending term metadata',get(at(ids.advisor,`agreements/${year}/${ids.pending}`)));
+ await no('electronic signature: access proof alone cannot reveal pending review reason',get(at(ids.advisor,`agreementReviews/${year}/${ids.pending}/reason`)));
+
+ // Actual teacher subscription must track approved->replacement->approved even
+ // when the scalar status remains approved in the retained old audit record.
+ let advisorStop=()=>{},latestAdvisor=null;
+ advisorStop=teacher('subscribeAdvisorAgreements','esgroup',year,state=>{latestAdvisor=state;});
+ const waitTeacher=predicate=>new Promise((resolve,reject)=>{const deadline=Date.now()+7000;const loop=()=>{if(predicate(latestAdvisor)){resolve(latestAdvisor);return;}if(Date.now()>deadline){reject(new Error('Teacher subscription transition timed out'));return;}setTimeout(loop,10);};loop();});
+ await waitTeacher(state=>state?.reviewReady&&state.agreements.some(item=>item.id===ids.student));count('electronic signature: teacher subscription initially lists approved own member');
+ await approve(ids.pending);
+ await waitTeacher(state=>state?.agreements.some(item=>item.id===ids.pending));count('electronic signature: live teacher list adds newly approved own member');
+ await ok('electronic signature: approved term replacement invalidates old signatures',student('uploadAgreement',file(),{year}));
+ const replacement=await meta(ids.student);
+ await waitTeacher(state=>state&&!state.agreements.some(item=>item.id===ids.student));count('electronic signature: live teacher list clears member after unreviewed replacement');
+ const replacedState=await waitOwn(student,state=>state.signatureReady&&state.agreements.some(item=>item.uploadVersion===replacement.uploadVersion));
+ check('replacement owner sees pending review and no old signature',replacedState.agreements[0].review===null&&replacedState.agreements[0].signatures.length===0);
+ await no('electronic signature: retained old approval does not expose replacement bytes to teacher',get(at(ids.advisor,`agreementFiles/${year}/${ids.student}`)));
+ const reapproved=await approve(ids.student);
+ await waitTeacher(state=>state?.agreements.some(item=>item.id===ids.student&&item.uploadVersion===replacement.uploadVersion));count('electronic signature: same-status reapproval restores teacher row without group refresh');
+ await rejects('old signing dialog cannot sign reuploaded file',()=>teacher('signAgreement',ids.student,signing(approved,'advisor','esgroup')));
+ await ok('electronic signature: teacher may sign newly approved replacement',teacher('signAgreement',ids.student,signing(reapproved,'advisor','esgroup')));
+ await admin(database=>set(ref(database,`${root}/groups/esgroup/advisorId`),ids.foreign));
+ await no('electronic signature: reassigned former teacher loses private file access',get(at(ids.advisor,`agreementFiles/${year}/${ids.student}`)));
+ await no('electronic signature: reassigned former teacher loses signature read access',get(at(ids.advisor,`agreementSignatures/${year}/${ids.student}`)));
+ await rejects('former teacher cannot use stale access proof to sign',()=>teacher('signAgreement',ids.student,signing(reapproved,'advisor','esgroup')));
+ await waitTeacher(state=>state?.error||!state?.agreements.some(item=>item.id===ids.student));count('electronic signature: teacher subscription drops records after reassignment');advisorStop();
+ const newTeacher=loadService(db(ids.foreign),ids.foreign);
+ await ok('electronic signature: newly assigned teacher may inspect approved member',newTeacher('downloadSigningAgreement',ids.student,{year,role:'advisor',groupId:'esgroup'}));
+ await admin(database=>update(ref(database,`${root}/groups/esgroup`),{[`members/${ids.student}`]:null,[`memberNames/${ids.student}`]:null}));
+ await no('electronic signature: removing a member revokes retained teacher document proof',get(at(ids.foreign,`agreementFiles/${year}/${ids.student}`)));
+ await rejects('teacher cannot sign after student leaves the group',()=>newTeacher('signAgreement',ids.student,signing(reapproved,'advisor','esgroup')));
+ await ok('electronic signature: coordination retains approved document access after group changes',coordinator('downloadSigningAgreement',ids.student,{year,role:'coordinator'}));
+
+ const dualStudent=loadService(db(ids.dual),ids.dual);await dualStudent('uploadAgreement',file(),{year});const dualApproved=await approve(ids.dual);
+ await ok('electronic signature: listed coordinator signs own group as its advisor',coordinator('signAgreement',ids.dual,signing(dualApproved,'advisor','esdualgroup')));
+ await ok('electronic signature: same coordinator signs independent coordination field',coordinator('signAgreement',ids.dual,signing(dualApproved)));
+ check('dual role preserves separate immutable advisor and coordinator records',Boolean(await value(sigPath(ids.dual,'advisor',ids.coord)))&&Boolean(await value(sigPath(ids.dual,'coordinator',ids.coord)))&&(await value(`roles/${ids.coord}`))==='coordinator');
+ const legacyApproved=await approve(ids.legacy);
+ await ok('electronic signature: legacy upload can receive verified account signature',coordinator('signAgreement',ids.legacy,signing(legacyApproved)));
+ check('legacy signature digest is calculated from actual authenticated file bytes',(await value(sigPath(ids.legacy,'coordinator',ids.coord))).documentSha256===digest);
+
+ const raceStudent=loadService(db(ids.race),ids.race);await raceStudent('uploadAgreement',file(),{year});const raceApproved=await approve(ids.race);
+ let reached,release;const barrier=new Promise(resolve=>{reached=resolve;}),gate=new Promise(resolve=>{release=resolve;});
+ const delayed=loadService(db(ids.coord2),ids.coord2,{beforeUpdate:async(_target,patch)=>{if(Object.keys(patch).includes(sigPath(ids.race,'coordinator',ids.coord2))){reached();await gate;}}});
+ const attempt=delayed('signAgreement',ids.race,signing(raceApproved)).then(()=>true,()=>false);
+ await Promise.race([barrier,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(new Error('Signature barrier timed out')),7000);timer.unref();})]);
+ const changedApproval=await approve(ids.race);release();
+ check('server rejects in-flight signature after approval revision changed',await attempt===false&&!(await value(sigPath(ids.race,'coordinator',ids.coord2))));
+ await rejects('old approval identity cannot authorize signature after reconfirmation',()=>coord2('signAgreement',ids.race,signing(raceApproved)));
+ await ok('electronic signature: refreshed approval permits explicit new signature',coord2('signAgreement',ids.race,signing(changedApproval)));
+ // Hashing can take long enough for another device to replace the same PDF.
+ // Matching bytes/digest must not make an old approval attach to the new upload.
+ let hashingReached,hashingRelease;const hashingStarted=new Promise(resolve=>{hashingReached=resolve;}),hashingGate=new Promise(resolve=>{hashingRelease=resolve;});let pauseDigest=true;
+ const hashDelayedCoordinator=loadService(db(ids.coord2),ids.coord2,{authOverrides:{crypto:{subtle:{digest:async(...args)=>{if(pauseDigest){pauseDigest=false;hashingReached();await hashingGate;}return webcrypto.subtle.digest(...args);}}}}});
+ const oldDownload=hashDelayedCoordinator('downloadSigningAgreement',ids.race,{year,role:'coordinator'}).then(()=>true,()=>false);
+ await Promise.race([hashingStarted,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(new Error('Digest barrier timed out')),7000);timer.unref();})]);
+ await ok('electronic signature: student may upload identical bytes while previous download is hashing',raceStudent('uploadAgreement',file(),{year}));
+ const duringDigest=await meta(ids.race);hashingRelease();
+ check('download rejects replacement with same digest but changed upload and approval context',await oldDownload===false&&duringDigest.uploadVersion!==raceApproved.metadata.uploadVersion&&duringDigest.documentSha256===digest);
+ await rejects('unreviewed replacement cannot produce signing copy',()=>coordinator('downloadSigningAgreement',ids.race,{year,role:'coordinator'}));
+ const finalApproval=await approve(ids.race);const currentDownload=await coordinator('downloadSigningAgreement',ids.race,{year,role:'coordinator'});
+ check('fresh approval restores exact signing copy without stale signatures',currentDownload.metadata.uploadVersion===finalApproval.metadata.uploadVersion&&currentDownload.review.reviewedAt===finalApproval.review.reviewedAt&&currentDownload.signatures.length===0);
+
+}

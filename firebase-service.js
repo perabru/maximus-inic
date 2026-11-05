@@ -495,22 +495,30 @@ export const agreementLimits=Object.freeze({maxBytes:3*1024*1024,contentTypes:['
 function agreementYear(year=2027) {
   const value=Number(year);if(!Number.isInteger(value)||value<2027||value>2100)throw new Error('Escolha uma edição válida para o termo.');return value;
 }
+function effectiveAgreementReview(metadata,review) {
+  if(!metadata||!review||!['approved','returned'].includes(review.status)||review.uploadedAt!==metadata.uploadedAt||review.uploadVersion!==(metadata.uploadVersion||''))return null;
+  return review;
+}
 export function subscribeAgreements(year=2027,callback) {
   const user=needUser(),edition=agreementYear(year);let stopped=false,dataStops=[];let generation=0,currentEmit=()=>{};
   const pendingEmit=()=>currentEmit();agreementObservers.add(pendingEmit);
   const roleStop=onValue(path(`roles/${user.uid}`),snapshot=>{
     const current=++generation;dataStops.forEach(stop=>stop());dataStops=[];
-    if(!stopped)callback({agreements:[],requirement:{ready:false,fulfilled:false}});
+    if(!stopped)callback({agreements:[],reviewReady:false,requirement:{ready:false,fulfilled:false}});
     const coordinator=snapshot.val()==='coordinator';
     const staff=coordinator||snapshot.val()==='advisor';
     const target=coordinator?path(`agreements/${edition}`):path(`agreements/${edition}/${user.uid}`);
-    let metadataLoaded=false,metadata=null,list=[],descriptor={},scopeError=null;const descriptorLoaded=new Set();
+    const reviewTarget=coordinator?path(`agreementReviews/${edition}`):path(`agreementReviews/${edition}/${user.uid}`);
+    let metadataLoaded=false,metadata=null,list=[],descriptor={},scopeError=null,reviewsLoaded=false,reviews=null,reviewError=null,signaturesLoaded=false,signatureData=null,signatureError=null;const descriptorLoaded=new Set();
     const emit=()=>{
       if(stopped||current!==generation)return;
-      if(scopeError){callback({agreements:[],requirement:{ready:false,fulfilled:false},error:scopeError});return;}
+      if(scopeError){callback({agreements:[],reviewReady:false,requirement:{ready:false,fulfilled:false},error:scopeError});return;}
       const pending=!staff&&agreementUploads.has(user.uid);
       const ready=!pending&&metadataLoaded&&(staff||descriptorLoaded.size===3);
-      callback({agreements:list,requirement:{ready,fulfilled:ready&&(staff||completeAgreement(metadata,descriptor,user.uid,edition))}});
+      const reviewReady=ready&&reviewsLoaded&&!reviewError;
+      const signatureReady=reviewReady&&signaturesLoaded&&!signatureError;
+      const records=list.map(record=>{const review=reviewReady?effectiveAgreementReview(record,coordinator?reviews?.[record.uid||record.id]:reviews):null;return {...record,review,signatures:signatureReady?effectiveAgreementSignatures(record,review,coordinator?signatureData?.[record.uid||record.id]:signatureData):[]};});
+      callback({agreements:records,reviewReady,reviewError,signatureReady,signatureError,requirement:{ready,fulfilled:ready&&(staff||completeAgreement(metadata,descriptor,user.uid,edition))}});
     };
     currentEmit=emit;
     const fail=error=>{if(!stopped&&current===generation){scopeError=error;emit();}};
@@ -518,12 +526,126 @@ export function subscribeAgreements(year=2027,callback) {
       if(stopped||current!==generation)return;
       metadataLoaded=true;metadata=snap.val();list=(coordinator?collection(snap):snap.exists()?[{...snap.val(),id:user.uid}]:[]).sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0));emit();
     },fail));
+    dataStops.push(onValue(reviewTarget,snap=>{
+      if(stopped||current!==generation)return;reviews=snap.val();reviewsLoaded=true;reviewError=null;emit();
+    },error=>{if(!stopped&&current===generation){reviews=null;reviewsLoaded=false;reviewError=error;emit();}}));
+    dataStops.push(onValue(coordinator?path(`agreementSignatures/${edition}`):path(`agreementSignatures/${edition}/${user.uid}`),snap=>{if(stopped||current!==generation)return;signatureData=snap.val();signaturesLoaded=true;signatureError=null;emit();},error=>{if(!stopped&&current===generation){signatureData=null;signaturesLoaded=false;signatureError=error;emit();}}));
     if(!staff)for(const field of ['size','contentType','uploadedAt'])dataStops.push(onValue(path(`agreementFiles/${edition}/${user.uid}/${field}`),snap=>{
       if(stopped||current!==generation)return;descriptor[field]=snap.val();descriptorLoaded.add(field);emit();
     },fail));
-  },error=>{if(!stopped){generation++;dataStops.forEach(stop=>stop());dataStops=[];currentEmit=()=>{};callback({agreements:[],requirement:{ready:false,fulfilled:false},error});}});
+  },error=>{if(!stopped){generation++;dataStops.forEach(stop=>stop());dataStops=[];currentEmit=()=>{};callback({agreements:[],reviewReady:false,requirement:{ready:false,fulfilled:false},error});}});
   return()=>{stopped=true;generation++;agreementObservers.delete(pendingEmit);roleStop();dataStops.forEach(stop=>stop());};
 }
+export async function reviewAgreement(uid,{year=2027,status,reason='',expectedUploadVersion='',expectedUploadedAt,expectedReviewedAt=0}={}) {
+  const user=needUser(),edition=agreementYear(year);checkIdentifier(uid);
+  if(!['approved','returned'].includes(status))throw new Error('Escolha confirmar o recebimento ou devolver com uma pendência.');
+  const note=status==='returned'?String(reason||'').trim():'';
+  if(status==='returned'&&(note.length<3||note.length>2000))throw new Error('Descreva a pendência em 3 a 2000 caracteres.');
+  if(typeof expectedUploadVersion!=='string'||!Number.isInteger(expectedUploadedAt)||expectedUploadedAt<=0||!Number.isInteger(expectedReviewedAt)||expectedReviewedAt<0)throw new Error('Reabra o termo enviado antes de conferir.');
+  const role=(await get(path(`roles/${user.uid}`))).val();
+  if(role!=='coordinator')throw new Error('Somente a coordenação pode conferir os termos.');
+  const [metadataSnapshot,reviewSnapshot,profileSnapshot,sizeSnapshot,typeSnapshot,stampSnapshot,versionSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementReviews/${edition}/${uid}`)),get(path(`users/${user.uid}`)),get(path(`agreementFiles/${edition}/${uid}/size`)),get(path(`agreementFiles/${edition}/${uid}/contentType`)),get(path(`agreementFiles/${edition}/${uid}/uploadedAt`)),get(path(`agreementFiles/${edition}/${uid}/uploadVersion`))]);
+  const metadata=metadataSnapshot.val(),profile=profileSnapshot.val(),previous=effectiveAgreementReview(metadata,reviewSnapshot.val());
+  if(!metadata)throw new Error('O aluno ainda não enviou o termo.');
+  if(!completeAgreement(metadata,{size:sizeSnapshot.val(),contentType:typeSnapshot.val(),uploadedAt:stampSnapshot.val()},uid,edition)||(metadata.uploadVersion||'')!==(versionSnapshot.val()||''))throw new Error('O arquivo enviado está incompleto. Solicite um novo envio antes de conferir.');
+  if(metadata.uploadedAt!==expectedUploadedAt||(metadata.uploadVersion||'')!==expectedUploadVersion)throw new Error('O termo foi atualizado. Reabra o arquivo mais recente antes de conferir.');
+  if((previous?.reviewedAt||0)!==expectedReviewedAt)throw new Error('A conferência mudou. Atualize a página e revise a situação atual.');
+  if(!profile?.name)throw new Error('Conclua o perfil da coordenação antes de conferir o termo.');
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente antes de conferir.');
+  const record={status,reason:note,reviewerUid:user.uid,reviewerName:clean(profile.name,100),reviewedAt:serverTimestamp(),uploadVersion:expectedUploadVersion,uploadedAt:expectedUploadedAt,previousReviewedAt:expectedReviewedAt};
+  await update(path(),{[`agreementReviews/${edition}/${uid}`]:record});
+  return record;
+}
+const signatureRoles=['advisor','coordinator'];
+function effectiveAgreementSignatures(metadata,review,stored) {
+  if(!metadata||review?.status!=='approved')return [];
+  return Object.values(stored||{}).flatMap(role=>Object.values(role||{})).filter(item=>item&&signatureRoles.includes(item.role)&&item.consent===true&&item.uploadVersion===(metadata.uploadVersion||'')&&item.uploadedAt===metadata.uploadedAt&&item.reviewedAt===review.reviewedAt&&(!metadata.documentSha256||item.documentSha256===metadata.documentSha256));
+}
+async function documentChecksum(bytes) {
+  if(!globalThis.crypto?.subtle)throw new Error('Este navegador não permite conferir a integridade do documento. Atualize o aplicativo.');
+  const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);
+  return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+async function advisorDocumentAccess(uid,year,groupId) {
+  const user=needUser();checkIdentifier(uid);checkIdentifier(groupId);
+  const [roleSnapshot,groupSnapshot]=await Promise.all([get(path(`roles/${user.uid}`)),get(path(`groups/${groupId}`))]);
+  const role=roleSnapshot.val(),group=groupSnapshot.val();
+  if(!['advisor','coordinator'].includes(role)||!group||group.status!=='active'||group.advisorId!==user.uid||group.members?.[uid]!==true)throw new Error('Somente o orientador atual do grupo pode acessar este termo aprovado.');
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente antes de continuar.');
+  await set(path(`agreementAdvisorAccess/${year}/${uid}/${user.uid}`),groupId);
+  return group;
+}
+export async function downloadSigningAgreement(uid,{year=2027,role,groupId=''}={}) {
+  const user=needUser(),edition=agreementYear(year);checkIdentifier(uid);
+  const actorRole=(await get(path(`roles/${user.uid}`))).val()||'student';
+  if(role==='advisor'||actorRole==='advisor')await advisorDocumentAccess(uid,edition,groupId);
+  else if(actorRole!=='coordinator'&&user.uid!==uid)throw new Error('Você não tem acesso ao termo deste estudante.');
+  const [metaSnapshot,reviewSnapshot,signatureSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementReviews/${edition}/${uid}`)),get(path(`agreementSignatures/${edition}/${uid}`))]);
+  const metadata=metaSnapshot.val(),review=effectiveAgreementReview(metadata,reviewSnapshot.val());
+  if(review?.status!=='approved')throw new Error('Aguarde a coordenação confirmar este termo antes de assinar.');
+  const original=await downloadAgreement(uid,edition);
+  if(original.metadata.uploadedAt!==metadata.uploadedAt||(original.metadata.uploadVersion||'')!==(metadata.uploadVersion||''))throw new Error('O termo foi atualizado durante a leitura. Reabra o documento atual.');
+  const documentSha256=await documentChecksum(new Uint8Array(await original.blob.arrayBuffer()));
+  if(metadata.documentSha256&&metadata.documentSha256!==documentSha256)throw new Error('A integridade do documento mudou. Solicite um novo envio.');
+  const [currentMetadataSnapshot,currentReviewSnapshot,currentSignatureSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementReviews/${edition}/${uid}`)),get(path(`agreementSignatures/${edition}/${uid}`))]);
+  const currentMetadata=currentMetadataSnapshot.val(),currentReview=effectiveAgreementReview(currentMetadata,currentReviewSnapshot.val());
+  if(!currentMetadata||currentMetadata.uploadedAt!==metadata.uploadedAt||(currentMetadata.uploadVersion||'')!==(metadata.uploadVersion||'')||currentReview?.status!=='approved'||currentReview.reviewedAt!==review.reviewedAt)throw new Error('O documento ou a aprovação mudou durante a leitura. Reabra a versão atual.');
+  return {...original,metadata:currentMetadata,review:currentReview,signatures:effectiveAgreementSignatures(currentMetadata,currentReview,currentSignatureSnapshot.val()).filter(item=>item.documentSha256===documentSha256),documentSha256};
+}
+export async function signAgreement(uid,{year=2027,role,groupId='',consent=false,signatureImage='',signaturePng=signatureImage,expectedUploadVersion='',expectedUploadedAt,expectedReviewedAt}={}) {
+  const user=needUser(),edition=agreementYear(year);checkIdentifier(uid);
+  if(!signatureRoles.includes(role)||consent!==true)throw new Error('Leia o documento e confirme expressamente a assinatura com sua conta.');
+  if(typeof signaturePng!=='string'||signaturePng.length>180000||signaturePng!==''&&!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(signaturePng))throw new Error('A imagem da assinatura deve ser PNG e ter até130KB.');
+  if(signaturePng){const image=Uint8Array.from(atob(signaturePng.split(',')[1]),character=>character.charCodeAt(0));if(image.length<24||![137,80,78,71,13,10,26,10].every((byte,index)=>image[index]===byte))throw new Error('A assinatura desenhada precisa ser uma imagem PNG válida.');}
+  const actorRole=(await get(path(`roles/${user.uid}`))).val();
+  if(role==='coordinator'&&actorRole!=='coordinator')throw new Error('Somente a coordenação pode assinar neste campo.');
+  if(role==='advisor')await advisorDocumentAccess(uid,edition,groupId);
+  const data=await downloadSigningAgreement(uid,{year:edition,role,groupId});
+  if(data.metadata.uploadedAt!==expectedUploadedAt||(data.metadata.uploadVersion||'')!==expectedUploadVersion||data.review.reviewedAt!==expectedReviewedAt)throw new Error('O documento ou sua aprovação mudou. Reabra a versão atual antes de assinar.');
+  if(data.signatures.some(item=>item.role===role&&item.signerUid===user.uid))throw new Error('Sua assinatura já está registrada nesta versão aprovada.');
+  const profile=(await get(path(`users/${user.uid}`))).val();
+  if(!profile?.name||auth.currentUser?.uid!==user.uid)throw new Error('Confira sua conta antes de assinar.');
+  const record={role,signerUid:user.uid,signerName:clean(profile.name,100),signedAt:serverTimestamp(),uploadVersion:expectedUploadVersion,uploadedAt:expectedUploadedAt,reviewedAt:expectedReviewedAt,documentSha256:data.documentSha256,signaturePng,consent:true,groupId:role==='advisor'?groupId:''};
+  await update(path(),{[`agreementSignatures/${edition}/${uid}/${role}/${user.uid}`]:record});
+  return record;
+}
+export function subscribeAdvisorAgreements(groupId,year=2027,callback) {
+  const user=needUser(),edition=agreementYear(year);checkIdentifier(groupId);
+  let stopped=false,generation=0,memberStops=[],rows=new Map(),pendingMembers=new Set(),groupLoaded=false;
+  const emit=(error=null)=>{const ready=groupLoaded&&pendingMembers.size===0&&!error;if(!stopped)callback({agreements:[...rows.values()].sort((a,b)=>(a.ownerName||'').localeCompare(b.ownerName||'','pt-BR')),reviewReady:ready,signatureReady:ready,requirement:{ready,fulfilled:ready},error});};
+  const groupStop=onValue(path(`groups/${groupId}`),snapshot=>{
+    const current=++generation;memberStops.forEach(stop=>stop());memberStops=[];rows=new Map();groupLoaded=false;
+    const group=snapshot.val();
+    if(!group||group.status!=='active'||group.advisorId!==user.uid){emit(new Error('Você não orienta este grupo.'));return;}
+    groupLoaded=true;pendingMembers=new Set(Object.keys(group.members||{}));emit();
+    for(const uid of Object.keys(group.members||{})){
+      let dataStops=[],documentEpoch=0,statusLoaded=false,revisionLoaded=false,observedStatus=null,observedRevision=0;
+      const valid=()=>!stopped&&current===generation;
+      const fail=()=>{if(valid()){documentEpoch++;dataStops.forEach(stop=>stop());dataStops=[];pendingMembers.delete(uid);rows.delete(uid);emit();}};
+      const refresh=()=>{
+        if(!valid()||!statusLoaded||!revisionLoaded)return;
+        const epoch=++documentEpoch;dataStops.forEach(stop=>stop());dataStops=[];rows.delete(uid);
+        if(observedStatus!=='approved'){pendingMembers.delete(uid);emit();return;}
+        pendingMembers.add(uid);emit();
+        let metadata=null,review=null,signatures=null,metadataReady=false,reviewReady=false,signatureReady=false;
+        const currentDocument=()=>valid()&&epoch===documentEpoch;
+        const paint=()=>{if(!currentDocument())return;const effective=effectiveAgreementReview(metadata,review);if(metadataReady&&reviewReady&&signatureReady){pendingMembers.delete(uid);}if(metadataReady&&reviewReady&&signatureReady&&effective?.status==='approved'&&effective.reviewedAt===observedRevision)rows.set(uid,{...metadata,id:uid,review:effective,signatures:effectiveAgreementSignatures(metadata,effective,signatures)});else rows.delete(uid);emit();};
+        const unavailable=()=>{if(currentDocument())fail();};
+        dataStops.push(onValue(path(`agreements/${edition}/${uid}`),snap=>{if(!currentDocument())return;metadata=snap.val();metadataReady=true;paint();},unavailable));
+        dataStops.push(onValue(path(`agreementReviews/${edition}/${uid}`),snap=>{if(!currentDocument())return;review=snap.val();reviewReady=true;paint();},unavailable));
+        dataStops.push(onValue(path(`agreementSignatures/${edition}/${uid}`),snap=>{if(!currentDocument())return;signatures=snap.val();signatureReady=true;paint();},unavailable));
+      };
+      memberStops.push(()=>{documentEpoch++;dataStops.forEach(stop=>stop());});
+      advisorDocumentAccess(uid,edition,groupId).then(()=>{
+        if(!valid())return;
+        memberStops.push(onValue(path(`agreementReviews/${edition}/${uid}/status`),snap=>{if(!valid())return;observedStatus=snap.val();statusLoaded=true;refresh();},fail));
+        memberStops.push(onValue(path(`agreementReviews/${edition}/${uid}/reviewedAt`),snap=>{if(!valid())return;observedRevision=snap.val()||0;revisionLoaded=true;refresh();},fail));
+      }).catch(fail);
+    }
+  },error=>{generation++;memberStops.forEach(stop=>stop());memberStops=[];rows.clear();groupLoaded=false;emit(error);});
+  return()=>{stopped=true;generation++;groupStop();memberStops.forEach(stop=>stop());};
+}
+
 function bytesToBase64(bytes) {
   let binary='';for(let offset=0;offset<bytes.length;offset+=32768)binary+=String.fromCharCode(...bytes.subarray(offset,offset+32768));return btoa(binary);
 }
@@ -549,9 +671,9 @@ export async function uploadAgreement(file,{year=2027}={}) {
   const contentType=detectAgreementType(bytes);
   if(!contentType||file.type&&file.type!==contentType)throw new Error('Formato inválido. Envie um PDF, JPG ou PNG.');
   const filename=agreementFilename(file.name,contentType,edition);
-  const uploadedAt=serverTimestamp();
-  const metadata={uid:user.uid,year:edition,filename,size:bytes.length,contentType,ownerName:clean(profile.name,100),uploadedAt};
-  const payload={base64:bytesToBase64(bytes),size:bytes.length,contentType,uploadedAt};
+  const uploadedAt=serverTimestamp(),uploadVersion=push(path(`agreements/${edition}`)).key,documentSha256=await documentChecksum(bytes);
+  const metadata={uid:user.uid,year:edition,filename,size:bytes.length,contentType,ownerName:clean(profile.name,100),uploadedAt,uploadVersion,documentSha256};
+  const payload={base64:bytesToBase64(bytes),size:bytes.length,contentType,uploadedAt,uploadVersion,documentSha256};
   // Only metadata is listed. File bytes are fetched individually with Auth and
   // never exposed through a persistent download token or public URL.
   if(agreementUploads.has(user.uid))throw new Error('O envio anterior ainda está em andamento.');
@@ -570,10 +692,10 @@ export async function downloadAgreement(uid,year=2027) {
   const [metadataSnapshot,fileSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementFiles/${edition}/${uid}`))]);
   const metadata=metadataSnapshot.val(),file=fileSnapshot.val();
   if(!metadata||!file)throw new Error('O termo ainda não foi enviado.');
-  if(file.uploadedAt!==metadata.uploadedAt||file.size!==metadata.size||file.contentType!==metadata.contentType)throw new Error('O termo foi atualizado. Tente baixar novamente.');
+  if(file.uploadedAt!==metadata.uploadedAt||file.size!==metadata.size||file.contentType!==metadata.contentType||(file.uploadVersion||'')!==(metadata.uploadVersion||''))throw new Error('O termo foi atualizado. Tente baixar novamente.');
   const binary=atob(file.base64),bytes=Uint8Array.from(binary,character=>character.charCodeAt(0));
   if(bytes.length!==metadata.size||detectAgreementType(bytes)!==metadata.contentType)throw new Error('O arquivo não pôde ser validado. Envie uma nova cópia.');
-  return {blob:new Blob([bytes],{type:metadata.contentType}),filename:agreementFilename(metadata.filename,metadata.contentType,edition),contentType:metadata.contentType};
+  return {blob:new Blob([bytes],{type:metadata.contentType}),filename:agreementFilename(metadata.filename,metadata.contentType,edition),contentType:metadata.contentType,metadata};
 }
 
 function pushDevice(value) {

@@ -22,6 +22,13 @@ let agreements = [];
 let agreementsReady = false;
 let agreementsError = null;
 let agreementRequirement = {ready:false,fulfilled:false};
+let agreementReviewsReady = false;
+let agreementReviewError = null;
+let agreementSignaturesReady = false;
+let agreementSignatureError = null;
+let advisorAgreementGroupId = '';
+let agreementReviewBaselineReady = false;
+const seenAgreementReviews = new Set();
 let agreementSearch = '';
 let agreementFilter = 'all';
 let agreementUploadBusy = false;
@@ -103,7 +110,7 @@ function canAccessAcademic() {
 }
 function canCreateGroup() { return canAccessAcademic(); }
 function canPrepareProposal() { return Boolean(state.user && state.ready && state.profile && state.role === 'student' && state.profile.onboardingRequired !== true && !isPendingAdvisor()); }
-function canUseAgreements() { return state.role === 'coordinator' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor'); }
+function canUseAgreements() { return state.role === 'coordinator' || state.role === 'advisor' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor'); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
   if (parseDate(task.dueDate) && task.dueDate < todayString()) return {key:'late',text:'Em atraso',className:'danger'};
@@ -138,7 +145,7 @@ function notice(text, kind = 'success', persistent = false, options = {}) {
   const close=button('×','notice-card-close',dismiss);close.setAttribute('aria-label','Fechar notificação');
   header.append(icon,title,close);
   const actions=node('div','notice-card-actions');
-  if(typeof options.href==='string'&&/^#(?:grupo\/[^/]+\/(?:overview|messages)|convites|grupos)$/.test(options.href)){
+  if(typeof options.href==='string'&&/^#(?:grupo\/[^/]+\/(?:overview|messages)|convites|grupos|termo)$/.test(options.href)){
     const destination=link(options.label||'Ver detalhes',options.href,'button primary');destination.addEventListener('click',dismiss);actions.append(destination);
   } else actions.append(button('Entendi','button primary',dismiss));
   target.replaceChildren(header,node('p','notice-card-message',text),actions);
@@ -214,6 +221,8 @@ function makeField(labelText, name, options = {}) {
 function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = false,access = 'academic',busy = 'Salvando…',handler}) {
   if(state.user && access === 'academic' && !canAccessAcademic()){render();return;}
   if(access === 'draft' && !canPrepareProposal()){render();return;}
+  if(access === 'review' && state.role !== 'coordinator'){render();return;}
+  if(access === 'signature' && !['advisor','coordinator'].includes(state.role)){render();return;}
   dialogVersion++;
   dialogAccess=access;
   dialogBusyText=busy;
@@ -380,7 +389,7 @@ function verificationNotice() {
   }
 }
 function sessionChanged(user) {
-  const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();
+  const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';
   proposalDraft=null;
   dialogVersion++;dialogHandler=null;$('#form-dialog').close();
   appUnsubscribe();
@@ -408,6 +417,8 @@ function sessionChanged(user) {
     state.invitations = data.invitations || [];
     state.error = data.error || null;
     state.ready = true;
+    if(dialogAccess==='signature'&&!['advisor','coordinator'].includes(state.role)&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
+    if(dialogAccess==='review'&&state.role!=='coordinator'&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
     if(!canPrepareProposal()){
       proposalDraft=null;
       if(dialogAccess==='draft'&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
@@ -422,7 +433,7 @@ function sessionChanged(user) {
 
 function updateShell() {
   const route = currentRoute.view === 'group' ? 'groups' : currentRoute.view;
-  const titles = {dashboard:'Visão geral',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',agreements:state.role==='coordinator'?'Termos assinados':'Meu termo',admin:'Coordenação',group:'Meu grupo'};
+  const titles = {dashboard:'Visão geral',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',agreements:state.role==='coordinator'?'Termos e assinaturas':state.role==='advisor'?'Termos para assinar':'Meu termo',admin:'Coordenação',group:'Meu grupo'};
   $('#view-title').textContent = titles[currentRoute.view] || 'Visão geral';
   $('#view-kicker').textContent = state.role === 'coordinator' ? 'ACOMPANHAMENTO DA ESCOLA' : 'SEU ESPAÇO DE PESQUISA';
   $('#user-name').textContent = myName();
@@ -432,8 +443,14 @@ function updateShell() {
   $('#mobile-admin-nav').hidden = state.role !== 'coordinator';
   $('#agreements-nav').hidden = !canUseAgreements();
   $('#mobile-agreements-nav').hidden = !canUseAgreements();
-  $('#agreements-nav-label').textContent = state.role === 'coordinator' ? 'Termos assinados' : 'Meu termo';
-  $('#mobile-agreements-label').textContent = state.role === 'coordinator' ? 'Termos' : 'Termo';
+  $('#agreements-nav-label').textContent = state.role === 'coordinator' ? 'Termos e assinaturas' : state.role==='advisor'?'Termos para assinar':'Meu termo';
+  $('#mobile-agreements-label').textContent = state.role === 'coordinator' || state.role==='advisor' ? 'Termos' : 'Termo';
+  const groupsLabel=state.role==='coordinator'?'Todos os grupos':'Meus grupos';
+  document.querySelectorAll('[data-route="groups"]').forEach(item=>{
+    const label=item.querySelector('span:not([aria-hidden])');
+    if(label)label.textContent=groupsLabel;
+    else {const text=[...item.childNodes].find(child=>child.nodeType===3);if(text)text.textContent=groupsLabel;}
+  });
   $('#invite-badge').hidden = !pendingInvitations().length;
   $('#invite-badge').textContent = pendingInvitations().length;
   $('#pending-advisor-note').hidden = !isPendingAdvisor();
@@ -526,19 +543,39 @@ function renderGoogleOnboarding() {
   panel.append(form);$('#view-content').replaceChildren(panel);
 }
 function syncAgreementSubscription() {
-  const scope=state.user&&state.profile&&state.profile.onboardingRequired!==true&&canUseAgreements()?`${state.user.uid}/${state.role}/${AGREEMENT_YEAR}`:'';
+  const advisor=state.role==='advisor';
+  const assigned=state.groups.filter(group=>group.status!=='deleting'&&group.advisorId===state.user?.uid);
+  if(advisor&&!assigned.some(group=>group.id===advisorAgreementGroupId))advisorAgreementGroupId=assigned[0]?.id||'';
+  const scope=state.user&&state.profile&&state.profile.onboardingRequired!==true&&canUseAgreements()?`${state.user.uid}/${state.role}/${AGREEMENT_YEAR}${advisor?'/'+(advisorAgreementGroupId||'none'):''}`:'';
   if(scope===agreementScope)return;
+  if(dialogAccess==='signature'&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
   agreementsUnsubscribe();agreementsUnsubscribe=()=>{};agreementScope=scope;
   const version=++agreementSubscription;
-  agreements=[];agreementsReady=false;agreementsError=null;agreementRequirement={ready:false,fulfilled:false};agreementUploadBusy=false;
+  agreements=[];agreementsReady=false;agreementsError=null;agreementRequirement={ready:false,fulfilled:false};agreementUploadBusy=false;agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;
   if(!scope)return;
+  if(advisor&&!advisorAgreementGroupId){agreementsReady=true;agreementReviewsReady=true;agreementSignaturesReady=true;agreementRequirement={ready:true,fulfilled:true};return;}
   if(typeof service?.subscribeAgreements!=='function'){agreementsError=new Error('O envio de termos não está disponível. Atualize a página.');agreementsReady=true;return;}
-  agreementsUnsubscribe=service.subscribeAgreements(AGREEMENT_YEAR,data=>{
+  const subscribe=advisor?callback=>service.subscribeAdvisorAgreements(advisorAgreementGroupId,AGREEMENT_YEAR,callback):callback=>service.subscribeAgreements(AGREEMENT_YEAR,callback);
+  if(advisor&&typeof service.subscribeAdvisorAgreements!=='function'){agreementsError=new Error('Atualize a página para consultar os termos dos seus grupos.');agreementsReady=true;return;}
+  agreementsUnsubscribe=subscribe(data=>{
     if(version!==agreementSubscription||scope!==agreementScope)return;
     agreementsError=data?.error||null;
-    agreements=agreementsError?[]:(data?.agreements||[]).filter(item=>state.role==='coordinator'||(item.uid||item.id)===state.user?.uid);
+    agreements=agreementsError?[]:(data?.agreements||[]).filter(item=>state.role==='coordinator'||(state.role==='advisor'?Boolean(state.groups.find(group=>group.id===advisorAgreementGroupId&&group.status!=='deleting'&&group.advisorId===state.user?.uid)?.members?.[item.uid||item.id]):(item.uid||item.id)===state.user?.uid));
     agreementRequirement={ready:!agreementsError&&data?.requirement?.ready===true,fulfilled:!agreementsError&&data?.requirement?.ready===true&&data?.requirement?.fulfilled===true};
     agreementsReady=Boolean(agreementsError||agreementRequirement.ready);
+    agreementSignatureError=data?.signatureError||null;
+    agreementSignaturesReady=!agreementsError&&!agreementSignatureError&&data?.signatureReady===true;
+    agreementReviewError=data?.reviewError||null;
+    agreementReviewsReady=!agreementsError&&!agreementReviewError&&data?.reviewReady===true;
+    if(agreementsError)agreementReviewBaselineReady=false;
+    if(requiresAgreement()&&agreementReviewsReady&&agreementRequirement.ready){
+      const own=agreements.find(record=>(record.uid||record.id)===state.user?.uid),review=currentAgreementReview(own);
+      if(review){
+        const key=`${own.uid||own.id}/${own.uploadVersion||own.uploadedAt}/${review.status}/${review.reviewedAt}`;
+        if(!seenAgreementReviews.has(key)){seenAgreementReviews.add(key);if(agreementReviewBaselineReady)notice(review.status==='approved'?'Seu termo foi conferido pela coordenação. Está tudo certo.':`Seu termo foi devolvido. Pendência: ${review.reason}`,review.status==='approved'?'success':'info',true,{title:review.status==='approved'?'Termo conferido':'Ajuste seu termo',href:'#termo',label:'Ver meu termo'});}
+      }
+      agreementReviewBaselineReady=true;
+    }
     syncGroupListeners();
     scheduleRender();
   })||(()=>{});
@@ -553,7 +590,7 @@ async function downloadAgreement(record,control) {
   const uid=state.user?.uid;const version=agreementSubscription;
   if(control){control.disabled=true;control.setAttribute('aria-busy','true');}
   try {
-    const result=await service.downloadAgreement(record.uid||record.id,AGREEMENT_YEAR);
+    const result=state.role==='advisor'?await service.downloadSigningAgreement(record.uid||record.id,{year:AGREEMENT_YEAR,role:'advisor',groupId:advisorAgreementGroupId}):await service.downloadAgreement(record.uid||record.id,AGREEMENT_YEAR);
     if(state.user?.uid!==uid||version!==agreementSubscription)return;
     if(!(result?.blob instanceof Blob))throw new Error('O arquivo não pôde ser aberto. Tente novamente.');
     const url=URL.createObjectURL(result.blob);
@@ -581,7 +618,7 @@ function buildAgreementUpload() {
     try {
       await service.uploadAgreement(file,{year:AGREEMENT_YEAR});
       if(state.user?.uid!==uid||version!==agreementSubscription)return;
-      status.dataset.awaitingConfirmation=String(!agreementSatisfied());status.textContent=agreementSatisfied()?'Termo recebido e salvo para a coordenação. Seu acesso está liberado.':'Termo enviado. Confirmando o arquivo salvo para a coordenação…';input.value='';notice(agreementSatisfied()?'Termo recebido e salvo para a coordenação.':'Termo assinado enviado. Aguarde a confirmação do arquivo salvo.');
+      status.dataset.awaitingConfirmation=String(!agreementSatisfied());status.textContent=agreementSatisfied()?'Arquivo salvo. Aguardando conferência da coordenação.':'Termo enviado. Confirmando o arquivo salvo para a coordenação…';input.value='';notice(agreementSatisfied()?'Arquivo enviado. Aguardando conferência da coordenação.':'Termo assinado enviado. Aguarde a confirmação do arquivo salvo.');
     }catch(error){if(state.user?.uid===uid&&version===agreementSubscription){status.classList.add('error');status.textContent=errorText(error);}}
     finally{
       if(state.user?.uid===uid&&version===agreementSubscription)agreementUploadBusy=false;
@@ -603,30 +640,193 @@ function paintProposalCallout() {
   status.textContent=canCreateGroup()?(draft?'Rascunho pronto. Revise e confirme o envio.':'Opcional · você também pode entrar por convite.'):(draft?'Rascunho salvo nesta sessão. Envie o termo para concluir.':'Você pode preparar agora. Envie o termo antes de concluir.');
 }
 function renderAgreements() {
-  const key=`agreements/${state.user.uid}/${state.role}`;
+  const key=`agreements/${state.user.uid}/${state.role}/${state.role==='advisor'?advisorAgreementGroupId:''}`;
   if(renderedKey!==key){
     renderedKey=key;
     const fragment=document.createDocumentFragment();
     if(state.role==='coordinator')fragment.append(heading('Termos de aceite · 2027','Acompanhe os arquivos recebidos e as pendências.',[link('Visualizar o termo','conformidade.html','button secondary')]));
-    if(state.role!=='coordinator'){
+    if(state.role==='student'){
       const grid=node('div','term-action-grid');
       const download=node('section','term-download');download.append(node('span','term-step','01 · DOCUMENTO'),node('h2','','Termo de aceite · 2027'),node('p','','Baixe, imprima e recolha as assinaturas.'));
       const pdf=link('Baixar termo em PDF','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf','button term-download-button');pdf.download='Termo_Compromisso_INIC_2027_Maximus.pdf';
       download.append(pdf,link('Visualizar e imprimir','conformidade.html','term-preview-link'));
       const gate=node('p','agreement-gate agreement-gate--compact');gate.id='agreement-gate';gate.append(node('span','badge warning','Envio obrigatório'),document.createTextNode(' Envie o termo assinado para liberar sua participação.'));download.append(gate);
       grid.append(download,buildAgreementUpload());fragment.append(grid);
-      const released=node('section','notice success agreement-release');released.id='agreement-release';released.hidden=true;
-      released.append(node('strong','','Termo recebido e salvo para a coordenação.'),link('Acessar meus grupos','#grupos','button secondary compact'));fragment.append(released,proposalCallout());
+      const reviewSlot=node('div','agreement-review-slot');reviewSlot.id='agreement-review-slot';fragment.append(reviewSlot,proposalCallout());
+    }else if(state.role==='advisor'){
+      fragment.append(heading('Termos para assinar','Documentos conferidos dos estudantes dos seus grupos.'));
+      const groups=state.groups.filter(group=>group.status!=='deleting'&&group.advisorId===state.user.uid);
+      if(groups.length){const selector=makeField('Grupo orientado','advisorAgreementGroup',{value:advisorAgreementGroupId,options:groups.map(group=>({value:group.id,label:group.name}))});selector.field.addEventListener('change',()=>{advisorAgreementGroupId=selector.field.value;agreementScope='';syncAgreementSubscription();renderedKey='';render();});fragment.append(selector.label);}
     }else{
       const summary=node('div','agreement-summary');summary.id='agreement-summary';summary.setAttribute('aria-live','polite');fragment.append(summary);
       const search=node('input');search.type='search';search.className='agreement-search';search.placeholder='Buscar estudante, e-mail ou arquivo';search.setAttribute('aria-label','Buscar contratos assinados');search.value=agreementSearch;search.addEventListener('input',()=>{agreementSearch=search.value;paintAgreements();});
       const filters=node('div','filter-pills agreement-filters');filters.setAttribute('aria-label','Filtrar termos');
-      [['all','Todos'],['pending','Pendentes'],['received','Enviados']].forEach(([value,label])=>{const filter=button(label,'',()=>{agreementFilter=value;paintAgreements();});filter.dataset.agreementFilter=value;filters.append(filter);});fragment.append(search,filters);
+      [['all','Todos'],['pending','Sem envio'],['awaiting','Aguardando conferência'],['approved','Conferidos'],['returned','Devolvidos'],['received','Todos os enviados']].forEach(([value,label])=>{const filter=button(label,'',()=>{agreementFilter=value;paintAgreements();});filter.dataset.agreementFilter=value;filters.append(filter);});fragment.append(search,filters);
     }
-    const list=node('section','agreement-list');list.id='agreement-list';list.setAttribute('aria-label',state.role==='coordinator'?'Situação dos termos dos estudantes':'Seu arquivo enviado');fragment.append(list);
+    const list=node('section','agreement-list');list.id='agreement-list';list.setAttribute('aria-label',state.role==='coordinator'?'Situação dos termos dos estudantes':state.role==='advisor'?'Termos aprovados do grupo orientado':'Seu arquivo enviado');fragment.append(list);
     $('#view-content').replaceChildren(fragment);
   }
   paintAgreements();
+}
+function currentAgreementReview(record) {
+  const review=record?.review;
+  if(!record||!review||!['approved','returned'].includes(review.status)||review.uploadedAt!==record.uploadedAt||String(review.uploadVersion||'')!==String(record.uploadVersion||'')||!Number.isFinite(review.reviewedAt)||review.reviewedAt<=0)return null;
+  if(review.status==='returned'&&(typeof review.reason!=='string'||!review.reason.trim()))return null;
+  return review;
+}
+function agreementReviewState(record) {
+  if(!record)return {key:'pending',label:'Sem envio',badge:'warning'};
+  if(agreementReviewError)return {key:'unavailable',label:'Conferência indisponível',badge:'warning'};
+  if(!agreementReviewsReady)return {key:'loading',label:'Conferindo situação…',badge:''};
+  const review=currentAgreementReview(record);
+  return review?.status==='approved'?{key:'approved',label:'Conferido pela coordenação',badge:'success'}:review?.status==='returned'?{key:'returned',label:'Devolvido com pendência',badge:'warning'}:{key:'awaiting',label:'Aguardando conferência',badge:''};
+}
+function studentAgreementReviewCard() {
+  if(!requiresAgreement()||!agreementSatisfied())return null;
+  const record=agreements.find(item=>(item.uid||item.id)===state.user.uid);if(!record)return null;
+  const status=agreementReviewState(record),review=agreementReviewsReady?currentAgreementReview(record):null;
+  const card=node('section',`panel agreement-review-card agreement-review-card--${status.key}`);card.dataset.reviewStatus=status.key;card.setAttribute('aria-label','Resposta da coordenação sobre seu termo');
+  const icon=node('span','agreement-review-icon',status.key==='approved'?'✓':status.key==='returned'?'!':'◷');icon.setAttribute('aria-hidden','true');
+  const copy=node('div','agreement-review-copy');copy.append(node('span',`badge ${status.badge}`,status.label),node('h3','',status.key==='approved'?'Tudo certo com seu termo.':status.key==='returned'?'Seu termo precisa de um ajuste.':status.key==='loading'?'Conferindo a resposta da coordenação…':status.key==='unavailable'?'Não foi possível consultar a conferência.':'Arquivo enviado para a coordenação.'));
+  if(status.key==='approved')copy.append(node('p','','A coordenação conferiu seu arquivo e confirmou o recebimento.'));
+  else if(status.key==='returned'){
+    copy.append(node('strong','agreement-review-pending-label','Pendência informada:'),node('p','agreement-review-reason',review.reason),node('p','','Corrija o documento e envie uma nova cópia para conferência.'));
+  }else if(status.key==='awaiting')copy.append(node('p','','Aguarde a conferência. O resultado aparecerá aqui.'));
+  else if(status.key==='unavailable')copy.append(node('p','','Seu arquivo permanece salvo. Tente consultar a resposta novamente.'));
+  if(review)copy.append(node('p','agreement-review-audit',`${review.reviewerName||'Coordenação'} · ${agreementTimestamp(review.reviewedAt)}`));
+  const actions=node('div','agreement-review-actions');
+  if(status.key==='unavailable')actions.append(button('Tentar novamente','button secondary compact',()=>{agreementScope='';syncAgreementSubscription();render();}));
+  else if(status.key==='returned')actions.append(button('Enviar nova cópia','button primary compact',()=>{navigate('agreements');queueMicrotask(()=>{$('#agreement-upload-form')?.scrollIntoView?.({behavior:'smooth',block:'center'});$('#agreement-upload-form input[type=file]')?.focus();});}));
+  else if(currentRoute.view!=='agreements')actions.append(link('Ver meu termo','#termo','button secondary compact'));
+  card.append(icon,copy);if(actions.childNodes.length)card.append(actions);return card;
+}
+function eligibleAdvisorGroups(record) {
+  const uid=record?.uid||record?.id;
+  return state.groups.filter(group=>group.status!=='deleting'&&group.advisorId===state.user?.uid&&group.members?.[uid]===true);
+}
+function currentAgreementSignatures(record) {
+  const review=currentAgreementReview(record);if(review?.status!=='approved')return [];
+  return (Array.isArray(record?.signatures)?record.signatures:[]).filter(signature=>signature&&['advisor','coordinator'].includes(signature.role)&&typeof signature.signerUid==='string'&&signature.signerUid&&typeof signature.signerName==='string'&&signature.signerName&&Number.isFinite(signature.signedAt)&&signature.signedAt>0&&signature.consent===true&&signature.uploadedAt===record.uploadedAt&&String(signature.uploadVersion||'')===String(record.uploadVersion||'')&&signature.reviewedAt===review.reviewedAt&&/^[a-f0-9]{64}$/i.test(signature.documentSha256||''));
+}
+function canSignAgreement(record,role,groupId='') {
+  if(!state.user||!agreementReviewsReady||!agreementSignaturesReady||currentAgreementReview(record)?.status!=='approved')return false;
+  if(role==='coordinator')return state.role==='coordinator';
+  return role==='advisor'&&['advisor','coordinator'].includes(state.role)&&eligibleAdvisorGroups(record).some(group=>!groupId||group.id===groupId);
+}
+function signingContext(record) {
+  return state.role==='advisor'?{role:'advisor',groupId:advisorAgreementGroupId}:state.role==='coordinator'?{role:'coordinator',groupId:''}:{role:'student',groupId:''};
+}
+function agreementSignaturePanel(record) {
+  const panel=node('section','agreement-signatures');panel.setAttribute('aria-label','Assinaturas eletrônicas do termo');
+  panel.append(node('h4','','Assinaturas eletrônicas'));
+  if(!agreementReviewsReady){panel.append(node('p','','Consulte a conferência atual para acessar as assinaturas.'));return panel;}
+  if(!agreementSignaturesReady){panel.append(node('p','',agreementSignatureError?'Não foi possível consultar as assinaturas.':'Consultando assinaturas…'));if(agreementSignatureError)panel.append(button('Tentar novamente','text-button',()=>{agreementScope='';syncAgreementSubscription();render();}));return panel;}
+  const signatures=currentAgreementSignatures(record),list=node('div','agreement-signature-list');
+  for(const [role,label] of [['advisor','Professor orientador'],['coordinator','Coordenação']]){
+    const row=node('div','agreement-signature-role');const signed=signatures.filter(signature=>signature.role===role);
+    row.append(node('strong','',label));
+    if(signed.length)signed.forEach(signature=>row.append(node('p','signature-signed',`✓ ${signature.signerName} · ${agreementTimestamp(signature.signedAt)}`)));
+    else row.append(node('p','signature-awaiting','Aguardando assinatura'));
+    list.append(row);
+  }
+  panel.append(list);
+  const actions=node('div','agreement-signature-controls');
+  for(const role of ['advisor','coordinator'])if(canSignAgreement(record,role)){
+    const own=signatures.some(signature=>signature.role===role&&signature.signerUid===state.user.uid);
+    const label=role==='coordinator'?'Assinar como coordenação':'Assinar como orientador(a)';
+    const sign=button(own?(role==='coordinator'?'✓ Assinado como coordenação':'✓ Assinado como orientador(a)'):label,'button secondary compact',()=>openAgreementSignature(record,role));sign.dataset.agreementSign=role;sign.disabled=own;actions.append(sign);
+  }
+  if(signatures.length){const download=button('Baixar termo com assinaturas','button primary compact',event=>downloadSignedAgreement(record,event.currentTarget));download.dataset.agreementSignedPdf='true';actions.append(download);}
+  panel.append(actions,node('p','signature-method-note','Assinatura eletrônica vinculada à conta autenticada do Meu INIC. O arquivo original permanece preservado.'));
+  return panel;
+}
+function createSignatureDrawing() {
+  const field=node('div','signature-drawing');field.append(node('p','field-label','Desenho da assinatura (opcional)'));
+  const canvas=node('canvas','signature-canvas');canvas.width=700;canvas.height=210;canvas.setAttribute('aria-label','Área opcional para desenhar sua assinatura');
+  let context=null;try{context=canvas.getContext?.('2d')||null;}catch{}let drawing=false,drawn=false;
+  function reset(){if(context){context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.strokeStyle='#232540';context.lineWidth=2.4;context.lineCap='round';context.lineJoin='round';}drawn=false;}
+  const position=event=>{const bounds=canvas.getBoundingClientRect();return {x:(event.clientX-bounds.left)*canvas.width/(bounds.width||canvas.width),y:(event.clientY-bounds.top)*canvas.height/(bounds.height||canvas.height)};};
+  canvas.addEventListener('pointerdown',event=>{if(!context)return;event.preventDefault();drawing=true;const point=position(event);context.beginPath();context.moveTo(point.x,point.y);try{canvas.setPointerCapture?.(event.pointerId);}catch{}});
+  canvas.addEventListener('pointermove',event=>{if(!drawing||!context)return;event.preventDefault();const point=position(event);context.lineTo(point.x,point.y);context.stroke();drawn=true;});
+  for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,()=>{drawing=false;});
+  reset();
+  const clear=button('Limpar desenho','text-button',reset);clear.disabled=!context;
+  const note=node('p','signature-method-note',context?'Use o mouse ou o dedo. O desenho é opcional; a confirmação abaixo é obrigatória.':'Você pode assinar com sua conta e a confirmação abaixo, mesmo sem desenhar.');
+  field.append(canvas,clear,note);
+  return {field,image(){if(!drawn)return '';const png=canvas.toDataURL?.('image/png')||'';if(!png.startsWith('data:image/png;base64,')||png.length>180000)throw new Error('Reduza o desenho ou use Limpar desenho para assinar com sua conta.');return png;}};
+}
+function openAgreementSignature(record,role) {
+  if(!canSignAgreement(record,role))return;
+  const actor=state.user.uid,session=sessionVersion,scope=agreementSubscription,uid=record.uid||record.id;
+  const review=currentAgreementReview(record),expectedUploadVersion=record.uploadVersion||'',expectedUploadedAt=record.uploadedAt,expectedReviewedAt=review.reviewedAt;
+  const details=node('div','dialog-details');details.append(node('strong','',record.ownerName||'Estudante'),node('span','',record.filename||'Termo assinado'),node('span','',role==='coordinator'?'Assinatura da coordenação':'Assinatura do professor orientador'));
+  const account=makeField('Nome da conta que assina','signerName',{value:myName()});account.field.readOnly=true;
+  const groups=role==='advisor'?eligibleAdvisorGroups(record):[];
+  const group=groups.length>1?makeField('Grupo orientado','signatureGroupId',{value:state.role==='advisor'?advisorAgreementGroupId:groups[0].id,options:groups.map(item=>({value:item.id,label:item.name}))}):null;
+  const drawing=createSignatureDrawing();
+  const consent=node('label','agreement-signature-consent');const check=node('input');check.type='checkbox';check.name='consent';check.value='true';check.required=true;
+  consent.append(check,node('span','',`Li este termo e confirmo minha assinatura eletrônica como ${role==='coordinator'?'coordenação':'professor(a) orientador(a)'}, com minha conta ${myName()}.`));
+  const original=button('Baixar arquivo para leitura','button secondary compact',event=>downloadAgreement(record,event.currentTarget));
+  openForm({title:'Assinar eletronicamente',kicker:'TERMO CONFERIDO · INIC 2027',access:'signature',fields:[details,original,account.label,...(group?[group.label]:[]),drawing.field,consent,node('p','dialog-note','A assinatura será registrada com sua conta, papel e data para esta versão do documento.')],submit:'Confirmar minha assinatura',busy:'Registrando sua assinatura…',handler:async data=>{
+    if(state.user?.uid!==actor||sessionVersion!==session||agreementSubscription!==scope)return;
+    const current=agreements.find(item=>(item.uid||item.id)===uid);const selectedGroup=role==='advisor'?(group?String(data.get('signatureGroupId')||''):groups[0]?.id||''):'';
+    if(!current||current.uploadedAt!==expectedUploadedAt||String(current.uploadVersion||'')!==String(expectedUploadVersion)||currentAgreementReview(current)?.reviewedAt!==expectedReviewedAt)throw new Error('O termo ou a conferência mudou. Abra a versão atual antes de assinar.');
+    if(!canSignAgreement(current,role,selectedGroup))throw new Error('Seu acesso a este termo mudou. Consulte seus grupos antes de assinar.');
+    if(!data.has('consent'))throw new Error('Leia o termo e marque a confirmação para assinar eletronicamente.');
+    if(currentAgreementSignatures(current).some(signature=>signature.role===role&&signature.signerUid===actor))throw new Error('Sua assinatura já está registrada nesta versão.');
+    if(typeof service.signAgreement!=='function')throw new Error('Atualize a página para assinar eletronicamente.');
+    const signaturePng=drawing.image();
+    try{await service.signAgreement(uid,{year:AGREEMENT_YEAR,role,groupId:selectedGroup,expectedUploadVersion,expectedUploadedAt,expectedReviewedAt,consent:true,signaturePng});}
+    catch(error){if(state.user?.uid===actor&&sessionVersion===session&&agreementSubscription===scope)throw error;return;}
+    if(state.user?.uid!==actor||sessionVersion!==session||agreementSubscription!==scope)return;
+    const latest=agreements.find(item=>(item.uid||item.id)===uid);
+    if(!latest||currentAgreementReview(latest)?.status!=='approved'||currentAgreementReview(latest)?.reviewedAt!==expectedReviewedAt||latest.uploadedAt!==expectedUploadedAt||String(latest.uploadVersion||'')!==String(expectedUploadVersion))return;
+    notice('Sua assinatura eletrônica foi registrada para esta versão do termo.','success',true,{title:'Assinatura registrada',href:'#termo',label:'Ver termo e assinaturas'});
+  }});
+}
+async function downloadSignedAgreement(record,control) {
+  const actor=state.user?.uid,session=sessionVersion,scope=agreementSubscription,uid=record.uid||record.id,review=currentAgreementReview(record);
+  if(!actor||!agreementReviewsReady||review?.status!=='approved'||!agreementSignaturesReady||!currentAgreementSignatures(record).length)return;
+  const current=()=>state.user?.uid===actor&&sessionVersion===session&&agreementSubscription===scope;
+  const context=signingContext(record),oldLabel=control?.textContent;
+  if(control){control.disabled=true;control.setAttribute('aria-busy','true');control.textContent='Preparando PDF…';}
+  try{
+    if(typeof service.downloadSigningAgreement!=='function')throw new Error('Atualize a página para baixar o termo com assinaturas.');
+    const snapshot=await service.downloadSigningAgreement(uid,{year:AGREEMENT_YEAR,...context});if(!current())return;
+    if(!(snapshot?.blob instanceof Blob)||snapshot.metadata?.uploadedAt!==record.uploadedAt||String(snapshot.metadata?.uploadVersion||'')!==String(record.uploadVersion||'')||snapshot.review?.status!=='approved'||snapshot.review?.reviewedAt!==review.reviewedAt)throw new Error('O termo foi atualizado. Abra a versão atual e tente baixar novamente.');
+    const module=await import('./signed-term-pdf.js?v=20261105-11');if(!current())return;
+    const result=await module.createSignedTermPdf({originalBlob:snapshot.blob,filename:snapshot.filename||snapshot.metadata.filename,studentName:snapshot.metadata.ownerName,year:snapshot.metadata.year,review:snapshot.review,signatures:snapshot.signatures,uploadVersion:snapshot.metadata.uploadVersion||'',uploadedAt:snapshot.metadata.uploadedAt});if(!current())return;
+    const latest=agreements.find(item=>(item.uid||item.id)===uid);
+    if(!latest||latest.uploadedAt!==record.uploadedAt||String(latest.uploadVersion||'')!==String(record.uploadVersion||'')||currentAgreementReview(latest)?.status!=='approved'||currentAgreementReview(latest)?.reviewedAt!==review.reviewedAt)throw new Error('O termo foi atualizado. Baixe a versão atual novamente.');
+    if(!(result?.blob instanceof Blob))throw new Error('Não foi possível gerar o PDF. Tente novamente.');
+    const url=URL.createObjectURL(result.blob);const download=link('',url);download.download=result.filename||'Termo_INIC_2027_assinaturas.pdf';document.body.append(download);download.click();download.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(error){if(current())notice(errorText(error),'error',true);}
+  finally{if(control){control.disabled=false;control.removeAttribute('aria-busy');control.textContent=oldLabel;}}
+}
+
+function openAgreementReview(record,status,studentName) {
+  if(state.role!=='coordinator'||!agreementReviewsReady)return;
+  const actor=state.user?.uid,session=sessionVersion,scope=agreementSubscription,uid=record.uid||record.id;
+  const expectedUploadVersion=record.uploadVersion||'',expectedUploadedAt=record.uploadedAt,expectedReviewedAt=currentAgreementReview(record)?.reviewedAt||0;
+  const details=node('div','dialog-details');details.append(node('strong','',studentName||record.ownerName||'Estudante'),node('span','',record.filename||'Termo assinado'));
+  const reason=status==='returned'?makeField('Pendência para o estudante','reason',{type:'textarea',required:true,minLength:3,maxLength:2000,placeholder:'Ex.: falta a assinatura do responsável na segunda página.'}):null;
+  if(reason)reason.field.rows=4;
+  const note=node('p','dialog-note',status==='approved'?'Confirme após conferir o arquivo. O estudante verá que está tudo certo.':'Descreva o que precisa ser corrigido. O estudante receberá essa pendência e poderá reenviar.');
+  openForm({title:status==='approved'?'Confirmar recebimento':'Devolver termo',kicker:'COORDENAÇÃO · TERMO 2027',access:'review',fields:[details,note,...(reason?[reason.label]:[])],submit:status==='approved'?'Confirmar recebimento':'Devolver com pendência',busy:status==='approved'?'Confirmando recebimento…':'Enviando pendência…',handler:async data=>{
+    if(state.user?.uid!==actor||sessionVersion!==session||agreementSubscription!==scope)return;
+    if(state.role!=='coordinator')throw new Error('Somente a coordenação pode conferir os termos.');
+    if(!agreementReviewsReady)throw new Error('A conferência está indisponível. Consulte a situação atual antes de continuar.');
+    const current=agreements.find(item=>(item.uid||item.id)===uid);
+    if(!current||current.uploadedAt!==expectedUploadedAt||String(current.uploadVersion||'')!==String(expectedUploadVersion))throw new Error('O estudante enviou outra versão. Baixe o arquivo atualizado antes de conferir.');
+    if((currentAgreementReview(current)?.reviewedAt||0)!==expectedReviewedAt)throw new Error('A conferência foi atualizada por outra pessoa. Revise a situação atual antes de continuar.');
+    const pending=status==='returned'?String(data.get('reason')||'').trim():'';
+    if(status==='returned'&&(pending.length<3||pending.length>2000))throw new Error('Descreva a pendência com 3 a 2000 caracteres.');
+    if(typeof service.reviewAgreement!=='function')throw new Error('Atualize a página para conferir o termo.');
+    try{await service.reviewAgreement(uid,{year:AGREEMENT_YEAR,status,reason:pending,expectedUploadVersion,expectedUploadedAt,expectedReviewedAt});}
+    catch(error){if(state.user?.uid===actor&&sessionVersion===session&&agreementSubscription===scope)throw error;return;}
+    if(state.user?.uid!==actor||sessionVersion!==session||agreementSubscription!==scope)return;
+    notice(status==='approved'?'Recebimento confirmado. O estudante foi informado.':'Termo devolvido com a pendência informada.');
+  }});
 }
 function coordinationAgreementRows() {
   const submitted=new Map(agreements.map(record=>[record.uid||record.id,record]));
@@ -641,36 +841,50 @@ function paintAgreements() {
   const list=$('#agreement-list');if(!list)return;
   const required=requiresAgreement()&&!agreementSatisfied();
   if($('#agreement-gate'))$('#agreement-gate').hidden=!required;
-  if($('#agreement-release'))$('#agreement-release').hidden=!agreementSatisfied();
+  const reviewSlot=$('#agreement-review-slot');if(reviewSlot){const card=studentAgreementReviewCard();reviewSlot.replaceChildren(...(card?[card]:[]));}
   paintProposalCallout();
-  const uploadStatus=$('#agreement-upload-status');if(agreementSatisfied()&&uploadStatus?.dataset.awaitingConfirmation==='true'){uploadStatus.textContent='Termo recebido e salvo para a coordenação. Seu acesso está liberado.';uploadStatus.classList.remove('is-loading','error');uploadStatus.removeAttribute('aria-busy');delete uploadStatus.dataset.awaitingConfirmation;}
+  const uploadStatus=$('#agreement-upload-status');if(agreementSatisfied()&&uploadStatus?.dataset.awaitingConfirmation==='true'){uploadStatus.textContent='Arquivo salvo. Aguardando conferência da coordenação.';uploadStatus.classList.remove('is-loading','error');uploadStatus.removeAttribute('aria-busy');delete uploadStatus.dataset.awaitingConfirmation;}
   if(required){$('#view-title').textContent='Termo obrigatório · INIC 2027';$('#view-kicker').textContent='INIC 2027 · PARTICIPAÇÃO DOS ESTUDANTES';}
   if(!agreementsReady){list.replaceChildren(loadingPanel('Conferindo o envio do termo…'));return;}
   if(agreementsError){list.replaceChildren(emptyState('Não foi possível conferir o termo',errorText(agreementsError),[button('Tentar novamente','button secondary',()=>{agreementScope='';syncAgreementSubscription();render();})]));return;}
   const term=normalize(agreementSearch).trim();
   list.replaceChildren();
   if(state.role==='coordinator'){
+    if(agreementReviewError)list.append(emptyState('Não foi possível consultar as conferências','Os arquivos continuam disponíveis. Tente novamente para confirmar ou devolver um termo.',[button('Tentar novamente','button secondary compact',()=>{agreementScope='';syncAgreementSubscription();render();})]));
     const rows=coordinationAgreementRows();const received=rows.filter(item=>item.record).length;
-    const summary=$('#agreement-summary');summary?.replaceChildren(node('span','',`${rows.length} estudante(s)`),node('span','',`${received} enviado(s)`),node('span','',`${rows.length-received} pendente(s)`));
+    const approved=rows.filter(item=>agreementReviewState(item.record).key==='approved').length,returned=rows.filter(item=>agreementReviewState(item.record).key==='returned').length;
+    const summary=$('#agreement-summary');summary?.replaceChildren(node('span','',`${rows.length} estudante(s)`),node('span','',`${received} enviado(s)`),node('span','',`${rows.length-received} pendente(s) de envio`),node('span','',`${approved} conferido(s)`),node('span','',`${returned} devolvido(s)`));
     document.querySelectorAll('[data-agreement-filter]').forEach(control=>control.setAttribute('aria-pressed',String(control.dataset.agreementFilter===agreementFilter)));
-    const filtered=rows.filter(item=>(agreementFilter==='all'||(agreementFilter==='received'?Boolean(item.record):!item.record))&&(!term||normalize(`${item.name} ${item.email} ${item.record?.filename||''}`).includes(term)));
+    const filtered=rows.filter(item=>(agreementFilter==='all'||(agreementFilter==='received'?Boolean(item.record):agreementReviewState(item.record).key===agreementFilter))&&(!term||normalize(`${item.name} ${item.email} ${item.record?.filename||''}`).includes(term)));
     if(!filtered.length){list.append(emptyState(rows.length?'Nenhum estudante neste filtro':'Nenhum estudante cadastrado',rows.length?'Altere a busca ou o filtro para consultar outros termos.':'Os estudantes e a situação do envio aparecerão aqui após o cadastro.'));return;}
     filtered.forEach(item=>{
-      const card=node('article',`panel agreement-record${item.record?'':' agreement-record--pending'}`);const copy=node('div','agreement-record-copy');
-      copy.append(node('span',`badge ${item.record?'success':'warning'}`,item.record?'Enviado':'Pendente'),node('h3','',item.name));
+      const status=agreementReviewState(item.record),review=agreementReviewsReady?currentAgreementReview(item.record):null;
+      const card=node('article',`panel agreement-record${item.record?'':' agreement-record--pending'}`);card.dataset.reviewStatus=status.key;
+      const copy=node('div','agreement-record-copy');copy.append(node('span',`badge ${status.badge}`,status.label),node('h3','',item.name));
       if(item.email)copy.append(node('p','agreement-student-meta',[item.email,item.year].filter(Boolean).join(' · ')));
-      if(item.record){copy.append(node('p','agreement-filename',item.record.filename||'Termo assinado'),node('p','agreement-file-meta',`${agreementSize(item.record.size)} · Recebido em ${agreementTimestamp(item.record.uploadedAt)}`));card.append(copy,button('Baixar arquivo','button secondary compact',event=>downloadAgreement(item.record,event.currentTarget)));}
-      else {copy.append(node('p','agreement-file-meta',item.onboardingRequired?'Cadastro ainda não concluído. O envio será exigido após a escolha do perfil.':'Ainda não enviou o termo de aceite de 2027.'));card.append(copy);}
+      if(item.record){
+        copy.append(node('p','agreement-filename',item.record.filename||'Termo assinado'),node('p','agreement-file-meta',`${agreementSize(item.record.size)} · Recebido em ${agreementTimestamp(item.record.uploadedAt)}`));
+        if(review){if(review.status==='returned')copy.append(node('p','agreement-review-reason',review.reason));copy.append(node('p','agreement-review-audit',`${review.reviewerName||'Coordenação'} · ${agreementTimestamp(review.reviewedAt)}`));}
+        const actions=node('div','agreement-record-actions');actions.append(button('Baixar arquivo','button secondary compact',event=>downloadAgreement(item.record,event.currentTarget)));
+        const confirm=button(status.key==='approved'?'✓ Recebimento confirmado':'✓ Confirmar recebimento','button primary compact',()=>openAgreementReview(item.record,'approved',item.name));confirm.dataset.agreementReview='approved';confirm.disabled=!agreementReviewsReady||status.key==='approved';
+        const sendBack=button('Devolver','button secondary compact',()=>openAgreementReview(item.record,'returned',item.name));sendBack.dataset.agreementReview='returned';sendBack.disabled=!agreementReviewsReady;
+        actions.append(confirm,sendBack);card.append(copy,actions);if(status.key==='approved'){card.classList.add('agreement-signing-record');card.append(agreementSignaturePanel(item.record));}
+      }else {copy.append(node('p','agreement-file-meta',item.onboardingRequired?'Cadastro ainda não concluído. O envio será exigido após a escolha do perfil.':'Ainda não enviou o termo de aceite de 2027.'));card.append(copy);}
       list.append(card);
     });return;
+  }
+  if(state.role==='advisor'){
+    const records=agreements.filter(record=>eligibleAdvisorGroups(record).some(group=>group.id===advisorAgreementGroupId)&&currentAgreementReview(record)?.status==='approved');
+    if(!records.length){list.append(emptyState('Nenhum termo aprovado neste grupo',advisorAgreementGroupId?'Os termos aparecem aqui após a conferência da coordenação.':'Você precisa estar vinculado como orientador de um grupo para consultar seus termos.'));return;}
+    records.forEach(record=>{const card=node('article','panel agreement-record agreement-signing-record');const copy=node('div','agreement-record-copy');copy.append(node('span','badge success','Conferido pela coordenação'),node('h3','',record.ownerName||'Estudante'),node('p','agreement-filename',record.filename||'Termo assinado'));const actions=node('div','agreement-record-actions');actions.append(button('Baixar arquivo original','button secondary compact',event=>downloadAgreement(record,event.currentTarget)));card.append(copy,actions);card.append(agreementSignaturePanel(record));list.append(card);});return;
   }
   if(!agreements.length){list.append(node('p','agreement-empty-status','Seu termo ainda não foi enviado.'));return;}
   agreements.forEach(record=>{
     const card=node('article','panel agreement-record');const copy=node('div','agreement-record-copy');
     const received=agreementSatisfied();
-    copy.append(node('span',`badge ${received?'success':'warning'}`,received?'Arquivo recebido':'Envio ainda não confirmado'),node('h3','','Seu termo de aceite'),node('p','agreement-filename',record.filename||'Termo assinado'),node('p','agreement-file-meta',`${agreementSize(record.size)} · Enviado em ${agreementTimestamp(record.uploadedAt)}`));
+    copy.append(node('span',`badge ${received?'success':'warning'}`,received?'Arquivo salvo no aplicativo':'Envio ainda não confirmado'),node('h3','','Seu termo de aceite'),node('p','agreement-filename',record.filename||'Termo assinado'),node('p','agreement-file-meta',`${agreementSize(record.size)} · Enviado em ${agreementTimestamp(record.uploadedAt)}`));
     if(!received)copy.append(node('p','agreement-file-meta','O arquivo completo precisa ser confirmado no banco. Se a pendência continuar, envie novamente.'));
-    const download=button('Baixar arquivo','button secondary compact',event=>downloadAgreement(record,event.currentTarget));download.disabled=!received;card.append(copy,download);list.append(card);
+    const download=button('Baixar arquivo','button secondary compact',event=>downloadAgreement(record,event.currentTarget));download.disabled=!received;card.append(copy,download);if(received&&agreementReviewsReady&&currentAgreementReview(record)?.status==='approved'){card.classList.add('agreement-signing-record');card.append(agreementSignaturePanel(record));}list.append(card);
   });
 }
 function progressBlock(tasks, label = 'Entregas concluídas') {
@@ -699,6 +913,7 @@ function renderDashboard() {
   const welcome=node('section','welcome');const copy=node('div');copy.append(node('p','eyebrow','O PRÓXIMO PASSO DA SUA PESQUISA'),node('h2','',`Olá, ${myName().split(' ')[0]}. Vamos construir conhecimento?`),node('p','',state.role==='coordinator'?'Acompanhe grupos, orientadores e entregas em um só lugar.':'Seu grupo, seu orientador e as próximas entregas estão aqui. Comece por um pequeno passo.'));welcome.append(copy);
   if(canCreateGroup())welcome.append(button(state.role==='student'?'Montar meu grupo e convidar':'Criar um grupo','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas','index.html#artigos','button orange'));
   fragment.append(welcome);
+  const reviewCard=studentAgreementReviewCard();if(reviewCard)fragment.append(reviewCard);
   const tasks=allTasks();const complete=tasks.filter(t=>t.completed).length;const late=tasks.filter(t=>statusOf(t).key==='late').length;
   const stats=node('div','stats-grid');
   [[state.role==='coordinator'?'Grupos da escola':'Meus grupos',state.groups.length,'Cada pesquisa tem seu espaço'],['Etapas concluídas',`${complete}/${tasks.length}`,'Atualizadas pelo grupo'],['Entregas em atraso',late,'Prazos do planejamento interno'],['Convites recebidos',pendingInvitations().length,'Aguardando sua resposta']].forEach(([label,value,detail])=>{const stat=node('div','stat');stat.append(node('span','',label),node('strong','',value),node('p','',detail));stats.append(stat);});
@@ -721,7 +936,7 @@ function renderGroups() {
   const filters=node('div','search-filter');const search=node('input');search.type='search';search.placeholder='Buscar grupo, tema ou integrante';search.setAttribute('aria-label','Buscar grupos');search.value=groupSearch;
   search.addEventListener('input',event=>{groupSearch=event.target.value;paintFilteredGroups();});filters.append(search);
   if(state.role==='coordinator'){
-    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');[{value:'all',label:'Todos os orientadores'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;paintFilteredGroups();});filters.append(select);
+    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');[{value:'all',label:'Todos os orientadores'},{value:'mine',label:'Grupos que eu oriento'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;paintFilteredGroups();});filters.append(select);
   }
   fragment.append(filters,node('div','group-grid'));fragment.lastChild.id='filtered-groups';
   const count=node('p','count-label');count.id='groups-count';count.style.marginTop='16px';fragment.append(count);
@@ -730,7 +945,7 @@ function renderGroups() {
 function paintFilteredGroups() {
   const area=$('#filtered-groups');if(!area)return;
   const query=normalize(groupSearch).trim();
-  const filtered=state.groups.filter(g=>(!query||normalize([g.name,g.topic,g.description,...Object.values(g.memberNames||{})].join(' ')).includes(query))&&(groupAdvisorFilter==='all'||(groupAdvisorFilter==='none'?!g.advisorId:g.advisorId===groupAdvisorFilter)));
+  const filtered=state.groups.filter(g=>(!query||normalize([g.name,g.topic,g.description,...Object.values(g.memberNames||{})].join(' ')).includes(query))&&(state.role!=='coordinator'||groupAdvisorFilter==='all'||(groupAdvisorFilter==='mine'?g.advisorId===state.user?.uid:groupAdvisorFilter==='none'?!g.advisorId:g.advisorId===groupAdvisorFilter)));
   area.className=filtered.length?'group-grid':'';
   area.replaceChildren(...(filtered.length?filtered.map(groupCard):[emptyState(state.groups.length?'Nenhum grupo com esses filtros':'Você ainda não participa de um grupo',state.groups.length?'Tente outro tema ou nome.':'Crie um grupo ou aceite um convite para começar a organizar a pesquisa.',canCreateGroup()?[button('Criar grupo','button primary',showCreateGroup)]:[])]));
   $('#groups-count').textContent=`${filtered.length} ${filtered.length===1?'grupo encontrado':'grupos encontrados'}`;
@@ -1188,7 +1403,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261105-10');
+  service = await import('./firebase-service.js?v=20261105-11');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": "2026-11-05-agreement-review",
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -39,8 +39,8 @@
     "saveMemberEvaluation(groupId,uid,{score,feedback})": "Promise<void>; gestor; nota individual apenas de integrante atual",
     "deleteEvaluation(groupId,uid?)": "Promise<void>; gestor; sem uid remove nota coletiva, com uid remove nota individual",
     "completeGoogleProfile({requestedRole,year,name})": "Promise<profile>; primeiro acesso Google exige escolher student/advisor; só requestedRole, ano e nome do próprio perfil; nunca altera roles. Perfis existentes sem onboardingRequired permanecem preservados.",
-    "subscribeAgreements(year,callback)": "Unsubscribe; {agreements:[{id:uid,...metadata}],requirement:{ready,fulfilled},error?}. Coordenação lista metadados; aluno lê apenas os próprios metadados + descritores size/contentType/uploadedAt. Nunca assina bytes. fulfilled exige par coerente e envio confirmado pelo servidor; pending local não libera o portal.",
-    "uploadAgreement(file,{year=2027})": "Promise<metadata>; estudante com cadastro concluído, PDF/JPEG/PNG até 3MiB; verifica assinatura dos bytes e publica metadados+base64 atomicamente; nova cópia substitui a própria.",
+    "subscribeAgreements(year,callback)": "Unsubscribe; {agreements:[{id:uid,...metadata,review:effectiveReview|null}],reviewReady,reviewError?,requirement:{ready,fulfilled},error?}. Coordinator lists metadata and reviews only; student reads own metadata, review and three small file descriptors, never subscribes to bytes. reviewReady only after file requirement readiness and first real review snapshot; reviewError is separate and does not change academic eligibility. Pending upload fails closed until server acknowledgment. Previous-version reviews are ignored. Also returns signatureReady/signatureError and each record.signatures as current authenticated signatures. Signatures errors do not alter the original upload-based academic requirement.",
+    "uploadAgreement(file,{year=2027})": "Promise<metadata>; student completed profile, PDF/JPEG/PNG up to3MiB, validates bytes signature and commits metadata+base64+new uploadVersion together; each replacement uses a different nonce and strictly later server timestamp. Previous review remains an audit record but is ineffective until coordinator reviews the replacement.",
     "downloadAgreement(uid,year=2027)": "Promise<{blob,filename,contentType}>; leitura autenticada pontual por proprietário/coordenação; verifica tamanho, MIME e versão; força extensão segura; sem URL pública persistente.",
     "addEvent({groupId,title,date,description})": "Promise<eventId>; coordenação ou orientador atribuído; date YYYY-MM-DD válida, auditoria do servidor.",
     "updateEvent(groupId,eventId,patch)": "Promise<void>; título, data e descrição; preserves createdBy/createdAt, atualiza updatedAt do servidor.",
@@ -48,7 +48,11 @@
     "savePushSubscription(subscriptionJSON,deviceId)": "Promise<void>; dispositivo próprio, ID SHA256hex64, endpoint HTTPS nas origens FCM/Firefox/Apple e chaves de Web Push validadas; updatedAt do servidor.",
     "removePushSubscription(deviceId)": "Promise<void>; apaga inscrição do próprio dispositivo.",
     "createGroup({name,topic,description,year,advisorIds,advisorId,memberEmails})": "Promise<groupId>; proposta, índice privado, oito marcos, até 3 convites para orientadores aprovados e até 20 convites por e-mail para colegas são gravados num único update atômico. memberEmails é array opcional: valida, normaliza trim/lowercase, remove duplicados e o e-mail do criador antes de gravar. Emails ainda não cadastrados são permitidos; ninguém ingressa sem aceitar com a conta verificada e o termo obrigatório. advisorIds contém 0..3 UIDs distintos; advisorId mantém compatibilidade com criação do professor para si.",
-    "mandatoryAgreementYear": "2027; edição fixa obrigatória para estudantes, inclusive contas existentes. Professores ainda não aprovados aguardam coordenação; não obtêm permissão pelo requestedRole."
+    "mandatoryAgreementYear": "2027; edição fixa obrigatória para estudantes, inclusive contas existentes. Professores ainda não aprovados aguardam coordenação; não obtêm permissão pelo requestedRole.",
+    "reviewAgreement(uid,{year,status,reason,expectedUploadVersion,expectedUploadedAt,expectedReviewedAt})": "Promise<review>; coordinator only. Verifies the exact current complete file pair and previous effective review; rejects stale file/version or review decisions. returned requires a reason; approved clears reason. Does not grant student access based on review status.",
+    "signAgreement(uid,{year,role,groupId,consent,signatureImage,expectedUploadVersion,expectedUploadedAt,expectedReviewedAt})": "Promise<signature>; explicit authenticated action only. Coordination signs its role on any approved term; teacher (or dual-role coordinator) signs advisor role only for own currently assigned active group containing student. Original file checksum and exact approval are verified; write binds actor role/name/UID and server timestamp. Optional signatureImage alias signaturePng must be PNG. Same actor/role/current upload+approval cannot be overwritten; new upload/reapproval requires new signature.",
+    "downloadSigningAgreement(uid,{year,role,groupId})": "Promise<{blob,filename,metadata,review,signatures,documentSha256}>; approved terms only. Owner/coordinator or current assigned advisor with a validated group proof may read. Validates original pair, checksum and rechecks current upload/approval after hashing to reject stale mixed versions. Signatures are filtered to exact current upload, checksum and approval. No public URL or offline cache.",
+    "subscribeAdvisorAgreements(groupId,year,callback)": "Unsubscribe; same agreement record shape as subscribeAgreements, signatureReady and requirement readiness. Teacher sees only approved terms of current members of the active assigned group. Watches only status/reviewedAt before approval, never private metadata or return reason. Each document has an epoch to ignore stale callbacks and reattaches on reapproval even when status remains approved."
   },
   "schema": {
     "users/{uid}": {
@@ -140,13 +144,17 @@
       "size": "bytes inteiros1..3145728",
       "contentType": "application/pdf|image/jpeg|image/png",
       "ownerName": "nome do proprietário no próprio perfil",
-      "uploadedAt": "server timestamp epoch ms; igual ao registro dos bytes"
+      "uploadedAt": "server timestamp epoch ms; igual ao registro dos bytes",
+      "uploadVersion": "nonce10..100 chars, mandatory for new uploads; legacy stored records without this field remain readable and reviewable",
+      "documentSha256": "SHA-256 hex64 of original bytes, computed by client; required for new uploads; legacy absence supported"
     },
     "agreementFiles/{year}/{uid}": {
       "base64": "conteúdo até4194304 caracteres, alfabeto e tamanho compatíveis com size",
       "size": "bytes inteiros1..3145728",
       "contentType": "application/pdf|image/jpeg|image/png",
-      "uploadedAt": "server timestamp epoch ms igual aos metadados"
+      "uploadedAt": "server timestamp epoch ms igual aos metadados",
+      "uploadVersion": "same nonce as metadata; new upload requires a different nonce and a later server timestamp",
+      "documentSha256": "same SHA-256 value as metadata; signature and PDF downloads compute and verify against actual bytes"
     },
     "notificationWorkers/{uid}": "true; somente administração Firebase define, clientes não podem conceder; não é papel regular nem perfil de professor/aluno",
     "pushSubscriptions/{uid}/{deviceId}": {
@@ -167,21 +175,47 @@
       "invitationId": "convite aceito atomicamente",
       "createdAt": "server timestamp epoch ms",
       "requestVersion": "versão dos pedidos na primeira confirmação"
+    },
+    "agreementReviews/{year}/{uid}": {
+      "status": "approved|returned",
+      "reason": "empty for approved; 3..2000 characters describing pending issue for returned",
+      "reviewerUid": "authenticated coordinator UID only",
+      "reviewerName": "current coordinator profile name",
+      "reviewedAt": "server timestamp > previousReviewedAt",
+      "uploadedAt": "exact current upload timestamp",
+      "uploadVersion": "exact current metadata nonce or empty string for stored legacy upload",
+      "previousReviewedAt": "CAS audit; current effective review timestamp or0 if no review on this upload"
+    },
+    "agreementAdvisorAccess/{year}/{studentUid}/{advisorUid}": "groupId proof; advisor/coordinator writes only own UID for a current active assigned group containing the student. It never grants broad access: all teacher file reads revalidate current group and current approved upload. Only status/reviewedAt may be read before approval to maintain live listings.",
+    "agreementSignatures/{year}/{studentUid}/{role}/{signerUid}": {
+      "role": "advisor|coordinator, equals path",
+      "signerUid": "authenticated UID equals path",
+      "signerName": "current actor profile name",
+      "signedAt": "server timestamp",
+      "uploadVersion": "exact approved upload nonce, empty only stored legacy",
+      "uploadedAt": "exact upload timestamp",
+      "reviewedAt": "exact current approved decision timestamp",
+      "documentSha256": "SHA-256 of original, matches new metadata; legacy calculated from authenticated original",
+      "signaturePng": "optional PNG data URL up to180000 characters; empty means authenticated account attestation without drawing",
+      "consent": "true, explicit user choice required",
+      "groupId": "empty for coordination; current active assigned group containing student for advisor"
     }
   },
   "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
   "securityNotice": "Convites por e-mail exigem e-mail verificado. Solicitar perfil orientador não concede papel: liberação pela coordenação. Remover integrante também invalida convites anteriores à remoção, sem consultar perfis globais ou e-mails alheios.",
   "verification": {
     "sdkCDN": "13.2.0 respondeu HTTP200 em 05/11/2026",
-    "securityTests": 327,
+    "securityTests": 532,
     "engine": "Firebase Realtime Database Emulator 4.11.2",
     "cli": "Firebase CLI 15.35.0",
-    "result": "Todos os 371 cenários passaram no emulador local demo-maximus-inic: 327 cenários anteriores de termo obrigatório, sessão, propostas para até três orientadores, primeiro aceite, privacidade, calendário e limpeza; mais 44 verificações de convites aos colegas no cadastro. Criação de aluno, professor e coordenação; normalização/deduplicação/exclusão própria; até 20 colegas; e-mail ainda não cadastrado; destinatário verificado; termo antes do aceite; rollback integral e tentativas de forjar criador/orientador/integrantes foram aprovados. Auth é simulado e o runtime recusa banco fora do emulador local."
+    "result": "Todos os 532 cenários passaram no emulador local demo-maximus-inic: 371 cenários anteriores, revisão privada por versão com motivo e comparação da decisão anterior, arquivos legados, nonce e checksum, separação entre coordenação e orientador, assinaturas eletrônicas autenticadas, consentimento, acesso mínimo por grupo ativo, revogação, dois papéis do coordenador, reenvio, nova aprovação e corridas durante o cálculo do hash. Auth é simulado; o runtime recusa banco fora do emulador local. Nenhum dado de produção foi alterado."
   },
   "evaluationPrivacy": "Só coordenador ou orientador atualmente atribuído lê todas avaliações individuais. Integrante lê nota coletiva e sua própria nota. Nenhum aluno escreve notas; remover o integrante revoga a leitura e apaga sua avaliação.",
   "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação.",
-  "agreementPrivacy": "Metadados e bytes só podem ser lidos pelo estudante proprietário ou coordenação. Orientadores não recebem acesso. A coordenação lista apenas metadados; bytes não têm leitura coletiva. Só estudantes de cadastro concluído publicam as próprias cópias. Regras exigem par consistente, bloqueiam deleções parciais e campos extras; o app não determina validade jurídica de assinaturas.",
+  "agreementPrivacy": "Owners and coordination can read signed-term metadata and individual original files; bulk bytes remain forbidden. A current assigned teacher may read only the approved term of a current member of an active assigned group, through a server-validated group proof. Pending invitations, unrelated groups, role self-choice and stale proofs do not grant file access. Before approval, only status/reviewedAt are visible to that teacher for live status updates; no file, metadata or reason. The technical notification worker cannot read terms, reviews, grants or signatures. Only completed-profile students upload their own original pair; only coordination writes review decisions. Each new upload changes nonce and timestamp and invalidates previous review/signatures.",
   "notificationWorkerPrivacy": "Worker técnico lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries/advisorConfirmations; não lê perfis, convites, mensagens, notas ou contratos. Confirmações são somente leitura, enviadas apenas ao estudante ainda integrante de grupo ativo com o mesmo orientador. Recusas nunca geram confirmação/push.",
   "mandatoryAgreementNotice": "Todo estudante deve enviar o termo assinado de 2027 antes de escrever em grupos, convites aceitos, mensagens, cronograma e metadados acadêmicos. Perfil, upload/download do próprio termo, leitura autorizada e preferências de notificação continuam acessíveis. A autorização é validada nas regras do banco e no serviço. Arquivo recebido não significa verificação humana das assinaturas.",
-  "proposalMemberInvitationsNotice": "A criação do grupo envia convites internos automaticamente aos e-mails informados; não dispara e-mails externos nem adiciona membros sem consentimento. Não consulta perfis de colegas. Duplicados e próprio endereço são ignorados, até 20 destinatários distintos; valores inválidos rejeitam a proposta inteira antes de gravar. Convites permanecem vinculados ao mesmo e-mail verificado mesmo se a pessoa só se cadastrar depois."
+  "proposalMemberInvitationsNotice": "A criação do grupo envia convites internos automaticamente aos e-mails informados; não dispara e-mails externos nem adiciona membros sem consentimento. Não consulta perfis de colegas. Duplicados e próprio endereço são ignorados, até 20 destinatários distintos; valores inválidos rejeitam a proposta inteira antes de gravar. Convites permanecem vinculados ao mesmo e-mail verificado mesmo se a pessoa só se cadastrar depois.",
+  "agreementReviewNotice": "Submission and human confirmation are separate: a complete submitted file continues satisfying the upload requirement while awaiting review; a coordinator may confirm received/OK or return with a described issue. The student receives the current decision as a private in-app card. No push sender access was added. The coordinator role keeps school-wide group access and may also remain listed as an advisor; a plain advisor is restricted to assigned groups and validated invitations, with no student-document review permission.",
+  "electronicSignatureNotice": "These are authenticated in-app account attestations with explicit consent, actor identity, role, server time, exact upload/approval and document checksum. They are not described as ICP-Brasil, Gov.br or qualified digital certificates. The PDF is assembled on the client and includes the original file bytes and current records; no public signed-document URL is created. Student and guardian signatures on the original paper remain part of the existing term workflow."
 }

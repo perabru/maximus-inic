@@ -57,7 +57,7 @@ Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três ori
 
 O aceite aparece no grupo e gera um aviso ao aluno proponente. A recusa não gera notificação para o aluno. Carregamento e confirmação acompanham as operações reais de cadastro, envio e resposta.
 
-As regras do servidor controlam os papéis, a entrada em grupos e o acesso aos dados. Ser coordenador na interface não depende de uma comparação de email no JavaScript. Os coordenadores veem todos os grupos e orientadores; cada orientador vê as equipes sob sua orientação. Consulte `service-contract.json` e `database.rules.json`.
+As regras do servidor controlam os papéis, a entrada em grupos e o acesso aos dados. Ser coordenador na interface não depende de uma comparação de email no JavaScript. Os coordenadores veem todos os grupos e orientadores; cada orientador vê as equipes sob sua orientação. Um coordenador também pode orientar suas próprias equipes: permanece com acesso à escola inteira e usa **Grupos que eu oriento** para filtrar suas orientações. Bruno mantém esse acesso de coordenação e orientação pelo papel e diretório cadastrados no banco, sem conceder privilégios por comparação de e-mail no cliente. Consulte `service-contract.json` e `database.rules.json`.
 
 ### Cronograma e calendário
 
@@ -71,7 +71,14 @@ O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, 
 
 A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Enviar proposta e convites**; a confirmação do termo não dispara convites sozinha.
 
-Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Professores e outros alunos não têm acesso. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. Metadados e bytes ficam separados, com download autenticado, sem URL pública ou cache offline.
+Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Professores e outros alunos não têm acesso. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
+
+### Assinaturas eletrônicas da equipe escolar
+
+Depois do aceite do termo, o orientador e a coordenação podem assinar eletronicamente com a própria conta. Cada assinatura exige uma confirmação explícita e registra nome, papel, data e vínculo com o arquivo aprovado; o desenho é opcional. O orientador acessa somente os termos aceitos dos integrantes dos grupos que orienta. Um convite ainda não aceito não permite abrir o arquivo. A coordenação acompanha todas as assinaturas, e um coordenador que também orienta assina em cada papel separadamente.
+
+O aplicativo disponibiliza o original e uma versão em PDF com os registros das assinaturas, a identificação da cópia aceita e seu resumo SHA-256. O PDF final inclui o original como anexo, preservado byte a byte. Os registros são assinaturas eletrônicas realizadas no aplicativo. Reenvio, devolução ou novo aceite tornam os registros anteriores inaplicáveis à nova conferência; os responsáveis precisam assinar novamente. Arquivos e pareceres permanecem privados, e o remetente de avisos não recebe acesso a eles.
+ Metadados e bytes ficam separados, com download autenticado, sem URL pública ou cache offline.
 
 ### Avisos no aplicativo instalado
 
@@ -83,7 +90,7 @@ O remetente também acompanha confirmações de orientação. Envia o aviso de a
 
 ### Validação
 
-371 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 72 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
+532 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 119 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. A geração do PDF e a preservação do original passaram em 18 testes. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
 ### Grupos, integrantes e avaliações
 
