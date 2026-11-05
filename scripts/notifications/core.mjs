@@ -4,6 +4,7 @@ export const TIME_ZONE='America/Sao_Paulo';
 export const PUSH_HOSTS=new Set(['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com']);
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+const identifier=value=>typeof value==='string'&&value.length>0&&value.length<=128&&!/[.#$\[\]/]/.test(value);
 export function validEndpoint(value) {
   try {const u=new URL(value);return u.protocol==='https:'&&PUSH_HOSTS.has(u.hostname)&&!u.port&&!u.username&&!u.password&&!u.hash&&u.pathname.length>1;}catch{return false;}
 }
@@ -32,23 +33,40 @@ export function calendarItems(groups,tasks,events) {
   }
   return result;
 }
-export function planNotifications({groups={},tasks={},events={},subscriptions={},deliveries={},now=Date.now()}) {
+export function orientationItems(groups,confirmations,now=Date.now()) {
+  const result=[];
+  for(const [groupId,value] of Object.entries(record(confirmations))){
+    const confirmation=record(value),group=record(record(groups)[groupId]);
+    if(group.status!=='active'||![confirmation.studentUid,confirmation.advisorUid,confirmation.invitationId].every(identifier)||group.members?.[confirmation.studentUid]!==true||group.advisorId!==confirmation.advisorUid)continue;
+    if(typeof confirmation.createdAt!=='number'||!Number.isFinite(confirmation.createdAt)||confirmation.createdAt<=0||confirmation.createdAt>now)continue;
+    const version=hash(JSON.stringify([confirmation.studentUid,confirmation.advisorUid,confirmation.invitationId,confirmation.createdAt]));
+    result.push({id:hash(`orientation/${groupId}`),groupId,kind:'orientation',version,members:[confirmation.studentUid]});
+  }
+  return result;
+}
+export function planNotifications({groups={},tasks={},events={},advisorConfirmations={},subscriptions={},deliveries={},now=Date.now()}) {
   const time=localTime(now),priorItems=record(deliveries.items),sent=record(deliveries.sent);
   const initialized=Number(deliveries.lastRun)>0;
-  const items=calendarItems(groups,tasks,events),nextItems=Object.fromEntries(items.map(item=>[item.id,item.version]));
+  const items=[...calendarItems(groups,tasks,events),...orientationItems(groups,advisorConfirmations,now)],nextItems=Object.fromEntries(items.map(item=>[item.id,item.version]));
   // Keep changes pending overnight, without sending during quiet hours.
   if(time.hour<7||time.hour>=22)return {batches:[],nextItems:null,quiet:true};
   const devices=new Map();
   for(const item of items){
     const kinds=[];
-    if(initialized&&priorItems[item.id]!==item.version&&item.date>=time.today)kinds.push('changed');
-    if(item.date===time.today&&time.hour>=8)kinds.push('today');
-    if(item.date===time.tomorrow&&time.hour>=18)kinds.push('tomorrow');
+    if(item.kind==='orientation'){
+      // Receipts exist only for accepted requests. A baseline skips old history;
+      // subsequent unseen receipts remain pending through quiet hours or retries.
+      if(initialized&&priorItems[item.id]!==item.version)kinds.push('orientation');
+    }else{
+      if(initialized&&priorItems[item.id]!==item.version&&item.date>=time.today)kinds.push('changed');
+      if(item.date===time.today&&time.hour>=8)kinds.push('today');
+      if(item.date===time.tomorrow&&time.hour>=18)kinds.push('tomorrow');
+    }
     for(const uid of item.members)for(const [deviceId,subscription] of Object.entries(record(subscriptions[uid]))){
       if(!/^[a-f0-9]{64}$/.test(deviceId)||!validSubscription(subscription))continue;
       const deviceKey=`${uid}/${deviceId}`;
       for(const kind of kinds){
-        const key=hash(`${uid}/${deviceId}/${item.id}/${item.version}/${kind}/${kind==='changed'?'':time.today}`);
+        const key=hash(`${uid}/${deviceId}/${item.id}/${item.version}/${kind}/${kind==='today'||kind==='tomorrow'?time.today:''}`);
         if(sent[key])continue;
         if(!devices.has(deviceKey))devices.set(deviceKey,{uid,deviceId,subscription,keys:[],kinds:new Set(),sources:new Set()});
         const batch=devices.get(deviceKey);batch.keys.push(key);batch.kinds.add(kind);batch.sources.add(item.kind);
@@ -56,10 +74,11 @@ export function planNotifications({groups={},tasks={},events={},subscriptions={}
     }
   }
   const batches=Array.from(devices.values()).map(batch=>{
-    const kind=batch.kinds.has('today')?'today':batch.kinds.has('tomorrow')?'tomorrow':'changed';
+    const orientation=batch.kinds.has('orientation');
+    const kind=orientation?'orientation':batch.kinds.has('today')?'today':batch.kinds.has('tomorrow')?'tomorrow':'changed';
     const task=batch.sources.has('task');
-    const body=kind==='today'?(task?'Há uma entrega do INIC para hoje. Abra seu calendário.':'Há um evento do INIC para hoje. Abra seu calendário.'):kind==='tomorrow'?(task?'Há uma entrega do INIC para amanhã. Confira seu calendário.':'Há um evento do INIC para amanhã. Confira seu calendário.'):'Seu calendário do INIC recebeu novas datas ou alterações. Abra o aplicativo para conferir.';
-    return {...batch,kinds:undefined,sources:undefined,payload:{title:'Máximu’s · INIC',body,url:'portal.html#calendario',tag:`inic-${hash(batch.keys.join('/')).slice(0,24)}`,kind:task?'task':'event'}};
+    const body=orientation?'Um orientador aceitou sua proposta de TCC. Abra o aplicativo.':kind==='today'?(task?'Há uma entrega do INIC para hoje. Abra seu calendário.':'Há um evento do INIC para hoje. Abra seu calendário.'):kind==='tomorrow'?(task?'Há uma entrega do INIC para amanhã. Confira seu calendário.':'Há um evento do INIC para amanhã. Confira seu calendário.'):'Seu calendário do INIC recebeu novas datas ou alterações. Abra o aplicativo para conferir.';
+    return {...batch,kinds:undefined,sources:undefined,payload:{title:'Máximu’s · INIC',body,url:orientation?'portal.html#grupos':'portal.html#calendario',tag:`inic-${hash(batch.keys.join('/')).slice(0,24)}`,kind:orientation?'orientation':task?'task':'event'}};
   });
   return {batches,nextItems,quiet:false};
 }

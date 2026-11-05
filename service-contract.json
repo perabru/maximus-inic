@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -15,15 +15,14 @@
     "logout()": "Promise<void>",
     "resetPassword(email)": "Promise<void>",
     "subscribeApp(user,callback)": "Unsubscribe; callback recebe {profile,role,users,advisors,groups,invitations,error?}; todas as coleções são arrays com id; users apenas coordenação",
-    "subscribeGroup(groupId,callback)": "Unsubscribe; callback recebe {tasks,messages,events,groupEvaluation:null|evaluation,memberEvaluations:array,error?}; gestor recebe todas avaliações individuais; aluno assina apenas a própria. Mudanças de papel/vínculo descartam o cache privilegiado.",
+    "subscribeGroup(groupId,callback)": "Unsubscribe; callback recebe {tasks,messages,events,groupEvaluation,memberEvaluations,advisorConfirmation:null|receipt,advisorConfirmationReady:boolean,error?}; o primeiro snapshot de confirmação é histórico silencioso. Avaliações individuais seguem o vínculo atual.",
     "saveProfile(patch)": "Promise<void>; name,year,requestedRole",
     "approveAdvisor(uid)": "Promise<void>; lista orientador aprovado; preserva papel coordinator quando já existente",
     "setUserRole(uid,role)": "Promise<void>; exclusivo coordenação",
-    "createGroup({name,topic,description,year,advisorId})": "Promise<groupId>; orientador sugerido recebe convite, exceto professor aprovado que cria para si; grupo+índice privados atômicos",
     "updateGroup(groupId,patch)": "Promise<void>; apenas name,topic,description,year,status. Aluno criador mantém edição dos metadados; status deleting exclusivo dos gestores.",
     "removeMember(groupId,uid)": "Promise<void>; gestor; remoção atômica de membro, alias, índice privado, admissão e avaliação individual; permite remover último integrante e preserva advisorId; cria cutoff memberRevocations que invalida convites anteriores",
-    "invite({groupId,toEmail,toUid,type})": "Promise<inviteId>; type member/advisor; uma modalidade de destinatário",
-    "respondInvitation(inviteId,accept)": "Promise<void>; somente destinatário; ingresso e vínculo validados nas regras",
+    "invite({groupId,toEmail,toUid,type})": "Promise<inviteId>; professor/coordenação ou integrante autorizado; type member/advisor. Todo novo convite de orientador ocupa um dos 3 slots pendentes. Recusa/cancelamento libera reutilização preservando histórico; grupo com orientador confirmado não recebe novas solicitações.",
+    "respondInvitation(inviteId,accept)": "Promise<void>; destinatário. Primeiro aceite vence, inclusive para convite legado; não substitui orientador atribuído. Aceite gera confirmação durável e cancela pedidos pendentes irmãos. Recusa grava somente status, sem mensagem nem push.",
     "createDefaultSchedule(groupId,year)": "Promise<void>; oito marcos internos, idempotente",
     "addTask(groupId,{title,dueDate,weight})": "Promise<taskId>",
     "updateTask(groupId,taskId,patch)": "Promise<void>; aluno muda só completed/completedBy; gestor muda prazo e título",
@@ -35,19 +34,21 @@
     "refreshSession()": "Promise<User>; atualiza emailVerified e token",
     "currentUser()": "Firebase User|null",
     "updateMember(groupId,uid,{name})": "Promise<void>; coordenador/orientador atribuído; muda só alias memberNames no grupo, sem editar perfil global",
-    "deleteGroup(groupId)": "Promise<void>; gestor atual; bloqueia atividade com status deleting e remove atomicamente grupo, tarefas, mensagens, eventos, avaliações, admissões, todos convites do grupo e índices dos membros/criador/orientador. Uma nova chamada retoma exclusão interrompida. Inclui memberRevocations na limpeza.",
-    "saveEvaluation(groupId,{score,feedback})": "Promise<void>; gestor; nota coletiva numérica 0..10 e feedback até3000",
+    "deleteGroup(groupId)": "Promise<void>; gestor atual; bloqueia atividade com status deleting e remove atomicamente grupo, tarefas, mensagens, eventos, avaliações, admissões, todos convites do grupo e índices dos membros/criador/orientador. Uma nova chamada retoma exclusão interrompida. Inclui memberRevocations na limpeza. Remove também advisorRequests, advisorRequestSlots e advisorConfirmations.",
+    "saveEvaluation(groupId,{score,feedback})": "Promise<void>; gestor; nota coletiva numérica 0..10 e feedback até 3000",
     "saveMemberEvaluation(groupId,uid,{score,feedback})": "Promise<void>; gestor; nota individual apenas de integrante atual",
     "deleteEvaluation(groupId,uid?)": "Promise<void>; gestor; sem uid remove nota coletiva, com uid remove nota individual",
     "completeGoogleProfile({requestedRole,year,name})": "Promise<profile>; primeiro acesso Google exige escolher student/advisor; só requestedRole, ano e nome do próprio perfil; nunca altera roles. Perfis existentes sem onboardingRequired permanecem preservados.",
-    "subscribeAgreements(year,callback)": "Unsubscribe; {agreements:[{id:uid,...metadata}],error?}; coordenação recebe metadados da edição, aluno apenas os próprios; troca de papel descarta lista anterior, nunca assina bytes.",
-    "uploadAgreement(file,{year=2027})": "Promise<metadata>; estudante com cadastro concluído, PDF/JPEG/PNG até3MiB; verifica assinatura dos bytes e publica metadados+base64 atomicamente; nova cópia substitui a própria.",
+    "subscribeAgreements(year,callback)": "Unsubscribe; {agreements:[{id:uid,...metadata}],requirement:{ready,fulfilled},error?}. Coordenação lista metadados; aluno lê apenas os próprios metadados + descritores size/contentType/uploadedAt. Nunca assina bytes. fulfilled exige par coerente e envio confirmado pelo servidor; pending local não libera o portal.",
+    "uploadAgreement(file,{year=2027})": "Promise<metadata>; estudante com cadastro concluído, PDF/JPEG/PNG até 3MiB; verifica assinatura dos bytes e publica metadados+base64 atomicamente; nova cópia substitui a própria.",
     "downloadAgreement(uid,year=2027)": "Promise<{blob,filename,contentType}>; leitura autenticada pontual por proprietário/coordenação; verifica tamanho, MIME e versão; força extensão segura; sem URL pública persistente.",
     "addEvent({groupId,title,date,description})": "Promise<eventId>; coordenação ou orientador atribuído; date YYYY-MM-DD válida, auditoria do servidor.",
     "updateEvent(groupId,eventId,patch)": "Promise<void>; título, data e descrição; preserves createdBy/createdAt, atualiza updatedAt do servidor.",
     "deleteEvent(groupId,eventId)": "Promise<void>; apenas gestor e grupo ativo.",
     "savePushSubscription(subscriptionJSON,deviceId)": "Promise<void>; dispositivo próprio, ID SHA256hex64, endpoint HTTPS nas origens FCM/Firefox/Apple e chaves de Web Push validadas; updatedAt do servidor.",
-    "removePushSubscription(deviceId)": "Promise<void>; apaga inscrição do próprio dispositivo."
+    "removePushSubscription(deviceId)": "Promise<void>; apaga inscrição do próprio dispositivo.",
+    "createGroup({name,topic,description,year,advisorIds,advisorId})": "Promise<groupId>; proposta, índice privado, oito marcos e até 3 convites para orientadores aprovados são atômicos. advisorIds contém 0..3 UIDs distintos; advisorId mantém compatibilidade com criação do professor para si.",
+    "mandatoryAgreementYear": "2027; edição fixa obrigatória para estudantes, inclusive contas existentes. Professores ainda não aprovados aguardam coordenação; não obtêm permissão pelo requestedRole."
   },
   "schema": {
     "users/{uid}": {
@@ -77,7 +78,9 @@
       },
       "createdBy": "UID",
       "createdAt": "epoch ms",
-      "status": "active|archived|deleting; deleting exclusivo gestor e irreversível até concluir exclusão"
+      "status": "active|archived|deleting; deleting exclusivo gestor e irreversível até concluir exclusão",
+      "advisorRequestPolicy": "first-accept-v1; marcador obrigatório para nova proposta de estudante, imutável",
+      "advisorRequestVersion": "inteiro >= 0; 0 sem candidatos iniciais, 1 com candidatos; cada novo lote de solicitações incrementa 1. Aceite deve usar versão atual, rejeitando snapshot desatualizado."
     },
     "invitations/{id}": {
       "groupId": "gid",
@@ -109,14 +112,14 @@
     "userGroups/{uid}/{gid}": "true; índice privado de participação do próprio aluno",
     "evaluations/{gid}/group": {
       "score": "number 0..10, inclusive zero e decimais",
-      "feedback": "string até3000",
+      "feedback": "string até 3000",
       "updatedBy": "UID do gestor autenticado",
       "updatedAt": "server timestamp epoch ms",
       "evaluatorName": "nome do gestor no próprio perfil"
     },
     "evaluations/{gid}/members/{uid}": {
       "score": "number 0..10, inclusive zero e decimais",
-      "feedback": "string até3000",
+      "feedback": "string até 3000",
       "updatedBy": "UID do gestor autenticado",
       "updatedAt": "server timestamp epoch ms",
       "evaluatorName": "nome do gestor no próprio perfil"
@@ -125,7 +128,7 @@
     "events/{gid}/{id}": {
       "title": "string1..160",
       "date": "YYYY-MM-DD",
-      "description": "string até3000",
+      "description": "string até 3000",
       "createdBy": "UID gestor autenticado",
       "createdAt": "server timestamp epoch ms imutável",
       "updatedAt": "server timestamp epoch ms"
@@ -154,19 +157,30 @@
       },
       "updatedAt": "server timestamp epoch ms"
     },
-    "notificationDeliveries": "marcadores e checkpoint privados do worker para evitar envio duplicado; sem acesso de usuários/coordenadores"
+    "notificationDeliveries": "marcadores e checkpoint privados do worker para evitar envio duplicado; sem acesso de usuários/coordenadores",
+    "advisorRequests/{gid}/{advisorUid}": "invitationId; índice de pedidos, cada UID precisa ocupar um slot autorizado. Ativos imutáveis; recusados/cancelados podem ser reciclados sem apagar convite.",
+    "advisorRequestSlots/{gid}/{0|1|2}": "advisorUid; três posições exclusivas impõem máximo de 3 pedidos pendentes no servidor. Nenhuma quarta chave é aceita.",
+    "advisorConfirmations/{gid}": {
+      "studentUid": "criador da proposta",
+      "advisorUid": "orientador que aceitou",
+      "advisorName": "nome do próprio perfil aprovado",
+      "invitationId": "convite aceito atomicamente",
+      "createdAt": "server timestamp epoch ms",
+      "requestVersion": "versão dos pedidos na primeira confirmação"
+    }
   },
   "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
   "securityNotice": "Convites por e-mail exigem e-mail verificado. Solicitar perfil orientador não concede papel: liberação pela coordenação. Remover integrante também invalida convites anteriores à remoção, sem consultar perfis globais ou e-mails alheios.",
   "verification": {
     "sdkCDN": "13.2.0 respondeu HTTP200 em 05/11/2026",
-    "securityTests": 225,
+    "securityTests": 327,
     "engine": "Firebase Realtime Database Emulator 4.11.2",
     "cli": "Firebase CLI 15.35.0",
-    "result": "Todos os 225 cenários passaram no emulador local demo-maximus-inic: Google por popup/redirecionamento e escolha de perfil sem autopromoção; contratos privados até 3 MiB com metadados e bytes atômicos; convites pelo professor; eventos e exclusão; worker Web Push restrito; todos os 131 casos anteriores. Auth é simulado e o runtime recusa banco fora do emulador local."
+    "result": "Todos os 327 cenários passaram no emulador local demo-maximus-inic: termo obrigatório privado de 2027; envio confirmado pelo servidor e rollback otimista; escolha de perfil Google sem autopromoção; proteção de sessão antiga; até 3 orientadores pendentes com limite nas regras; primeiro aceite vence; convites legados; reciclagem após recusa; corrida entre convite e aceite; confirmação de aceite e privacidade do worker; limpeza atômica. Os 227 cenários de base atualizados e 100 novos foram aprovados. Auth é simulado e o runtime recusa banco fora do emulador local."
   },
   "evaluationPrivacy": "Só coordenador ou orientador atualmente atribuído lê todas avaliações individuais. Integrante lê nota coletiva e sua própria nota. Nenhum aluno escreve notas; remover o integrante revoga a leitura e apaga sua avaliação.",
   "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação.",
   "agreementPrivacy": "Metadados e bytes só podem ser lidos pelo estudante proprietário ou coordenação. Orientadores não recebem acesso. A coordenação lista apenas metadados; bytes não têm leitura coletiva. Só estudantes de cadastro concluído publicam as próprias cópias. Regras exigem par consistente, bloqueiam deleções parciais e campos extras; o app não determina validade jurídica de assinaturas.",
-  "notificationWorkerPrivacy": "Worker técnico autenticado lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries; não lê perfis, convites, mensagens, notas ou contratos. Pode atualizar marcadores e remover inscrições expiradas; não cria grupos/perfis nem altera inscrições de usuários."
+  "notificationWorkerPrivacy": "Worker técnico lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries/advisorConfirmations; não lê perfis, convites, mensagens, notas ou contratos. Confirmações são somente leitura, enviadas apenas ao estudante ainda integrante de grupo ativo com o mesmo orientador. Recusas nunca geram confirmação/push.",
+  "mandatoryAgreementNotice": "Todo estudante deve enviar o termo assinado de 2027 antes de escrever em grupos, convites aceitos, mensagens, cronograma e metadados acadêmicos. Perfil, upload/download do próprio termo, leitura autorizada e preferências de notificação continuam acessíveis. A autorização é validada nas regras do banco e no serviço. Arquivo recebido não significa verificação humana das assinaturas."
 }

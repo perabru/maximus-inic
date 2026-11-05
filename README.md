@@ -53,6 +53,10 @@ Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam 
 
 No primeiro cadastro com Google, a pessoa escolhe **Estudante** ou **Professor(a)** e conclui seu perfil. A escolha de professor solicita a aprovação da coordenação; não concede permissões administrativas. Contas existentes mantêm seu perfil e papel. Professores aprovados enviam convites aos integrantes dos seus grupos e recebem convites para orientar outras equipes. O botão **Enviar convite +** também encaminha à criação de um grupo quando ainda não há uma equipe disponível.
 
+Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos.
+
+O aceite aparece no grupo e gera um aviso ao aluno proponente. A recusa não gera notificação para o aluno. Carregamento e confirmação acompanham as operações reais de cadastro, envio e resposta.
+
 As regras do servidor controlam os papéis, a entrada em grupos e o acesso aos dados. Ser coordenador na interface não depende de uma comparação de email no JavaScript. Os coordenadores veem todos os grupos e orientadores; cada orientador vê as equipes sob sua orientação. Consulte `service-contract.json` e `database.rules.json`.
 
 ### Cronograma e calendário
@@ -63,7 +67,9 @@ O calendário destaca os nove feriados nacionais federais de 2027 e reúne as en
 
 ### Contratos assinados
 
-Em **Meu termo**, cada estudante envia um PDF, JPG ou PNG de até 3 MiB com todas as assinaturas. Um novo envio substitui o anterior. A coordenação consulta e baixa os arquivos em **Termos assinados**, com busca pelo nome do estudante ou arquivo. Professores e outros alunos não têm acesso. O serviço valida o formato do arquivo, mantém metadados separados dos bytes e baixa o conteúdo com autenticação, sem URL pública ou cache offline.
+O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, inclusive contas já cadastradas. Antes de usar os grupos, o aluno é direcionado a **Meu termo** para enviar um PDF, JPG ou PNG de até 3 MiB. Um termo válido já enviado continua atendendo à exigência. O acesso é liberado após a confirmação do servidor; falha, espera ou envio offline não liberam o uso. As regras também exigem o termo nas gravações acadêmicas. Professores pendentes aguardam aprovação e não conseguem usar essa escolha de perfil para pular a exigência.
+
+Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Professores e outros alunos não têm acesso. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. Metadados e bytes ficam separados, com download autenticado, sem URL pública ou cache offline.
 
 ### Avisos no aplicativo instalado
 
@@ -71,9 +77,11 @@ O cliente Web Push, o service worker e o remetente agendado usam credenciais res
 
 Em **Calendário → Ativar avisos**, cada aluno autoriza o recebimento neste aparelho. No iPhone/iPad, é necessário abrir o aplicativo adicionado à Tela de Início, com sistema compatível. Os avisos são genéricos, sem dados do aluno na tela bloqueada. O remetente verifica mudanças e prazos a cada 15 minutos; execuções do GitHub podem atrasar. O botão **Desativar avisos** cancela a inscrição do aparelho, e sair da conta também a desativa. Detalhes e configuração em `scripts/notifications/README.md`.
 
+O remetente também acompanha confirmações de orientação. Envia o aviso de aceite apenas ao aluno proponente que ainda pertence ao grupo, sem nome do orientador na tela bloqueada. Convites recusados não entram no remetente e não produzem aviso.
+
 ### Validação
 
-225 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 20 regressões de interface, sete testes de calendário e 29 testes de Web Push sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
+327 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 54 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
 ### Grupos, integrantes e avaliações
 

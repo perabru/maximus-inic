@@ -8,8 +8,8 @@ const API_KEY='AIzaSyDESrp6AWsqZfU9QJ3f2XdiGtQNRR5LrtE';
 const ROOT_URL='https://perabru.github.io/maximus-inic/';
 const identifiers=value=>typeof value==='string'&&value.length<=128&&!/[.#$\[\]/]/.test(value);
 export async function dispatchNotifications({read,write,send,now=Date.now()}) {
-  const [groups,tasks,events,subscriptions,deliveries]=await Promise.all(['groups','tasks','events','pushSubscriptions','notificationDeliveries'].map(read));
-  const plan=planNotifications({groups:groups||{},tasks:tasks||{},events:events||{},subscriptions:subscriptions||{},deliveries:deliveries||{},now});
+  const [groups,tasks,events,advisorConfirmations,subscriptions,deliveries]=await Promise.all(['groups','tasks','events','advisorConfirmations','pushSubscriptions','notificationDeliveries'].map(read));
+  const plan=planNotifications({groups:groups||{},tasks:tasks||{},events:events||{},advisorConfirmations:advisorConfirmations||{},subscriptions:subscriptions||{},deliveries:deliveries||{},now});
   if(plan.quiet)return {sent:0,expired:0,failed:0,quiet:true};
   let sent=0,expired=0,failed=0;
   // One message per opted-in device for this pass, even when several tasks change.

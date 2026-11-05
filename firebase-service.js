@@ -31,6 +31,37 @@ const needUser = () => {
   if (!auth.currentUser) throw Object.assign(new Error('Entre na sua conta para continuar.'), {code:'auth/requires-login'});
   return auth.currentUser;
 };
+export const mandatoryAgreementYear = 2027;
+const agreementUploads = new Map();
+const agreementObservers = new Set();
+const notifyAgreementObservers = () => agreementObservers.forEach(emit=>emit());
+function completeAgreement(metadata,file,uid,year=mandatoryAgreementYear) {
+  return Boolean(metadata&&file&&metadata.uid===uid&&metadata.year===year&&
+    typeof metadata.filename==='string'&&metadata.filename.length>0&&typeof metadata.ownerName==='string'&&metadata.ownerName.length>0&&
+    Number.isInteger(metadata.size)&&metadata.size>0&&metadata.size<=3*1024*1024&&
+    ['application/pdf','image/jpeg','image/png'].includes(metadata.contentType)&&
+    typeof metadata.uploadedAt==='number'&&metadata.uploadedAt>0&&
+    file.size===metadata.size&&file.contentType===metadata.contentType&&file.uploadedAt===metadata.uploadedAt);
+}
+async function requireAcademicAccess() {
+  const user=needUser();
+  const role=(await get(path(`roles/${user.uid}`))).val();
+  if(role==='advisor'||role==='coordinator')return role;
+  if(agreementUploads.has(user.uid))throw Object.assign(new Error('Aguarde a confirmação do envio do termo.'),{code:'agreement/pending'});
+  const profile=(await get(path(`users/${user.uid}`))).val();
+  if(!profile||profile.onboardingRequired===true)throw new Error('Conclua seu cadastro antes de continuar.');
+  if(profile.requestedRole==='advisor')throw new Error('Aguarde a aprovação da coordenação para atuar como professor(a).');
+  const base=`${mandatoryAgreementYear}/${user.uid}`;
+  // Read only the small file descriptors; the signed document is never loaded
+  // just to check access. Database rules verify the complete stored file pair.
+  const [metadata,size,contentType,uploadedAt]=await Promise.all([
+    get(path(`agreements/${base}`)),get(path(`agreementFiles/${base}/size`)),
+    get(path(`agreementFiles/${base}/contentType`)),get(path(`agreementFiles/${base}/uploadedAt`))
+  ]);
+  if(!completeAgreement(metadata.val(),{size:size.val(),contentType:contentType.val(),uploadedAt:uploadedAt.val()},user.uid))
+    throw Object.assign(new Error('Envie o termo assinado de 2027 em “Meu termo” para continuar.'),{code:'agreement/required'});
+  return 'student';
+}
 async function ensureProfile(user, supplied = {}) {
   const previous = profileInitializations.get(user.uid) || Promise.resolve();
   const operation = previous.catch(() => {}).then(() => writeProfile(user,supplied));
@@ -54,14 +85,15 @@ async function writeProfile(user, supplied = {}) {
   }
 }
 export function onSession(callback) {
-  sessionObservers.add(callback);
+  sessionObservers.add(callback);let active=true,version=0;
   const stop=onAuthStateChanged(auth, async user => {
+    const current=++version;
     if (user) {
       try {await ensureProfile(user);} catch(error) {console.warn('Perfil: ', error.code || 'indisponível');}
     } else {profileCache = null; roleCache = 'student';}
-    callback(user);
+    if(active&&current===version&&(auth.currentUser?.uid||null)===(user?.uid||null))callback(user);
   });
-  return () => {sessionObservers.delete(callback);stop();};
+  return () => {active=false;version++;sessionObservers.delete(callback);stop();};
 }
 export async function register({name,email,password,requestedRole = 'student',year = ''}) {
   if (!clean(name,100)) throw new Error('Informe seu nome.');
@@ -194,7 +226,7 @@ export function subscribeApp(user, callback) {
 }
 export function subscribeGroup(groupId, callback) {
   const user=needUser();
-  const state = {tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[]};
+  const state = {tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[],advisorConfirmation:null,advisorConfirmationReady:false};
   let stopped=false;
   let group=null;
   let role='student';
@@ -224,6 +256,7 @@ export function subscribeGroup(groupId, callback) {
     emit();
   };
   const stops = [
+    onValue(path(`advisorConfirmations/${groupId}`),snap=>{state.advisorConfirmation=snap.val();state.advisorConfirmationReady=true;emit();},report),
     onValue(path(`events/${groupId}`),snap=>{state.events=collection(snap).sort((a,b)=>a.date.localeCompare(b.date));if(!stopped)callback({...state});},report),
     onValue(path(`tasks/${groupId}`), snap => {state.tasks=collection(snap).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));if(!stopped)callback({...state});}, report),
     onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report),
@@ -258,22 +291,38 @@ export async function approveAdvisor(uid) {
   const currentRole=(await get(path(`roles/${uid}`))).val();
   return setUserRole(uid,currentRole==='coordinator'?'coordinator':'advisor');
 }
-export async function createGroup({name,topic,description='',year=2027,advisorId=''}) {
-  const user=needUser();
+async function approvedAdvisorIds(ids) {
+  if(!Array.isArray(ids)||ids.length>3)throw new Error('Escolha até 3 orientadores.');
+  const unique=[...new Set(ids.map(checkIdentifier))];
+  if(unique.length!==ids.length)throw new Error('Escolha orientadores diferentes.');
+  for(const uid of unique)if(!(await get(path(`advisorDirectory/${uid}`))).exists())throw new Error('Selecione apenas orientadores aprovados pela coordenação.');
+  return unique;
+}
+function invitationRecord(user,groupId,groupName,toUid='',toEmail='',type='advisor') {
+  return {groupId,groupName,toEmail:clean(toEmail,254).toLowerCase(),toUid,type,senderId:user.uid,senderName:profileCache?.name||user.displayName||'Participante',status:'pending',createdAt:serverTimestamp()};
+}
+export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[]}) {
+  const user=needUser(),role=await requireAcademicAccess();
   const edition=Number(year);
-  if(!Number.isInteger(edition) || edition<2025 || edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
-  const groupRef=push(path('groups'));
-  const groupName=clean(name,100);
-  const groupTopic=clean(topic,240);
-  if(!groupName || !groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
-  const directAdvisor=(roleCache==='advisor' && (!advisorId || advisorId===user.uid)) || (roleCache==='coordinator' && advisorId===user.uid) ? user.uid : '';
-  await update(path(),{[`groups/${groupRef.key}`]:{name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name || user.displayName || 'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active'},[`userGroups/${user.uid}/${groupRef.key}`]:true});
-  await createDefaultSchedule(groupRef.key,edition);
-  if(advisorId && advisorId!==directAdvisor) await invite({groupId:groupRef.key,toUid:advisorId,type:'advisor'});
-  return groupRef.key;
+  if(!Number.isInteger(edition)||edition<2025||edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
+  const groupName=clean(name,100),groupTopic=clean(topic,240);
+  if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
+  const candidates=await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
+  const directAdvisor=(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
+  const groupId=push(path('groups')).key;
+  const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
+  if(role==='student')group.advisorRequestPolicy='first-accept-v1';
+  const changes={[`groups/${groupId}`]:group,[`userGroups/${user.uid}/${groupId}`]:true};
+  for(const task of defaultSchedule(edition))changes[`tasks/${groupId}/${task.id}`]={title:task.title,dueDate:task.dueDate,completed:false,weight:1,createdBy:user.uid,createdAt:Date.now(),completedBy:''};
+  for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid);changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
+  // Proposal, first schedule and all selected invitations either all commit or
+  // all fail. Retrying a failed form cannot leave a second partial proposal.
+  await update(path(),changes);
+  return groupId;
 }
 export async function updateGroup(groupId,patch) {
   needUser();
+  await requireAcademicAccess();
   const allowed={};
   for(const [key,value] of Object.entries(patch)) {
     if(['name','topic','description','status'].includes(key))allowed[key]=clean(value,key==='description'?3000:key==='topic'?240:100);
@@ -321,7 +370,7 @@ export async function deleteGroup(groupId) {
   const frozen=lockedGroup.val();
   if(!frozen)return;
   const changes={};
-  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])changes[`${resource}/${groupId}`]=null;
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations'])changes[`${resource}/${groupId}`]=null;
   const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));
   for(const uid of relatedUsers)changes[`userGroups/${uid}/${groupId}`]=null;
   for(const invitation of collection(invitationSnapshot))changes[`invitations/${invitation.id}`]=null;
@@ -349,39 +398,60 @@ export async function deleteEvaluation(groupId,uid) {
   await remove(path(`evaluations/${groupId}/${uid===undefined?'group':`members/${uid}`}`));
 }
 export async function invite({groupId,toEmail='',toUid='',type='member'}) {
-  const user=needUser();
-  checkIdentifier(groupId);
-  const [groupSnapshot,roleSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${user.uid}`))]);
-  const group=groupSnapshot.val(),role=roleSnapshot.val()||'student';
+  const user=needUser(),role=await requireAcademicAccess();checkIdentifier(groupId);
+  const group=(await get(path(`groups/${groupId}`))).val();
   if(!group)throw new Error('Grupo não encontrado.');
   if(group.status==='deleting')throw new Error('A exclusão deste grupo está em andamento.');
   if(!(role==='coordinator'||(role==='advisor'&&group.advisorId===user.uid)||(role!=='advisor'&&group.members?.[user.uid])))throw new Error('Você não pode enviar convites para este grupo.');
   if(!['member','advisor'].includes(type))throw new Error('Tipo de convite inválido.');
-  if(type==='advisor' && !toUid)throw new Error('Selecione um orientador aprovado.');
-  if(type==='member' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
-  const invitationRef=push(path('invitations'));
-  await set(invitationRef,{groupId,groupName:group.name,toEmail:clean(toEmail,254).toLowerCase(),toUid:clean(toUid,128),type,senderId:user.uid,senderName:profileCache?.name || user.displayName || 'Participante',status:'pending',createdAt:serverTimestamp()});
-  return invitationRef.key;
+  if(type==='member'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
+  const id=push(path('invitations')).key,changes={};
+  if(type==='advisor') {
+    await approvedAdvisorIds([toUid]);
+    const slots=(await get(path(`advisorRequests/${groupId}`))).val()||{};
+    const positions=(await get(path(`advisorRequestSlots/${groupId}`))).val()||{};
+    if(group.advisorId)throw new Error('Este grupo já tem um orientador confirmado.');
+    const active=[];
+    for(const [uid,previous] of Object.entries(slots)){
+      const status=(await get(path(`invitations/${previous}/status`))).val();
+      if(status==='pending')active.push(uid);else if(status==='declined'||status==='cancelled'){changes[`advisorRequests/${groupId}/${uid}`]=null;for(const [position,owner] of Object.entries(positions))if(owner===uid){changes[`advisorRequestSlots/${groupId}/${position}`]=null;delete positions[position];}}
+    }
+    if(active.includes(toUid))throw new Error('Já existe um convite pendente para este orientador.');
+    if(active.length>=3)throw new Error('O grupo já tem 3 convites pendentes. Aguarde uma resposta.');
+    const position=['0','1','2'].find(key=>!positions[key]);
+    if(position===undefined)throw new Error('O grupo já tem 3 convites pendentes.');
+    changes[`advisorRequests/${groupId}/${toUid}`]=id;
+    changes[`advisorRequestSlots/${groupId}/${position}`]=toUid;
+    changes[`groups/${groupId}/advisorRequestVersion`]=(group.advisorRequestVersion||0)+1;
+  }
+  changes[`invitations/${id}`]=invitationRecord(user,groupId,group.name,toUid,toEmail,type);
+  await update(path(),changes);return id;
 }
 export async function respondInvitation(invitationId,accept) {
-  const user=needUser();
+  const user=needUser();checkIdentifier(invitationId);
   const invitation=(await get(path(`invitations/${invitationId}`))).val();
-  if(!invitation || invitation.status!=='pending')throw new Error('Este convite já foi respondido ou cancelado.');
-  if(invitation.toUid!==user.uid && invitation.toEmail!==user.email?.toLowerCase())throw new Error('Este convite pertence a outra conta.');
-  if(!accept) {await update(path(`invitations/${invitationId}`),{status:'declined'});return;}
-  // Admissions contain only an invitation id. Server rules validate recipient,
-  // group, pending state, type and role before any membership can be written.
+  if(!invitation||invitation.status!=='pending')throw new Error('Este convite já foi respondido ou cancelado.');
+  if(invitation.toUid!==user.uid&&invitation.toEmail!==user.email?.toLowerCase())throw new Error('Este convite pertence a outra conta.');
+  if(!accept){await update(path(`invitations/${invitationId}`),{status:'declined'});return;}
+  await requireAcademicAccess();
   await set(path(`admissions/${invitation.groupId}/${user.uid}`),invitationId);
-  const changes = {[`invitations/${invitationId}/status`]:'accepted'};
+  const changes={[`invitations/${invitationId}/status`]:'accepted'};
   if(invitation.type==='advisor') {
-    changes[`groups/${invitation.groupId}/advisorId`] = user.uid;
+    const group=(await get(path(`groups/${invitation.groupId}`))).val();
+    if(!group||group.status==='deleting')throw new Error('Este grupo não está disponível.');
+    const slots=(await get(path(`advisorRequests/${invitation.groupId}`))).val()||{};
+    if(group.advisorId)throw new Error('Outro orientador já confirmou este grupo.');
+    const profile=(await get(path(`users/${user.uid}`))).val();
+    changes[`groups/${invitation.groupId}/advisorId`]=user.uid;
+    changes[`advisorConfirmations/${invitation.groupId}`]={studentUid:group.createdBy,advisorUid:user.uid,advisorName:clean(profile?.name||user.displayName||'Orientador',100),invitationId,createdAt:serverTimestamp(),requestVersion:group.advisorRequestVersion||0};
+    for(const previous of Object.values(slots))if(previous!==invitationId&&(await get(path(`invitations/${previous}/status`))).val()==='pending')changes[`invitations/${previous}/status`]='cancelled';
   } else {
-    changes[`groups/${invitation.groupId}/members/${user.uid}`] = true;
-    changes[`groups/${invitation.groupId}/memberNames/${user.uid}`] = profileCache?.name || user.displayName || 'Participante';
-    changes[`userGroups/${user.uid}/${invitation.groupId}`] = true;
+    changes[`groups/${invitation.groupId}/members/${user.uid}`]=true;
+    changes[`groups/${invitation.groupId}/memberNames/${user.uid}`]=profileCache?.name||user.displayName||'Participante';
+    changes[`userGroups/${user.uid}/${invitation.groupId}`]=true;
   }
-  // Only the admission is separate; it grants no data access. All effective
-  // membership changes and the final invitation status commit atomically.
+  // A validated pending advisor admission allows inspection of this proposal.
+  // Membership, acceptance and the durable confirmation still commit together.
   await update(path(),changes);
 }
 
@@ -412,19 +482,33 @@ function agreementYear(year=2027) {
   const value=Number(year);if(!Number.isInteger(value)||value<2027||value>2100)throw new Error('Escolha uma edição válida para o termo.');return value;
 }
 export function subscribeAgreements(year=2027,callback) {
-  const user=needUser(),edition=agreementYear(year);let stopped=false,stopData=()=>{};let generation=0;
+  const user=needUser(),edition=agreementYear(year);let stopped=false,dataStops=[];let generation=0,currentEmit=()=>{};
+  const pendingEmit=()=>currentEmit();agreementObservers.add(pendingEmit);
   const roleStop=onValue(path(`roles/${user.uid}`),snapshot=>{
-    const current=++generation;stopData();stopData=()=>{};
-    if(!stopped)callback({agreements:[]});
+    const current=++generation;dataStops.forEach(stop=>stop());dataStops=[];
+    if(!stopped)callback({agreements:[],requirement:{ready:false,fulfilled:false}});
     const coordinator=snapshot.val()==='coordinator';
+    const staff=coordinator||snapshot.val()==='advisor';
     const target=coordinator?path(`agreements/${edition}`):path(`agreements/${edition}/${user.uid}`);
-    stopData=onValue(target,snap=>{
+    let metadataLoaded=false,metadata=null,list=[],descriptor={},scopeError=null;const descriptorLoaded=new Set();
+    const emit=()=>{
       if(stopped||current!==generation)return;
-      const list=coordinator?collection(snap):snap.exists()?[{...snap.val(),id:user.uid}]:[];
-      callback({agreements:list.sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0))});
-    },error=>{if(!stopped&&current===generation)callback({agreements:[],error});});
-  },error=>{if(!stopped)callback({agreements:[],error});});
-  return()=>{stopped=true;generation++;roleStop();stopData();};
+      if(scopeError){callback({agreements:[],requirement:{ready:false,fulfilled:false},error:scopeError});return;}
+      const pending=!staff&&agreementUploads.has(user.uid);
+      const ready=!pending&&metadataLoaded&&(staff||descriptorLoaded.size===3);
+      callback({agreements:list,requirement:{ready,fulfilled:ready&&(staff||completeAgreement(metadata,descriptor,user.uid,edition))}});
+    };
+    currentEmit=emit;
+    const fail=error=>{if(!stopped&&current===generation){scopeError=error;emit();}};
+    dataStops.push(onValue(target,snap=>{
+      if(stopped||current!==generation)return;
+      metadataLoaded=true;metadata=snap.val();list=(coordinator?collection(snap):snap.exists()?[{...snap.val(),id:user.uid}]:[]).sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0));emit();
+    },fail));
+    if(!staff)for(const field of ['size','contentType','uploadedAt'])dataStops.push(onValue(path(`agreementFiles/${edition}/${user.uid}/${field}`),snap=>{
+      if(stopped||current!==generation)return;descriptor[field]=snap.val();descriptorLoaded.add(field);emit();
+    },fail));
+  },error=>{if(!stopped){generation++;dataStops.forEach(stop=>stop());dataStops=[];currentEmit=()=>{};callback({agreements:[],requirement:{ready:false,fulfilled:false},error});}});
+  return()=>{stopped=true;generation++;agreementObservers.delete(pendingEmit);roleStop();dataStops.forEach(stop=>stop());};
 }
 function bytesToBase64(bytes) {
   let binary='';for(let offset=0;offset<bytes.length;offset+=32768)binary+=String.fromCharCode(...bytes.subarray(offset,offset+32768));return btoa(binary);
@@ -456,7 +540,15 @@ export async function uploadAgreement(file,{year=2027}={}) {
   const payload={base64:bytesToBase64(bytes),size:bytes.length,contentType,uploadedAt};
   // Only metadata is listed. File bytes are fetched individually with Auth and
   // never exposed through a persistent download token or public URL.
-  await update(path(),{[`agreements/${edition}/${user.uid}`]:metadata,[`agreementFiles/${edition}/${user.uid}`]:payload});
+  if(agreementUploads.has(user.uid))throw new Error('O envio anterior ainda está em andamento.');
+  agreementUploads.set(user.uid,true);notifyAgreementObservers();
+  try {
+    await update(path(),{[`agreements/${edition}/${user.uid}`]:metadata,[`agreementFiles/${edition}/${user.uid}`]:payload});
+  } finally {
+    // Local optimistic snapshots cannot unlock the portal before the write is
+    // acknowledged (or rolled back) by Firebase. Server rules are authoritative.
+    agreementUploads.delete(user.uid);notifyAgreementObservers();
+  }
   return metadata;
 }
 export async function downloadAgreement(uid,year=2027) {
@@ -497,6 +589,7 @@ export const defaultSchedule = (year=2027) => [
 ];
 export async function createDefaultSchedule(groupId,year=2027) {
   const user=needUser();
+  await requireAcademicAccess();
   if(!Number.isInteger(Number(year)) || Number(year)<2025 || Number(year)>2100)throw new Error('Informe um ano válido para o cronograma.');
   const existing=(await get(path(`tasks/${groupId}`))).val() || {};
   const changes={};
@@ -507,6 +600,7 @@ export async function createDefaultSchedule(groupId,year=2027) {
 }
 export async function addTask(groupId,{title,dueDate,weight=1}) {
   const user=needUser();
+  await requireAcademicAccess();
   checkDate(dueDate);
   const taskRef=push(path(`tasks/${groupId}`));
   await set(taskRef,{title:clean(title,160),dueDate:clean(dueDate,10),completed:false,weight:Math.max(1,Math.min(10,Number(weight)||1)),createdBy:user.uid,createdAt:Date.now(),completedBy:''});
@@ -514,6 +608,7 @@ export async function addTask(groupId,{title,dueDate,weight=1}) {
 }
 export async function updateTask(groupId,taskId,patch) {
   const user=needUser();
+  await requireAcademicAccess();
   const changes={};
   if(patch.title!==undefined)changes.title=clean(patch.title,160);
   if(patch.dueDate!==undefined){checkDate(patch.dueDate);changes.dueDate=clean(patch.dueDate,10);}
@@ -524,6 +619,7 @@ export async function updateTask(groupId,taskId,patch) {
 export const deleteTask=(groupId,taskId)=>{needUser();return remove(path(`tasks/${groupId}/${taskId}`));};
 export async function sendMessage(groupId,text) {
   const user=needUser();
+  await requireAcademicAccess();
   const message=clean(text,5000);
   if(!message)throw new Error('Escreva uma mensagem antes de enviar.');
   await set(push(path(`messages/${groupId}`)),{text:message,senderId:user.uid,senderName:profileCache?.name || user.displayName || 'Participante',createdAt:Date.now()});

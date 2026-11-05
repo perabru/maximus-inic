@@ -4,6 +4,8 @@ O aluno toca em **Ativar avisos** dentro da conta. A inscrição do aparelho fic
 
 O workflow `inic-reminders.yml` verifica os cronogramas e eventos a cada 15 minutos. GitHub pode atrasar execuções em períodos de demanda; não é um alarme com horário garantido. O remetente usa o fuso `America/Sao_Paulo`, envia entre 7h e 22h, avisa entregas/eventos do dia a partir de 8h e do dia seguinte a partir de 18h. Novas datas ou alterações também geram aviso. Várias mudanças na mesma verificação são reunidas em uma notificação por aparelho. A primeira execução registra a base sem disparar todas as datas antigas.
 
+O aceite de um orientador também gera um aviso ao estudante que cadastrou a proposta, desde que ele continue integrante do grupo e tenha autorizado notificações no aparelho. A mensagem é genérica: **“Um orientador aceitou sua proposta de TCC. Abra o aplicativo.”** O remetente lê somente o recibo de confirmação validado pelo servidor, verifica o orientador atual e evita repetir o aceite. Recusas não criam recibo, não são consultadas pelo remetente e não geram notificações. A primeira execução registra os aceites históricos como base; os próximos aceites são enviados na verificação seguinte, respeitando o horário silencioso.
+
 A mensagem exibida na tela bloqueada é genérica. O aluno precisa abrir o aplicativo autenticado para consultar grupo e entrega. Não são enviados nomes, temas, notas, mensagens privadas ou conteúdo dos termos.
 
 Configuração administrativa feita fora do repositório:
@@ -17,7 +19,7 @@ A ativação exige os quatro secrets, a conta técnica marcada em `notificationW
 
 Para suspender o remetente, remova a variável de prontidão ou altere seu valor para `false`. `senderReady:false` também impede novas inscrições pela interface e mostra a ativação pendente. Mesmo se executado diretamente, o runner encerra normalmente sem acessar o banco ou enviar mensagens quando faltam a configuração ou os secrets. As credenciais devem permanecer fora do código e dos logs.
 
-As regras limitam o remetente à leitura de grupos, entregas, eventos e inscrições de aparelhos. Ele pode guardar os marcadores privados de entrega e remover inscrições expiradas; não pode alterar grupos, prazos ou usuários. O envio aceita somente HTTPS nos provedores FCM, Mozilla e Apple. Respostas 404/410 removem a inscrição expirada. Falhas temporárias preservam as mudanças para a próxima tentativa.
+As regras limitam o remetente à leitura de grupos, entregas, eventos, confirmações de orientação, inscrições de aparelhos e marcadores de entrega. Ele pode guardar os marcadores privados de entrega e remover inscrições expiradas; não pode alterar grupos, prazos, confirmações ou usuários. O envio aceita somente HTTPS nos provedores FCM, Mozilla e Apple. Respostas 404/410 removem a inscrição expirada. Falhas temporárias preservam as mudanças para a próxima tentativa.
 
 Execute `npm ci --ignore-scripts` e `npm test` nesta pasta para testar planejamento, privacidade, limites de rede e idempotência, sem credenciais e sem enviar notificações reais. `npm run send` exige os quatro secrets no ambiente.
 
