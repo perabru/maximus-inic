@@ -1,0 +1,64 @@
+/* Notification card adapted from stlyash / Yaya12085, Uiverse (MIT).
+   Attribution and license: THIRD_PARTY_NOTICES.md. */
+#app-notice.notice {
+  --notice-accent: var(--primary);
+  position: fixed;
+  z-index: 80;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 36px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--notice-accent);
+  border-radius: 17px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 16px 60px #11142a30, 0 3px 12px #11142a12;
+  animation: notice-arrive .23s ease-out;
+}
+#app-notice.notice[hidden] { display: none; }
+#app-notice.notice.error { --notice-accent: var(--danger); }
+#app-notice.notice.info { --notice-accent: var(--orange); }
+.notice-card-header { display: flex; align-items: center; gap: 11px; }
+#app-notice .notice-card-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--notice-accent);
+  color: #fff;
+  font: 700 18px/1 Arial,sans-serif;
+}
+.notice-card-icon svg { width: 18px; height: 18px; fill: currentColor; }
+.notice-card-title { flex: 1; min-width: 0; font-size: 13px; line-height: 1.5; font-weight: 750; }
+.notice-card-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font: 20px/1 Arial,sans-serif;
+  cursor: pointer;
+}
+.notice-card-close:hover { color: var(--ink); background: var(--border); }
+.notice-card-message { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.75; overflow-wrap: anywhere; }
+.notice-card-actions { display: flex; gap: 10px; margin-top: 17px; }
+#app-notice .notice-card-actions>.button { width: 100%; justify-content: center; padding: 11px 15px; border-radius: 9px; font-size: 11px; }
+.notice-card-close:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+@keyframes notice-arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media(max-width:700px) {
+  #app-notice.notice { right: 18px; bottom: calc(86px + env(safe-area-inset-bottom)); padding: 17px; max-height: calc(100dvh - 115px); }
+}
+@media(prefers-reduced-motion:reduce) { #app-notice.notice { animation: none; } }

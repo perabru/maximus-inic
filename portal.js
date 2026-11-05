@@ -26,6 +26,7 @@ let agreementSearch = '';
 let agreementFilter = 'all';
 let agreementUploadBusy = false;
 let notificationsBusy = false;
+let proposalDraft = null;
 const AGREEMENT_YEAR = 2027;
 const AGREEMENT_LIMIT = 3 * 1024 * 1024;
 let currentRoute = {view:'dashboard',groupId:'',tab:'overview'};
@@ -101,6 +102,7 @@ function canAccessAcademic() {
   return state.role === 'advisor' || state.role === 'coordinator' || (requiresAgreement() && agreementSatisfied());
 }
 function canCreateGroup() { return canAccessAcademic(); }
+function canPrepareProposal() { return Boolean(state.user && state.ready && state.profile && state.role === 'student' && state.profile.onboardingRequired !== true && !isPendingAdvisor()); }
 function canUseAgreements() { return state.role === 'coordinator' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor'); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
@@ -124,13 +126,28 @@ function errorText(error) {
   if (service?.friendlyError) return service.friendlyError(error);
   return error?.message || 'Não foi possível concluir. Confira sua conexão e tente novamente.';
 }
-function notice(text, kind = 'success', persistent = false) {
+function notice(text, kind = 'success', persistent = false, options = {}) {
   clearTimeout(noticeTimer);
   const target = $('#app-notice');
-  target.textContent = text;
-  target.className = `notice ${kind}`;
+  const variant=['success','error','info'].includes(kind)?kind:'info';
+  const dismiss=()=>{clearTimeout(noticeTimer);target.hidden=true;};
+  const header=node('div','notice-card-header');
+  const icon=node('span','notice-card-icon',variant==='error'?'!':variant==='success'?'✓':'i');
+  icon.setAttribute('aria-hidden','true');
+  const title=node('strong','notice-card-title',options.title||(variant==='error'?'Confira esta informação':variant==='success'?'Tudo certo':'Meu INIC'));
+  const close=button('×','notice-card-close',dismiss);close.setAttribute('aria-label','Fechar notificação');
+  header.append(icon,title,close);
+  const actions=node('div','notice-card-actions');
+  if(typeof options.href==='string'&&/^#(?:grupo\/[^/]+\/(?:overview|messages)|convites|grupos)$/.test(options.href)){
+    const destination=link(options.label||'Ver detalhes',options.href,'button primary');destination.addEventListener('click',dismiss);actions.append(destination);
+  } else actions.append(button('Entendi','button primary',dismiss));
+  target.replaceChildren(header,node('p','notice-card-message',text),actions);
+  target.className = `notice ${variant}`;
+  target.setAttribute('role',variant==='error'?'alert':'status');
+  target.setAttribute('aria-live',variant==='error'?'assertive':'polite');
+  target.setAttribute('aria-atomic','true');
   target.hidden = false;
-  if (!persistent) noticeTimer = setTimeout(() => target.hidden = true,9000);
+  if (!persistent) noticeTimer = setTimeout(dismiss,9000);
 }
 function bookLoader() {
   const loader = node('div','book-loader');
@@ -196,6 +213,7 @@ function makeField(labelText, name, options = {}) {
 }
 function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = false,access = 'academic',busy = 'Salvando…',handler}) {
   if(state.user && access === 'academic' && !canAccessAcademic()){render();return;}
+  if(access === 'draft' && !canPrepareProposal()){render();return;}
   dialogVersion++;
   dialogAccess=access;
   dialogBusyText=busy;
@@ -332,7 +350,7 @@ function syncGroupListeners() {
       if(data.advisorConfirmationReady===true&&!data.error){
         if(confirmation&&state.role==='student'&&confirmation.studentUid===state.user.uid){
           const key=`${group.id}/${confirmation.invitationId||confirmation.createdAt}/${confirmation.advisorUid}`;
-          if(!seenAdvisorConfirmations.has(key)){seenAdvisorConfirmations.add(key);if(confirmationBaselineReady)notice(`${confirmation.advisorName||advisorName(currentGroup)} aceitou orientar o grupo “${currentGroup.name}”.`,'success',true);}
+          if(!seenAdvisorConfirmations.has(key)){seenAdvisorConfirmations.add(key);if(confirmationBaselineReady)notice(`${confirmation.advisorName||advisorName(currentGroup)} aceitou orientar o grupo “${currentGroup.name}”.`,'success',true,{title:'Orientação confirmada',href:routeHref('group',currentGroup.id),label:'Ver meu grupo'});}
         }
         confirmationBaselineReady=true;
       }
@@ -363,6 +381,7 @@ function verificationNotice() {
 }
 function sessionChanged(user) {
   const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();
+  proposalDraft=null;
   dialogVersion++;dialogHandler=null;$('#form-dialog').close();
   appUnsubscribe();
   appUnsubscribe = () => {};
@@ -389,6 +408,10 @@ function sessionChanged(user) {
     state.invitations = data.invitations || [];
     state.error = data.error || null;
     state.ready = true;
+    if(!canPrepareProposal()){
+      proposalDraft=null;
+      if(dialogAccess==='draft'&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
+    }
     if (data.error) notice(errorText(data.error),'error',true);
     syncAgreementSubscription();
     syncGroupListeners();
@@ -540,12 +563,12 @@ async function downloadAgreement(record,control) {
   finally{if(control){control.disabled=false;control.removeAttribute('aria-busy');}}
 }
 function buildAgreementUpload() {
-  const panel=node('section','panel agreement-upload');panel.append(node('h3','','Enviar contrato assinado'),node('p','','Fotografe com nitidez ou digitalize todas as assinaturas. A coordenação terá acesso ao arquivo.'));
+  const panel=node('section','panel agreement-upload');panel.append(node('span','term-step','02 · ENVIO'),node('h3','','Enviar termo assinado'));
   const form=node('form','agreement-upload-form');form.id='agreement-upload-form';
-  const label=node('label','field','Contrato assinado');const input=node('input');input.type='file';input.name='agreement';input.required=true;input.accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';label.append(input,node('small','','PDF, JPG ou PNG · até 3 MB. Para várias páginas, envie um único PDF.'));
+  const label=node('label','field','Arquivo assinado');const input=node('input');input.type='file';input.name='agreement';input.required=true;input.accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';label.append(input,node('small','','PDF, JPG ou PNG · até 3 MB. Reúna todas as páginas em um arquivo.'));
   const status=node('p','form-status');status.id='agreement-upload-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const submit=node('button','button primary','Enviar para a coordenação');submit.type='submit';submit.disabled=agreementUploadBusy;input.disabled=agreementUploadBusy;
-  form.append(label,status,submit,node('p','agreement-privacy','Somente você e a coordenação podem acessar este arquivo. Um novo envio substitui a versão anterior.'));
+  form.append(label,status,submit,node('p','agreement-privacy','Acesso privado: você e a coordenação.'));
   input.addEventListener('change',()=>{delete status.dataset.awaitingConfirmation;status.classList.remove('error');status.textContent=input.files?.[0]?`Selecionado: ${input.files[0].name}`:'';});
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(agreementUploadBusy)return;
@@ -567,18 +590,33 @@ function buildAgreementUpload() {
   });
   panel.append(form);return panel;
 }
+function proposalCallout() {
+  const panel=node('section','proposal-callout');panel.id='proposal-callout';
+  const copy=node('div','proposal-callout-copy');copy.append(node('span','term-step','SEU GRUPO'),node('h3','','Monte sua equipe e envie os convites.'),node('p','','Informe os e-mails dos colegas e escolha até 3 orientadores. Os convites são enviados juntos com a proposta.'));
+  const actions=node('div','proposal-callout-actions');const control=button('Montar meu grupo','button orange',()=>canCreateGroup()?showCreateGroup():showProposalDraft());control.id='proposal-callout-button';
+  const status=node('p','proposal-callout-status');status.id='proposal-callout-status';actions.append(control,status);panel.append(copy,actions);return panel;
+}
+function paintProposalCallout() {
+  const control=$('#proposal-callout-button'),status=$('#proposal-callout-status');if(!control||!status)return;
+  const draft=proposalDraft?.uid===state.user?.uid;
+  control.textContent=canCreateGroup()?(draft?'Enviar proposta e convites':'Montar meu grupo'):(draft?'Revisar meu grupo':'Montar meu grupo');
+  status.textContent=canCreateGroup()?(draft?'Rascunho pronto. Revise e confirme o envio.':'Opcional · você também pode entrar por convite.'):(draft?'Rascunho salvo nesta sessão. Envie o termo para concluir.':'Você pode preparar agora. Envie o termo antes de concluir.');
+}
 function renderAgreements() {
   const key=`agreements/${state.user.uid}/${state.role}`;
   if(renderedKey!==key){
     renderedKey=key;
     const fragment=document.createDocumentFragment();
-    fragment.append(heading(state.role==='coordinator'?'Termos de aceite · 2027':'Termo de aceite · 2027',state.role==='coordinator'?'Acompanhe quem enviou o documento e quem ainda precisa enviar.':'Envie uma cópia completa do termo assinado para a coordenação.',[link('Ler e imprimir o termo','conformidade.html','button secondary')]));
+    if(state.role==='coordinator')fragment.append(heading('Termos de aceite · 2027','Acompanhe os arquivos recebidos e as pendências.',[link('Visualizar o termo','conformidade.html','button secondary')]));
     if(state.role!=='coordinator'){
-      const gate=node('section','panel agreement-gate');gate.id='agreement-gate';
-      gate.append(node('span','badge warning','Envio obrigatório'),node('h3','','Envie o termo para liberar sua participação.'),node('p','','Imprima o documento, recolha as assinaturas e envie uma cópia legível. Grupos, convites, cronograma e mensagens ficam disponíveis depois que o arquivo for salvo.'));
-      const steps=node('ol','agreement-steps');['Abra o termo e preencha seus dados.','Recolha todas as assinaturas previstas no documento.','Envie abaixo um PDF ou uma foto legível do termo completo.'].forEach(text=>steps.append(node('li','',text)));gate.append(steps);fragment.append(gate,buildAgreementUpload());
+      const grid=node('div','term-action-grid');
+      const download=node('section','term-download');download.append(node('span','term-step','01 · DOCUMENTO'),node('h2','','Termo de aceite · 2027'),node('p','','Baixe, imprima e recolha as assinaturas.'));
+      const pdf=link('Baixar termo em PDF','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf','button term-download-button');pdf.download='Termo_Compromisso_INIC_2027_Maximus.pdf';
+      download.append(pdf,link('Visualizar e imprimir','conformidade.html','term-preview-link'));
+      const gate=node('p','agreement-gate agreement-gate--compact');gate.id='agreement-gate';gate.append(node('span','badge warning','Envio obrigatório'),document.createTextNode(' Envie o termo assinado para liberar sua participação.'));download.append(gate);
+      grid.append(download,buildAgreementUpload());fragment.append(grid);
       const released=node('section','notice success agreement-release');released.id='agreement-release';released.hidden=true;
-      released.append(node('strong','','Termo recebido e salvo para a coordenação.'),node('span','','Seu acesso aos grupos está liberado.'),link('Continuar para os grupos','#grupos','button primary compact'));fragment.append(released);
+      released.append(node('strong','','Termo recebido e salvo para a coordenação.'),link('Acessar meus grupos','#grupos','button secondary compact'));fragment.append(released,proposalCallout());
     }else{
       const summary=node('div','agreement-summary');summary.id='agreement-summary';summary.setAttribute('aria-live','polite');fragment.append(summary);
       const search=node('input');search.type='search';search.className='agreement-search';search.placeholder='Buscar estudante, e-mail ou arquivo';search.setAttribute('aria-label','Buscar contratos assinados');search.value=agreementSearch;search.addEventListener('input',()=>{agreementSearch=search.value;paintAgreements();});
@@ -604,6 +642,7 @@ function paintAgreements() {
   const required=requiresAgreement()&&!agreementSatisfied();
   if($('#agreement-gate'))$('#agreement-gate').hidden=!required;
   if($('#agreement-release'))$('#agreement-release').hidden=!agreementSatisfied();
+  paintProposalCallout();
   const uploadStatus=$('#agreement-upload-status');if(agreementSatisfied()&&uploadStatus?.dataset.awaitingConfirmation==='true'){uploadStatus.textContent='Termo recebido e salvo para a coordenação. Seu acesso está liberado.';uploadStatus.classList.remove('is-loading','error');uploadStatus.removeAttribute('aria-busy');delete uploadStatus.dataset.awaitingConfirmation;}
   if(required){$('#view-title').textContent='Termo obrigatório · INIC 2027';$('#view-kicker').textContent='INIC 2027 · PARTICIPAÇÃO DOS ESTUDANTES';}
   if(!agreementsReady){list.replaceChildren(loadingPanel('Conferindo o envio do termo…'));return;}
@@ -625,7 +664,7 @@ function paintAgreements() {
       list.append(card);
     });return;
   }
-  if(!agreements.length){list.append(emptyState('Seu termo ainda não foi enviado','O envio é obrigatório. Depois da confirmação, o arquivo fica salvo para você e para a coordenação.'));return;}
+  if(!agreements.length){list.append(node('p','agreement-empty-status','Seu termo ainda não foi enviado.'));return;}
   agreements.forEach(record=>{
     const card=node('article','panel agreement-record');const copy=node('div','agreement-record-copy');
     const received=agreementSatisfied();
@@ -658,7 +697,7 @@ function supportCard() {
 function renderDashboard() {
   const fragment=document.createDocumentFragment();
   const welcome=node('section','welcome');const copy=node('div');copy.append(node('p','eyebrow','O PRÓXIMO PASSO DA SUA PESQUISA'),node('h2','',`Olá, ${myName().split(' ')[0]}. Vamos construir conhecimento?`),node('p','',state.role==='coordinator'?'Acompanhe grupos, orientadores e entregas em um só lugar.':'Seu grupo, seu orientador e as próximas entregas estão aqui. Comece por um pequeno passo.'));welcome.append(copy);
-  if(canCreateGroup())welcome.append(button('Criar um grupo','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas','index.html#artigos','button orange'));
+  if(canCreateGroup())welcome.append(button(state.role==='student'?'Montar meu grupo e convidar':'Criar um grupo','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas','index.html#artigos','button orange'));
   fragment.append(welcome);
   const tasks=allTasks();const complete=tasks.filter(t=>t.completed).length;const late=tasks.filter(t=>statusOf(t).key==='late').length;
   const stats=node('div','stats-grid');
@@ -697,7 +736,7 @@ function paintFilteredGroups() {
   $('#groups-count').textContent=`${filtered.length} ${filtered.length===1?'grupo encontrado':'grupos encontrados'}`;
 }
 
-function buildAdvisorPicker() {
+function buildAdvisorPicker(initialIds = []) {
   const field=node('fieldset','advisor-picker');field.append(node('legend','','Orientadores para convidar'));
   field.append(node('p','advisor-picker-help','Envie convites para até 3 orientadores ao mesmo tempo. O primeiro aceite confirma a orientação.'));
   const count=node('p','advisor-picker-count','0 de 3 selecionados');count.setAttribute('role','status');count.setAttribute('aria-live','polite');
@@ -708,6 +747,7 @@ function buildAdvisorPicker() {
   function paint(){count.textContent=`${selected.size} de 3 selecionados`;controls.forEach(({input})=>{input.disabled=selected.size>=3&&!input.checked;});}
   advisors.forEach(person=>{
     const label=node('label','advisor-choice');label.dataset.search=normalize(person.name);const input=node('input');input.type='checkbox';input.name='advisorIds';input.value=person.id;
+    if(initialIds.includes(person.id)&&selected.size<3){selected.add(person.id);input.checked=true;}
     const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');
     const copy=node('span','advisor-choice-copy');copy.append(node('strong','',advisorLabel(person)),node('small','','Orientador(a) aprovado(a)'));
     input.addEventListener('change',()=>{if(input.checked&&selected.size>=3){input.checked=false;count.textContent='Selecione no máximo 3 orientadores.';return;}if(input.checked)selected.add(person.id);else selected.delete(person.id);paint();});
@@ -716,23 +756,53 @@ function buildAdvisorPicker() {
   const empty=node('p','empty-small',advisors.length?'Nenhum orientador com esse nome.':'A coordenação ainda não liberou orientadores para convite.');empty.hidden=Boolean(advisors.length);
   search.addEventListener('input',()=>{const query=normalize(search.value).trim();let visible=0;controls.forEach(({label})=>{label.hidden=Boolean(query&&!label.dataset.search.includes(query));if(!label.hidden)visible++;});empty.hidden=visible>0;});
   field.append(search,count,list,empty,node('p','advisor-picker-help','Você também pode escolher depois, em Convites.'));
+  paint();
   return {field,selectedIds:()=>[...selected]};
 }
 function showCreateGroup() {
   if(!canCreateGroup()){render();return;}
-  const name=makeField('Nome do grupo','name',{required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
-  const topic=makeField(state.role==='student'?'Tema da proposta':'Tema da pesquisa','topic',{required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
-  const description=makeField('Descrição da proposta','description',{type:'textarea',maxLength:3000,placeholder:'Problema, objetivo e ideia inicial da pesquisa.'});
-  const year=makeField('Edição do INIC','year',{type:'number',value:2027,required:true,min:2027,max:2100});
-  const student=state.role==='student';const picker=student?buildAdvisorPicker():null;
+  openProposalForm(false);
+}
+function showProposalDraft() {
+  if(!canPrepareProposal()){render();return;}
+  if(canCreateGroup()){showCreateGroup();return;}
+  openProposalForm(true);
+}
+function proposalMemberEmails(value) {
+  const own=String(state.user?.email||'').toLowerCase();
+  const emails=[...new Set(String(value||'').split(/[\s,;]+/).map(email=>email.trim().toLowerCase()).filter(email=>email&&email!==own))];
+  if(emails.some(email=>email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))throw new Error('Confira os e-mails dos colegas antes de continuar.');
+  if(emails.length>20)throw new Error('Convide no máximo 20 colegas por proposta.');
+  return emails;
+}
+function openProposalForm(draftOnly) {
+  const uid=state.user?.uid,session=sessionVersion;
+  const student=state.role==='student';const saved=student&&proposalDraft?.uid===uid?proposalDraft:{};
+  const name=makeField('Nome do grupo','name',{value:saved.name||'',required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
+  const topic=makeField(student?'Tema da proposta':'Tema da pesquisa','topic',{value:saved.topic||'',required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
+  const description=makeField('Descrição da proposta','description',{type:'textarea',value:saved.description||'',maxLength:3000,placeholder:'Problema, objetivo e ideia inicial da pesquisa.'});
+  const year=makeField('Edição do INIC','year',{type:'number',value:saved.year||2027,required:true,min:2027,max:2100});
+  const picker=student?buildAdvisorPicker(saved.advisorIds||[]):null;
+  const memberEmails=student?makeField('E-mails dos colegas para convidar (opcional)','memberEmails',{type:'textarea',value:(saved.memberEmails||[]).join('\n'),maxLength:6000,placeholder:'colega1@gmail.com\ncolega2@gmail.com',help:'Separe por vírgulas ou linhas. Cada colega recebe o convite no aplicativo ao entrar com esse e-mail.'}):null;
+  if(memberEmails)memberEmails.field.rows=3;
   const advisor=student?null:makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))],help:state.role==='coordinator'&&isListedAdvisor()?'Escolha seu nome para orientar este novo grupo. Outros orientadores receberão um convite e precisam aceitar.':'O orientador receberá um convite e será vinculado após aceitar.'});
-  openForm({title:student?'Nova proposta de TCC':'Novo grupo',kicker:'INIC 2027',fields:[name.label,topic.label,description.label,year.label,picker?.field||advisor.label,node('p','dialog-note','O grupo recebe um cronograma inicial editável. Confira as datas com seu orientador.')],submit:'Criar grupo',busy:student?'Criando proposta e enviando convites…':'Criando grupo…',handler:async data=>{
+  const fields=[name.label,topic.label,description.label,year.label,...(memberEmails?[memberEmails.label]:[]),picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'Ao confirmar, o grupo, o cronograma e todos os convites são criados juntos.':'O grupo recebe um cronograma inicial editável.')];
+  openForm({title:draftOnly?'Preparar meu grupo':student?'Nova proposta de TCC':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,submit:draftOnly?'Salvar rascunho':student?'Enviar proposta e convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando proposta e enviando convites…':'Criando grupo…',handler:async data=>{
+    if(state.user?.uid!==uid||sessionVersion!==session)return;
+    if(draftOnly&&!canPrepareProposal())throw new Error('Seu perfil mudou. Confira seu cadastro antes de continuar.');
+    if(!draftOnly&&!canCreateGroup())throw new Error('Envie o termo assinado e aguarde a confirmação antes de enviar a proposta.');
     const advisorIds=picker?.selectedIds()||[];
     if(advisorIds.length>3)throw new Error('Selecione no máximo 3 orientadores.');
     if(student&&advisorIds.some(id=>!state.advisors.some(person=>person.id===id)))throw new Error('A lista de orientadores mudou. Revise os nomes antes de enviar.');
-    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:String(data.get('description')).trim(),year:Number(data.get('year')),...(student?{advisorIds}:{advisorId:String(data.get('advisorId')||'')})};
+    const emails=student?proposalMemberEmails(data.get('memberEmails')):[];
+    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:String(data.get('description')).trim(),year:Number(data.get('year')),...(student?{advisorIds,memberEmails:emails}:{advisorId:String(data.get('advisorId')||'')})};
+    if(student)proposalDraft={uid,...payload};
+    if(draftOnly){paintProposalCallout();notice('Rascunho preparado. Envie o termo assinado para concluir a proposta.');return;}
     const id=await service.createGroup(payload);
-    notice(student&&advisorIds.length?'Proposta criada. Os orientadores selecionados receberam um convite.':'Grupo criado. Convide os integrantes e organize as entregas.');navigate('group',typeof id==='string'?id:id.id);
+    if(state.user?.uid!==uid||sessionVersion!==session)return;
+    proposalDraft=null;
+    const count=emails.length+advisorIds.length;
+    notice(student?(count?`Proposta criada. ${count} convite(s) enviado(s) para os colegas e orientadores selecionados.`:'Proposta criada. Você pode enviar convites na área do grupo.'):'Grupo criado. Convide os integrantes e organize as entregas.');navigate('group',typeof id==='string'?id:id.id);
   }});
 }
 function showEditGroup(group) {
@@ -1118,7 +1188,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261105-9');
+  service = await import('./firebase-service.js?v=20261105-10');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

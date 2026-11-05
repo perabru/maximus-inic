@@ -53,7 +53,7 @@ Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam 
 
 No primeiro cadastro com Google, a pessoa escolhe **Estudante** ou **Professor(a)** e conclui seu perfil. A escolha de professor solicita a aprovação da coordenação; não concede permissões administrativas. Contas existentes mantêm seu perfil e papel. Professores aprovados enviam convites aos integrantes dos seus grupos e recebem convites para orientar outras equipes. O botão **Enviar convite +** também encaminha à criação de um grupo quando ainda não há uma equipe disponível.
 
-Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos.
+Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos. O formulário também recebe até 20 e-mails de colegas; cada colega entra somente após aceitar o convite com o mesmo e-mail verificado. Não é necessário que a conta já exista no momento do convite.
 
 O aceite aparece no grupo e gera um aviso ao aluno proponente. A recusa não gera notificação para o aluno. Carregamento e confirmação acompanham as operações reais de cadastro, envio e resposta.
 
@@ -69,6 +69,8 @@ O calendário destaca os nove feriados nacionais federais de 2027 e reúne as en
 
 O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, inclusive contas já cadastradas. Antes de usar os grupos, o aluno é direcionado a **Meu termo** para enviar um PDF, JPG ou PNG de até 3 MiB. Um termo válido já enviado continua atendendo à exigência. O acesso é liberado após a confirmação do servidor; falha, espera ou envio offline não liberam o uso. As regras também exigem o termo nas gravações acadêmicas. Professores pendentes aguardam aprovação e não conseguem usar essa escolha de perfil para pular a exigência.
 
+A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Enviar proposta e convites**; a confirmação do termo não dispara convites sozinha.
+
 Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Professores e outros alunos não têm acesso. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. Metadados e bytes ficam separados, com download autenticado, sem URL pública ou cache offline.
 
 ### Avisos no aplicativo instalado
@@ -81,7 +83,7 @@ O remetente também acompanha confirmações de orientação. Envia o aviso de a
 
 ### Validação
 
-327 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 54 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
+371 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 72 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
 ### Grupos, integrantes e avaliações
 

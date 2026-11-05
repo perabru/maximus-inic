@@ -133,3 +133,44 @@ html[data-theme="dark"]{color-scheme:dark;--primary:#a7aaff;--primary-hover:#c6c
 .button.is-working::before{content:'';display:block;width:14px;height:14px;flex-shrink:0;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:operation-turn .8s linear infinite}
 @keyframes operation-turn{to{transform:rotate(360deg)}}
 @media(max-width:700px){.access-gate{padding:23px}.access-gate>h2{font-size:23px}.agreement-gate h3{font-size:20px}.agreement-steps{grid-template-columns:1fr;gap:9px;margin-top:18px}.agreement-steps li{display:flex;align-items:center;gap:14px;padding:12px}.agreement-steps li::before{margin-bottom:0;flex-shrink:0}.agreement-summary{gap:7px}.agreement-summary>span{padding:8px 11px;font-size:11px}.agreement-release>.button{width:100%}.mobile-nav.is-restricted{justify-content:center}.mobile-nav.is-restricted a{flex:0 1 160px}.advisor-picker{padding:13px}.advisor-picker-list{max-height:240px}.advisor-choice{gap:9px;padding:10px}.advisor-choice .avatar{display:none}.advisor-confirmation{padding:21px}.advisor-confirmation h3{font-size:17px}.dialog-status.is-loading{padding:12px;gap:11px}.app-header:has(+.app-main .agreement-gate:not([hidden])) h1{font-size:19px;line-height:1.3}}
+
+/* Two direct steps: download the blank term, then upload the signed copy. */
+.term-action-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:stretch}
+.term-download{padding:30px;border-radius:var(--radius);background:#f38635;color:#24244c;display:flex;align-items:flex-start;flex-direction:column;min-width:0;border:1px solid #ed7c2b;box-shadow:0 10px 30px #f3863514}
+.term-step{display:block;font-size:10px;font-weight:800;letter-spacing:.11em;line-height:1.5;color:var(--primary);margin-bottom:15px}
+.term-download .term-step{color:#403253}
+.term-download h2{font-size:27px;line-height:1.2;letter-spacing:-.04em;max-width:360px}
+.term-download>p:not(.agreement-gate){font-size:13px;line-height:1.7;margin-top:12px;color:#3f304a}
+.term-download .term-download-button{width:100%;min-height:58px;margin-top:27px;background:#303377;color:#fff;border:1px solid #303377;padding:16px 20px;font-size:15px;font-weight:800;box-shadow:0 6px 0 #222552;transition:transform .15s,box-shadow .15s}
+.term-download .term-download-button:hover{background:#25285f;color:#fff;transform:translateY(-1px);box-shadow:0 7px 0 #222552}
+.term-download .term-download-button:active{transform:translateY(4px);box-shadow:0 2px 0 #222552}
+.term-preview-link{display:inline-block;margin-top:19px;color:#34305b;font-size:11px;font-weight:750;text-decoration:underline;text-underline-offset:4px}
+.term-preview-link:hover{text-decoration:underline}
+.term-download .agreement-gate--compact{background:none;border:0;padding:0;margin:21px 0 0;font-size:11px;line-height:1.8;color:#403253}
+.term-download .agreement-gate--compact .badge{background:#33316b;color:#fff;margin-right:4px}
+.term-action-grid .agreement-upload{min-width:0;margin:0;padding:30px}
+.term-action-grid .agreement-upload h3{font-size:21px;margin-bottom:0;line-height:1.3}
+.term-action-grid .agreement-upload-form{margin-top:22px}
+.term-action-grid .agreement-upload-form .field{margin-bottom:10px}
+.term-action-grid .agreement-upload-form .field input[type=file]{font-size:11px;padding:10px;max-width:100%}
+.term-action-grid .agreement-upload-form>.button{width:100%;min-height:47px;margin-top:13px;font-size:12px}
+.term-action-grid .agreement-privacy{margin-top:12px;font-size:10px}
+.agreement-release{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-top:18px;padding:16px 20px}
+.agreement-release>.button{margin-top:0}
+.agreement-empty-status{font-size:11px;margin-top:0;color:var(--muted)}
+.proposal-callout{display:flex;align-items:center;justify-content:space-between;gap:25px;padding:25px 28px;margin-top:22px;border:2px solid var(--primary);border-radius:var(--radius);background:var(--surface);box-shadow:0 6px 24px #3d40940a;min-width:0}
+.proposal-callout-copy{max-width:620px;min-width:0}
+.proposal-callout .term-step{margin-bottom:9px}
+.proposal-callout h3{font-size:21px;line-height:1.3}
+.proposal-callout-copy>p{font-size:12px;line-height:1.8;margin-top:10px;max-width:620px}
+.proposal-callout-actions{width:255px;max-width:100%;flex-shrink:0}
+.proposal-callout-actions>.button{width:100%;min-height:50px;font-size:12px}
+.proposal-callout-status{font-size:10px;line-height:1.7;margin-top:11px;max-width:290px}
+@media(max-width:1050px){.term-download,.term-action-grid .agreement-upload{padding:24px}.term-download h2{font-size:25px}.proposal-callout{align-items:flex-start;flex-direction:column;gap:19px}.proposal-callout-actions{width:100%;display:flex;gap:15px;align-items:center;flex-wrap:wrap}.proposal-callout-actions>.button{width:auto;min-width:205px}.proposal-callout-status{margin-top:0;flex:1 1 220px;max-width:none}}
+@media(max-width:760px){.term-action-grid{grid-template-columns:1fr;gap:15px}.term-download,.term-action-grid .agreement-upload{padding:23px}.term-download h2{font-size:26px}.term-download .term-download-button{margin-top:23px;font-size:14px;min-height:55px}.term-download .agreement-gate--compact{margin-top:18px}.proposal-callout{padding:22px;gap:17px}.proposal-callout h3{font-size:20px}.proposal-callout-copy>p{font-size:11px}.proposal-callout-actions{display:block}.proposal-callout-actions>.button{width:100%}.proposal-callout-status{margin-top:11px;font-size:10px}.agreement-release{padding:16px}.agreement-release>.button{width:100%}}
+/* Keep the document and team calls to action prominent after shared button upgrades. */
+.term-download .button.term-download-button.uiverse-button{--uiverse-color:#303377;background:#303377;color:#fff;border-color:#303377;font-size:15px;padding:16px 20px;min-height:58px;border-radius:7px}
+.term-download .button.term-download-button.uiverse-button:is(:hover,:focus-visible){color:#fff;background:#25285f;border-color:#25285f}
+.proposal-callout-actions .button.orange.uiverse-button{--uiverse-color:#ffc08e;background:#f38635;color:#24244c;border-color:#f38635;min-height:50px;font-size:12px;border-radius:7px}
+.proposal-callout-actions .button.orange.uiverse-button:is(:hover,:focus-visible){color:#24244c;background:#ff9a50;border-color:#ff9a50}
+@media(max-width:760px){.term-download .button.term-download-button.uiverse-button{font-size:14px;min-height:55px}}

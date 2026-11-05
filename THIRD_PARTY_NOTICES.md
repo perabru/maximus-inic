@@ -24,4 +24,9 @@ Referência funcional do slideshow horizontal (implementação própria): https:
 
 Botão Entrar: adamgiebl (Adam Giebl), https://uiverse.io/adamgiebl/curly-wombat-58 — MIT. Copyright 2026 adamgiebl.
 
+Cartão de notificação: https://uiverse.io/stlyash/silent-wolverine-74 — MIT.
+Copyright - 2026 Yaya12085 (Yaya Mohamed).
+Copyright - 2026 stlyash (Yashasvi).
+Adaptado às cores da Máximu’s, aos modos claro/escuro e a mensagens reais da plataforma. A licença MIT acima se aplica a este componente.
+
 Tipografia dos botões: Montserrat ExtraBold Italic, SIL Open Font License 1.1. Fontes e licença em assets/fonts/SOURCE.txt e assets/fonts/OFL-Montserrat.txt. Maximus Interface é um alias CSS; os glifos originais foram preservados.

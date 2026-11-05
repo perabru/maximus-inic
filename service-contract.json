@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -47,7 +47,7 @@
     "deleteEvent(groupId,eventId)": "Promise<void>; apenas gestor e grupo ativo.",
     "savePushSubscription(subscriptionJSON,deviceId)": "Promise<void>; dispositivo próprio, ID SHA256hex64, endpoint HTTPS nas origens FCM/Firefox/Apple e chaves de Web Push validadas; updatedAt do servidor.",
     "removePushSubscription(deviceId)": "Promise<void>; apaga inscrição do próprio dispositivo.",
-    "createGroup({name,topic,description,year,advisorIds,advisorId})": "Promise<groupId>; proposta, índice privado, oito marcos e até 3 convites para orientadores aprovados são atômicos. advisorIds contém 0..3 UIDs distintos; advisorId mantém compatibilidade com criação do professor para si.",
+    "createGroup({name,topic,description,year,advisorIds,advisorId,memberEmails})": "Promise<groupId>; proposta, índice privado, oito marcos, até 3 convites para orientadores aprovados e até 20 convites por e-mail para colegas são gravados num único update atômico. memberEmails é array opcional: valida, normaliza trim/lowercase, remove duplicados e o e-mail do criador antes de gravar. Emails ainda não cadastrados são permitidos; ninguém ingressa sem aceitar com a conta verificada e o termo obrigatório. advisorIds contém 0..3 UIDs distintos; advisorId mantém compatibilidade com criação do professor para si.",
     "mandatoryAgreementYear": "2027; edição fixa obrigatória para estudantes, inclusive contas existentes. Professores ainda não aprovados aguardam coordenação; não obtêm permissão pelo requestedRole."
   },
   "schema": {
@@ -176,11 +176,12 @@
     "securityTests": 327,
     "engine": "Firebase Realtime Database Emulator 4.11.2",
     "cli": "Firebase CLI 15.35.0",
-    "result": "Todos os 327 cenários passaram no emulador local demo-maximus-inic: termo obrigatório privado de 2027; envio confirmado pelo servidor e rollback otimista; escolha de perfil Google sem autopromoção; proteção de sessão antiga; até 3 orientadores pendentes com limite nas regras; primeiro aceite vence; convites legados; reciclagem após recusa; corrida entre convite e aceite; confirmação de aceite e privacidade do worker; limpeza atômica. Os 227 cenários de base atualizados e 100 novos foram aprovados. Auth é simulado e o runtime recusa banco fora do emulador local."
+    "result": "Todos os 371 cenários passaram no emulador local demo-maximus-inic: 327 cenários anteriores de termo obrigatório, sessão, propostas para até três orientadores, primeiro aceite, privacidade, calendário e limpeza; mais 44 verificações de convites aos colegas no cadastro. Criação de aluno, professor e coordenação; normalização/deduplicação/exclusão própria; até 20 colegas; e-mail ainda não cadastrado; destinatário verificado; termo antes do aceite; rollback integral e tentativas de forjar criador/orientador/integrantes foram aprovados. Auth é simulado e o runtime recusa banco fora do emulador local."
   },
   "evaluationPrivacy": "Só coordenador ou orientador atualmente atribuído lê todas avaliações individuais. Integrante lê nota coletiva e sua própria nota. Nenhum aluno escreve notas; remover o integrante revoga a leitura e apaga sua avaliação.",
   "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação.",
   "agreementPrivacy": "Metadados e bytes só podem ser lidos pelo estudante proprietário ou coordenação. Orientadores não recebem acesso. A coordenação lista apenas metadados; bytes não têm leitura coletiva. Só estudantes de cadastro concluído publicam as próprias cópias. Regras exigem par consistente, bloqueiam deleções parciais e campos extras; o app não determina validade jurídica de assinaturas.",
   "notificationWorkerPrivacy": "Worker técnico lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries/advisorConfirmations; não lê perfis, convites, mensagens, notas ou contratos. Confirmações são somente leitura, enviadas apenas ao estudante ainda integrante de grupo ativo com o mesmo orientador. Recusas nunca geram confirmação/push.",
-  "mandatoryAgreementNotice": "Todo estudante deve enviar o termo assinado de 2027 antes de escrever em grupos, convites aceitos, mensagens, cronograma e metadados acadêmicos. Perfil, upload/download do próprio termo, leitura autorizada e preferências de notificação continuam acessíveis. A autorização é validada nas regras do banco e no serviço. Arquivo recebido não significa verificação humana das assinaturas."
+  "mandatoryAgreementNotice": "Todo estudante deve enviar o termo assinado de 2027 antes de escrever em grupos, convites aceitos, mensagens, cronograma e metadados acadêmicos. Perfil, upload/download do próprio termo, leitura autorizada e preferências de notificação continuam acessíveis. A autorização é validada nas regras do banco e no serviço. Arquivo recebido não significa verificação humana das assinaturas.",
+  "proposalMemberInvitationsNotice": "A criação do grupo envia convites internos automaticamente aos e-mails informados; não dispara e-mails externos nem adiciona membros sem consentimento. Não consulta perfis de colegas. Duplicados e próprio endereço são ignorados, até 20 destinatários distintos; valores inválidos rejeitam a proposta inteira antes de gravar. Convites permanecem vinculados ao mesmo e-mail verificado mesmo se a pessoa só se cadastrar depois."
 }

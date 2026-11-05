@@ -301,12 +301,25 @@ async function approvedAdvisorIds(ids) {
 function invitationRecord(user,groupId,groupName,toUid='',toEmail='',type='advisor') {
   return {groupId,groupName,toEmail:clean(toEmail,254).toLowerCase(),toUid,type,senderId:user.uid,senderName:profileCache?.name||user.displayName||'Participante',status:'pending',createdAt:serverTimestamp()};
 }
-export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[]}) {
+function proposalMemberEmails(emails,selfEmail) {
+  if(!Array.isArray(emails))throw new Error('Informe os e-mails dos colegas em uma lista.');
+  const unique=new Set(),own=String(selfEmail||'').trim().toLowerCase();
+  for(const value of emails){
+    if(typeof value!=='string')throw new Error('Informe um e-mail válido para cada colega.');
+    const email=value.trim().toLowerCase();
+    if(email.length>254||!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email))throw new Error('Confira os e-mails dos colegas antes de enviar os convites.');
+    if(email!==own)unique.add(email);
+    if(unique.size>20)throw new Error('Convide até 20 colegas ao criar o grupo.');
+  }
+  return [...unique];
+}
+export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[]}) {
   const user=needUser(),role=await requireAcademicAccess();
   const edition=Number(year);
   if(!Number.isInteger(edition)||edition<2025||edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
   const groupName=clean(name,100),groupTopic=clean(topic,240);
   if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
+  const colleagues=proposalMemberEmails(memberEmails,user.email);
   const candidates=await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
   const directAdvisor=(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
   const groupId=push(path('groups')).key;
@@ -315,6 +328,7 @@ export async function createGroup({name,topic,description='',year=2027,advisorId
   const changes={[`groups/${groupId}`]:group,[`userGroups/${user.uid}/${groupId}`]:true};
   for(const task of defaultSchedule(edition))changes[`tasks/${groupId}/${task.id}`]={title:task.title,dueDate:task.dueDate,completed:false,weight:1,createdBy:user.uid,createdAt:Date.now(),completedBy:''};
   for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid);changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
+  for(const email of colleagues){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,'',email,'member');}
   // Proposal, first schedule and all selected invitations either all commit or
   // all fail. Retrying a failed form cannot leave a second partial proposal.
   await update(path(),changes);
