@@ -58,6 +58,8 @@ function messageTime(value) {
 }
 function initials(name) { return String(name || 'M').trim().split(/\s+/).slice(0,2).map(n => n.charAt(0).toUpperCase()).join(''); }
 function myName() { return state.profile?.name || state.user?.displayName || 'Minha conta'; }
+function isListedAdvisor(uid = state.user?.uid) { return state.advisors.some(person=>person.id===uid); }
+function advisorLabel(person) { return person.name + (person.id===state.user?.uid?' (eu)':''); }
 function advisorName(group) { return state.advisors.find(p => p.id === group.advisorId)?.name || state.users.find(p => p.id === group.advisorId)?.name || (group.advisorId ? 'Orientador(a) do grupo' : 'Aguardando orientador(a)'); }
 function groupName(id) { return state.groups.find(g => g.id === id)?.name || 'Grupo de pesquisa'; }
 function canManage(group) { return state.role === 'coordinator' || group.advisorId === state.user?.uid || group.createdBy === state.user?.uid; }
@@ -322,7 +324,7 @@ function updateShell() {
   $('#view-title').textContent = titles[currentRoute.view] || 'Visão geral';
   $('#view-kicker').textContent = state.role === 'coordinator' ? 'ACOMPANHAMENTO DA ESCOLA' : 'SEU ESPAÇO DE PESQUISA';
   $('#user-name').textContent = myName();
-  $('#user-role').textContent = roleNames[state.role] || roleNames.student;
+  $('#user-role').textContent = state.role==='coordinator'&&isListedAdvisor()?'Coordenação e orientação':roleNames[state.role] || roleNames.student;
   $('#user-avatar').textContent = initials(myName());
   $('#admin-nav').hidden = state.role !== 'coordinator';
   $('#mobile-admin-nav').hidden = state.role !== 'coordinator';
@@ -399,7 +401,7 @@ function renderGroups() {
   const filters=node('div','search-filter');const search=node('input');search.type='search';search.placeholder='Buscar grupo, tema ou integrante';search.setAttribute('aria-label','Buscar grupos');search.value=groupSearch;
   search.addEventListener('input',event=>{groupSearch=event.target.value;paintFilteredGroups();});filters.append(search);
   if(state.role==='coordinator'){
-    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');[{value:'all',label:'Todos os orientadores'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:a.name}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;paintFilteredGroups();});filters.append(select);
+    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');[{value:'all',label:'Todos os orientadores'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;paintFilteredGroups();});filters.append(select);
   }
   fragment.append(filters,node('div','group-grid'));fragment.lastChild.id='filtered-groups';
   const count=node('p','count-label');count.id='groups-count';count.style.marginTop='16px';fragment.append(count);
@@ -419,7 +421,7 @@ function showCreateGroup() {
   const topic=makeField('Tema da pesquisa','topic',{required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
   const description=makeField('Conte um pouco sobre a ideia','description',{type:'textarea',maxLength:3000,placeholder:'Qual problema vocês querem compreender ou resolver?'});
   const year=makeField('Edição do INIC','year',{type:'number',value:2027,required:true,min:2027,max:2100});
-  const advisor=makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:a.name}))],help:'O orientador receberá um convite e será vinculado após aceitar.'});
+  const advisor=makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))],help:state.role==='coordinator'&&isListedAdvisor()?'Escolha seu nome para orientar este novo grupo. Outros orientadores receberão um convite e precisam aceitar.':'O orientador receberá um convite e será vinculado após aceitar.'});
   openForm({title:'Vamos criar seu grupo',kicker:'DA IDEIA AO PROJETO',fields:[name.label,topic.label,description.label,year.label,advisor.label,node('p','dialog-note','O grupo recebe um cronograma inicial de trabalho, com etapas que podem ser ajustadas. Datas oficiais de 2027 ainda não estão confirmadas.')],submit:'Criar grupo',handler:async data=>{
     const id=await service.createGroup({name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:String(data.get('description')).trim(),year:Number(data.get('year')),advisorId:String(data.get('advisorId'))});
     notice('Grupo criado. Organize as etapas e convide os integrantes.');navigate('group',typeof id==='string'?id:id.id);
@@ -436,7 +438,7 @@ function showInviteForm(initialGroupId = '') {
   if(!manageable.length){notice('Crie um grupo ou abra um grupo que você orienta para enviar convites.','info');return;}
   const group=makeField('Grupo','groupId',{required:true,value:initialGroupId||manageable[0].id,options:manageable.map(g=>({value:g.id,label:g.name}))});
   const type=makeField('Convidar como','type',{options:[{value:'member',label:'Estudante / integrante'},{value:'advisor',label:'Orientador(a)'}]});
-  const advisor=makeField('Orientador(a) cadastrado(a)','toUid',{options:[{value:'',label:'Selecione o orientador'},...state.advisors.map(p=>({value:p.id,label:p.name}))]});advisor.label.hidden=true;
+  const advisor=makeField('Orientador(a) cadastrado(a)','toUid',{options:[{value:'',label:'Selecione o orientador'},...state.advisors.map(p=>({value:p.id,label:advisorLabel(p)}))]});advisor.label.hidden=true;
   const email=makeField('E-mail de quem receberá','toEmail',{type:'email',required:true,maxLength:254,placeholder:'email@exemplo.com',help:'A pessoa verá o convite ao entrar com este mesmo e-mail.'});
   function toggle(){const isAdvisor=type.field.value==='advisor';advisor.label.hidden=!isAdvisor;advisor.field.required=isAdvisor;email.label.hidden=isAdvisor;email.field.required=!isAdvisor;}
   type.field.addEventListener('change',toggle);advisor.field.addEventListener('change',toggle);
@@ -622,7 +624,7 @@ function renderAdmin() {
   const wrap=node('div','user-table-wrap');const table=node('table','user-table');const thead=node('thead');const header=node('tr');['Nome','E-mail','Série','Acesso'].forEach(label=>header.append(node('th','',label)));thead.append(header);table.append(thead);const tbody=node('tbody');
   state.users.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).forEach(person=>{
     const row=node('tr');const name=node('td');name.append(node('strong','',person.name||'Sem nome'));row.append(name,node('td','',person.email||'—'),node('td','',person.year||'—'));const role=node('td');
-    if(person.role==='coordinator')role.append(node('span','badge','Coordenação'));
+    if(person.role==='coordinator')role.append(node('span','badge',isListedAdvisor(person.id)?'Coordenação e orientação':'Coordenação'));
     else {
       const select=node('select');select.setAttribute('aria-label',`Acesso de ${person.name||person.email||'usuário'}`);[{value:'student',label:'Estudante'},{value:'advisor',label:'Orientador(a)'}].forEach(item=>{const option=node('option','',item.label);option.value=item.value;select.append(option);});select.value=person.role||'student';select.addEventListener('change',async()=>{const oldRole=person.role||'student';const newRole=select.value;const ok=await action(select,()=>service.setUserRole(person.id,newRole),'Permissão atualizada.');if(!ok)select.value=oldRole;});role.append(select);
     }row.append(role);tbody.append(row);
@@ -634,7 +636,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js');
+  service = await import('./firebase-service.js?v=20261105-4');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

@@ -273,5 +273,38 @@
     "detail": "INIC · Univap",
     "focalPoint": "50% 55%",
     "original": "image(20261105-121910).png"
+  },
+  {
+    "src": "assets/photos/photo-26.webp",
+    "thumb": "assets/photos/photo-26-thumb.webp",
+    "width": 1200,
+    "height": 1600,
+    "alt": "Três participantes reunidas junto à porta de entrada do espaço do evento.",
+    "caption": "Encontro no INIC",
+    "detail": "Registros do evento",
+    "focalPoint": "50% 50%",
+    "original": "image(20261105-140004).png"
+  },
+  {
+    "src": "assets/photos/photo-27.webp",
+    "thumb": "assets/photos/photo-27-thumb.webp",
+    "width": 1600,
+    "height": 1200,
+    "alt": "Três participantes no palco, diante do painel INIC 2025, em uma vista ampla do auditório.",
+    "caption": "No palco do INIC 2025",
+    "detail": "Registro no auditório",
+    "focalPoint": "50% 50%",
+    "original": "image(20261105-140012).png"
+  },
+  {
+    "src": "assets/photos/photo-28.webp",
+    "thumb": "assets/photos/photo-28-thumb.webp",
+    "width": 1600,
+    "height": 1200,
+    "alt": "Três participantes no palco diante do painel INIC 2025; uma delas segura um certificado.",
+    "caption": "Uma lembrança do INIC 2025",
+    "detail": "Registro com certificado",
+    "focalPoint": "50% 50%",
+    "original": "image(20261105-140017).png"
   }
 ]

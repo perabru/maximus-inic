@@ -190,7 +190,7 @@ export async function saveProfile(patch) {
   await update(path(`users/${user.uid}`),changes);
   if(changes.name) {
     await updateProfile(user,{displayName:changes.name});
-    if(roleCache==='advisor') await set(path(`advisorDirectory/${user.uid}`),{uid:user.uid,name:changes.name});
+    if(roleCache==='advisor'||roleCache==='coordinator') await set(path(`advisorDirectory/${user.uid}`),{uid:user.uid,name:changes.name});
   }
 }
 export async function setUserRole(uid,role) {
@@ -201,7 +201,12 @@ export async function setUserRole(uid,role) {
   const changes = {[`roles/${uid}`]:role,[`advisorDirectory/${uid}`]:role==='advisor'||role==='coordinator'?{uid,name:person.name}:null};
   await update(path(),changes);
 }
-export const approveAdvisor = uid => setUserRole(uid,'advisor');
+export async function approveAdvisor(uid) {
+  // Coordination and group advising can coexist. Listing a coordinator as an
+  // advisor must preserve their access to the whole school.
+  const currentRole=(await get(path(`roles/${uid}`))).val();
+  return setUserRole(uid,currentRole==='coordinator'?'coordinator':'advisor');
+}
 export async function createGroup({name,topic,description='',year=2027,advisorId=''}) {
   const user=needUser();
   const edition=Number(year);
