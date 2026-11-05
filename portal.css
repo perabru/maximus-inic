@@ -23,3 +23,30 @@ html[data-theme="dark"]{color-scheme:dark;--primary:#a7aaff;--primary-hover:#c6c
 /* Calendar navigation uses explicit labels; decorative button arrows are omitted. */
 .calendar-nav .calendar-step{width:auto;min-width:62px;padding-inline:9px;flex-shrink:0;font-size:11px}
 @media(max-width:480px){.calendar-nav{gap:6px}.calendar-nav .calendar-step{min-width:56px;padding-inline:7px}.calendar-nav h3{font-size:15px;line-height:1.4}}
+
+/* Group management and evaluations share the existing controls and typography. */
+.group-detail-header .destructive-action{flex-basis:100%;text-align:right}
+.text-button.destructive-action{color:var(--danger)}
+.deletion-warning{padding:12px 14px;border:1px solid color-mix(in srgb,var(--danger) 35%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--danger) 7%,var(--surface));color:var(--danger);font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.button.danger-button.uiverse-button.uiverse-button{--uiverse-color:var(--danger);background:transparent;color:var(--danger);border-color:var(--danger)}
+.button.danger-button.uiverse-button.uiverse-button:is(:hover,:focus-visible){color:var(--surface)}
+.team-member{flex-wrap:wrap}
+.team-member .member-actions{display:flex;flex:1 0 100%;align-items:center;gap:8px 12px;flex-wrap:wrap;padding-left:48px;min-width:0}
+.team-member .member-actions .button{font-size:11px;padding:7px 11px;min-height:36px}
+.team-member .member-actions .text-button{font-size:11px;padding:8px 0}
+.evaluation-card{display:flex;flex-direction:column;gap:14px;min-width:0}
+.evaluation-card--group{margin-bottom:28px;border-top:3px solid var(--orange)}
+.evaluation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;min-width:0}
+.evaluation-heading h3{font-size:17px;overflow-wrap:anywhere}
+.evaluation-score{color:var(--primary);font-size:36px;line-height:1.2;font-weight:750;letter-spacing:-.04em;margin:0}
+.evaluation-score>span{color:var(--muted);font-size:14px;font-weight:450;letter-spacing:0}
+.evaluation-score.is-empty{font-size:22px;color:var(--muted);font-weight:550;letter-spacing:-.02em}
+.evaluation-feedback{color:var(--ink);font-size:12px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.evaluation-feedback.is-empty{color:var(--muted)}
+.evaluation-audit{font-size:10px;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+.evaluation-actions{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;padding-top:14px;margin-top:auto;border-top:1px solid var(--border)}
+.evaluation-actions .text-button{font-size:11px}
+.individual-evaluations>h3{font-size:19px;margin-bottom:18px}
+.evaluation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media(max-width:768px){.evaluation-grid{grid-template-columns:1fr}.evaluation-card{padding:20px}.group-detail-header .destructive-action{text-align:left}.evaluation-actions{gap:12px 16px}}
+@media(max-width:370px){.team-member .member-actions{padding-left:0}.evaluation-card{padding:18px}.evaluation-actions>.button{width:100%}.evaluation-score{font-size:32px}.group-tabs{gap:21px}}

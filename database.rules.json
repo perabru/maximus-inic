@@ -61,27 +61,27 @@
         ".read": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && query.orderByChild === 'advisorId' && query.equalTo === auth.uid))",
         "$gid": {
           ".read": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (!data.exists() && newData.child('createdBy').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && (newData.child('advisorId').val() === '' || (newData.child('advisorId').val() === auth.uid && root.child('maximusInic/roles').child(auth.uid).val() === 'advisor'))))",
-          ".validate": "newData.hasChildren(['name','topic','description','year','advisorId','members','memberNames','createdBy','createdAt','status']) && (!data.exists() || (newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
+          ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('status').val() !== 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (newData.child('createdBy').val() === auth.uid && newData.child('members').child(auth.uid).val() === true && (newData.child('advisorId').val() === '' || (newData.child('advisorId').val() === auth.uid && root.child('maximusInic/roles').child(auth.uid).val() === 'advisor'))))) || (data.exists() && !newData.exists() && data.child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('tasks').child($gid).exists() && !newData.parent().parent().child('messages').child($gid).exists() && !newData.parent().parent().child('evaluations').child($gid).exists() && !newData.parent().parent().child('admissions').child($gid).exists() && !newData.parent().parent().child('memberRevocations').child($gid).exists()))",
+          ".validate": "newData.hasChildren(['name','topic','description','year','advisorId','createdBy','createdAt','status']) && (!data.exists() || (newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))",
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100",
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))"
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
           },
           "topic": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 240",
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))"
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
           },
           "description": {
             ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 3000",
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))"
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
           },
           "year": {
             ".validate": "newData.isNumber() && newData.val() >= 2025 && newData.val() <= 2100 && newData.val() % 1 === 0",
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))"
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
           },
           "status": {
-            ".validate": "newData.val() === 'active' || newData.val() === 'archived'",
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))"
+            ".validate": "newData.val() === 'active' || newData.val() === 'archived' || newData.val() === 'deleting'",
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/roles').child(auth.uid).val() !== 'advisor' && root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting') && (newData.val() !== 'deleting' || (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)))"
           },
           "createdBy": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128 && (data.exists() || newData.val() === auth.uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')"
@@ -91,18 +91,18 @@
           },
           "advisorId": {
             ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 128 && (newData.val() === '' || root.child('maximusInic/roles').child(newData.val()).val() === 'advisor' || root.child('maximusInic/roles').child(newData.val()).val() === 'coordinator')",
-            ".write": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && newData.val() === auth.uid && (root.child('maximusInic/admissions').child($gid).child(auth.uid).isString() && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'pending' && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('type').val() === 'advisor' && (root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toEmail').val() === auth.token.email.toLowerCase()))) && newData.parent().parent().parent().child('invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'accepted'))"
+            ".write": "(auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && newData.val() === auth.uid && (root.child('maximusInic/admissions').child($gid).child(auth.uid).isString() && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'pending' && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('type').val() === 'advisor' && (root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toEmail').val() === auth.token.email.toLowerCase()))) && newData.parent().parent().parent().child('invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'accepted'))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
           },
           "members": {
             "$uid": {
-              ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && newData.val() === true && (root.child('maximusInic/admissions').child($gid).child(auth.uid).isString() && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'pending' && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('type').val() === 'member' && (root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toEmail').val() === auth.token.email.toLowerCase()))) && newData.parent().parent().parent().parent().child('invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'accepted'))",
+              ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && newData.val() === true && (root.child('maximusInic/admissions').child($gid).child(auth.uid).isString() && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'pending' && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('type').val() === 'member' && (root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('toEmail').val() === auth.token.email.toLowerCase()))) && newData.parent().parent().parent().parent().child('invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('status').val() === 'accepted'))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting') && (!data.exists() || newData.exists() || (!newData.parent().parent().parent().parent().child('userGroups').child($uid).child($gid).exists() && !newData.parent().parent().child('memberNames').child($uid).exists() && !newData.parent().parent().parent().parent().child('evaluations').child($gid).child('members').child($uid).exists() && !newData.parent().parent().parent().parent().child('admissions').child($gid).child($uid).exists() && newData.parent().parent().parent().parent().child('memberRevocations').child($gid).child($uid).val() === now)) && (!newData.exists() || ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid))) || !root.child('maximusInic/memberRevocations').child($gid).child(auth.uid).exists() || root.child('maximusInic/invitations').child(root.child('maximusInic/admissions').child($gid).child(auth.uid).val()).child('createdAt').val() > root.child('maximusInic/memberRevocations').child($gid).child(auth.uid).val())",
               ".validate": "newData.val() === true && (root.child('maximusInic/groups').child($gid).exists() || $uid === auth.uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')"
             }
           },
           "memberNames": {
             "$uid": {
-              ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && newData.parent().parent().child('members').child(auth.uid).val() === true))",
-              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100 && (root.child('maximusInic/groups').child($gid).exists() || $uid === auth.uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')"
+              ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && newData.parent().parent().child('members').child(auth.uid).val() === true))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')",
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100 && (root.child('maximusInic/groups').child($gid).exists() || $uid === auth.uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator') && newData.parent().parent().child('members').child($uid).val() === true"
             }
           },
           "$other": {
@@ -114,8 +114,8 @@
         "$uid": {
           ".read": "auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')",
           "$gid": {
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('groups').child($gid).child('members').child(auth.uid).val() === true)))",
-            ".validate": "newData.val() === true"
+            ".write": "auth != null && (((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && (((root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')) || (!newData.exists() && !newData.parent().parent().parent().child('groups').child($gid).exists()))) || (auth.uid === $uid && newData.parent().parent().parent().child('groups').child($gid).child('status').val() !== 'deleting' && (!newData.exists() || newData.parent().parent().parent().child('groups').child($gid).child('members').child(auth.uid).val() === true)))",
+            ".validate": "newData.val() === true && newData.parent().parent().parent().child('groups').child($gid).child('members').child($uid).val() === true"
           }
         }
       },
@@ -123,12 +123,13 @@
         ".indexOn": [
           "senderId",
           "toEmail",
-          "toUid"
+          "toUid",
+          "groupId"
         ],
-        ".read": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (query.orderByChild === 'senderId' && query.equalTo === auth.uid) || (query.orderByChild === 'toUid' && query.equalTo === auth.uid) || (auth.token.email_verified === true && auth.token.email != null && query.orderByChild === 'toEmail' && query.equalTo === auth.token.email.toLowerCase()))",
+        ".read": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (query.orderByChild === 'senderId' && query.equalTo === auth.uid) || (query.orderByChild === 'toUid' && query.equalTo === auth.uid) || (auth.token.email_verified === true && auth.token.email != null && query.orderByChild === 'toEmail' && query.equalTo === auth.token.email.toLowerCase()) || (query.orderByChild === 'groupId' && query.equalTo != null && root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child(query.equalTo).child('advisorId').val() === auth.uid))",
         "$invite": {
           ".read": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || data.child('senderId').val() === auth.uid || (data.child('toUid').val() === auth.uid || (auth.token.email_verified === true && auth.token.email != null && data.child('toEmail').val() === auth.token.email.toLowerCase())))",
-          ".write": "auth != null && !data.exists() && newData.child('senderId').val() === auth.uid && root.child('maximusInic/groups').child(newData.child('groupId').val()).exists() && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('advisorId').val() === auth.uid) || root.child('maximusInic/groups').child(newData.child('groupId').val()).child('members').child(auth.uid).val() === true) && newData.child('status').val() === 'pending'",
+          ".write": "auth != null && ((!newData.exists() && data.exists() && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child(data.child('groupId').val()).child('advisorId').val() === auth.uid)) && root.child('maximusInic/groups').child(data.child('groupId').val()).child('status').val() === 'deleting' && !newData.parent().parent().child('groups').child(data.child('groupId').val()).exists()) || (newData.exists() && (auth != null && !data.exists() && newData.child('senderId').val() === auth.uid && root.child('maximusInic/groups').child(newData.child('groupId').val()).exists() && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('advisorId').val() === auth.uid) || root.child('maximusInic/groups').child(newData.child('groupId').val()).child('members').child(auth.uid).val() === true) && newData.child('status').val() === 'pending') && (root.child('maximusInic/groups').child(newData.child('groupId').val()).exists() && root.child('maximusInic/groups').child(newData.child('groupId').val()).child('status').val() !== 'deleting')))",
           ".validate": "newData.hasChildren(['groupId','groupName','toEmail','toUid','type','senderId','senderName','status','createdAt']) && ((newData.child('type').val() === 'member' && newData.child('toUid').val() === '' && newData.child('toEmail').val().length > 3) || (newData.child('type').val() === 'advisor' && newData.child('toEmail').val() === '' && (root.child('maximusInic/roles').child(newData.child('toUid').val()).val() === 'advisor' || root.child('maximusInic/roles').child(newData.child('toUid').val()).val() === 'coordinator')))",
           "groupId": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
@@ -152,10 +153,10 @@
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
           },
           "createdAt": {
-            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 300000"
+            ".validate": "newData.isNumber() && newData.val() > 0 && (data.exists() || newData.val() === now)"
           },
           "status": {
-            ".write": "auth != null && data.val() === 'pending' && ((data.parent().child('senderId').val() === auth.uid && newData.val() === 'cancelled') || ((data.parent().child('toUid').val() === auth.uid || (auth.token.email_verified === true && data.parent().child('toEmail').val() === auth.token.email.toLowerCase())) && (newData.val() === 'declined' || (newData.val() === 'accepted' && ((data.parent().child('type').val() === 'member' && newData.parent().parent().parent().child('groups').child(data.parent().child('groupId').val()).child('members').child(auth.uid).val() === true) || (data.parent().child('type').val() === 'advisor' && newData.parent().parent().parent().child('groups').child(data.parent().child('groupId').val()).child('advisorId').val() === auth.uid))))))",
+            ".write": "(auth != null && data.val() === 'pending' && ((data.parent().child('senderId').val() === auth.uid && newData.val() === 'cancelled') || ((data.parent().child('toUid').val() === auth.uid || (auth.token.email_verified === true && data.parent().child('toEmail').val() === auth.token.email.toLowerCase())) && (newData.val() === 'declined' || (newData.val() === 'accepted' && ((data.parent().child('type').val() === 'member' && newData.parent().parent().parent().child('groups').child(data.parent().child('groupId').val()).child('members').child(auth.uid).val() === true) || (data.parent().child('type').val() === 'advisor' && newData.parent().parent().parent().child('groups').child(data.parent().child('groupId').val()).child('advisorId').val() === auth.uid))))))) && (root.child('maximusInic/groups').child(data.parent().child('groupId').val()).exists() && root.child('maximusInic/groups').child(data.parent().child('groupId').val()).child('status').val() !== 'deleting')",
             ".validate": "newData.val() === 'pending' || newData.val() === 'accepted' || newData.val() === 'declined' || newData.val() === 'cancelled'"
           },
           "$other": {
@@ -167,16 +168,17 @@
         "$gid": {
           "$uid": {
             ".read": "auth != null && (auth.uid === $uid || root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator')",
-            ".write": "auth != null && auth.uid === $uid && newData.isString() && root.child('maximusInic/invitations').child(newData.val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(newData.val()).child('status').val() === 'pending' && (root.child('maximusInic/invitations').child(newData.val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(newData.val()).child('toEmail').val() === auth.token.email.toLowerCase()))",
+            ".write": "auth != null && ((!newData.exists() && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')) || (newData.exists() && (auth != null && auth.uid === $uid && newData.isString() && root.child('maximusInic/invitations').child(newData.val()).child('groupId').val() === $gid && root.child('maximusInic/invitations').child(newData.val()).child('status').val() === 'pending' && (root.child('maximusInic/invitations').child(newData.val()).child('toUid').val() === auth.uid || (auth.token.email_verified === true && root.child('maximusInic/invitations').child(newData.val()).child('toEmail').val() === auth.token.email.toLowerCase()))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting'))) && (!newData.exists() || !root.child('maximusInic/memberRevocations').child($gid).child(auth.uid).exists() || root.child('maximusInic/invitations').child(newData.val()).child('createdAt').val() > root.child('maximusInic/memberRevocations').child($gid).child(auth.uid).val())",
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
-          }
+          },
+          ".write": "auth != null && !newData.exists() && root.child('maximusInic/groups').child($gid).child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('groups').child($gid).exists()"
         }
       },
       "tasks": {
         "$gid": {
           ".read": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)",
           "$tid": {
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true && !data.exists() && $tid.matches(/^(tema|pesquisa|rascunho|artigo|inscricao|formatacao|banner|apresentacao)$/)))",
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (root.child('maximusInic/groups').child($gid).child('createdBy').val() === auth.uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true && !data.exists() && $tid.matches(/^(tema|pesquisa|rascunho|artigo|inscricao|formatacao|banner|apresentacao)$/)))) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')",
             ".validate": "newData.hasChildren(['title','dueDate','completed','weight','createdBy','createdAt','completedBy']) && (!data.exists() || (newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val())) && ((newData.child('completed').val() === true && (newData.child('completedBy').val() === auth.uid || (data.child('completed').val() === true && newData.child('completedBy').val() === data.child('completedBy').val()))) || (newData.child('completed').val() === false && newData.child('completedBy').val() === ''))",
             "title": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 160"
@@ -195,16 +197,17 @@
             },
             "completed": {
               ".validate": "newData.isBoolean()",
-              ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)"
+              ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
             },
             "completedBy": {
               ".validate": "newData.isString() && newData.val().length >= 0 && newData.val().length <= 128",
-              ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)"
+              ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')"
             },
             "$other": {
               ".validate": false
             }
-          }
+          },
+          ".write": "auth != null && !newData.exists() && root.child('maximusInic/groups').child($gid).child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('groups').child($gid).exists()"
         }
       },
       "messages": {
@@ -214,7 +217,7 @@
             "createdAt"
           ],
           "$mid": {
-            ".write": "auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true) && !data.exists() && newData.child('senderId').val() === auth.uid",
+            ".write": "(auth != null && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true) && !data.exists() && newData.child('senderId').val() === auth.uid) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting')",
             ".validate": "newData.hasChildren(['text','senderId','senderName','createdAt'])",
             "text": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 5000"
@@ -231,6 +234,75 @@
             "$other": {
               ".validate": false
             }
+          },
+          ".write": "auth != null && !newData.exists() && root.child('maximusInic/groups').child($gid).child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('groups').child($gid).exists()"
+        }
+      },
+      "evaluations": {
+        "$gid": {
+          ".read": "auth != null && root.child('maximusInic/groups').child($gid).exists() && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid))",
+          ".write": "auth != null && !newData.exists() && root.child('maximusInic/groups').child($gid).child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('groups').child($gid).exists()",
+          "group": {
+            ".validate": "newData.hasChildren(['score','feedback','updatedBy','updatedAt','evaluatorName']) && newData.child('updatedBy').val() === auth.uid && newData.child('updatedAt').val() === now && newData.child('evaluatorName').val() === root.child('maximusInic/users').child(auth.uid).child('name').val()",
+            "score": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+            },
+            "feedback": {
+              ".validate": "newData.isString() && newData.val().length <= 3000"
+            },
+            "updatedBy": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "updatedAt": {
+              ".validate": "newData.isNumber() && newData.val() === now"
+            },
+            "evaluatorName": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100 && newData.val() === root.child('maximusInic/users').child(auth.uid).child('name').val()"
+            },
+            "$other": {
+              ".validate": false
+            },
+            ".read": "auth != null && root.child('maximusInic/groups').child($gid).exists() && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true)",
+            ".write": "auth != null && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting') && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid))"
+          },
+          "members": {
+            "$uid": {
+              ".validate": "newData.hasChildren(['score','feedback','updatedBy','updatedAt','evaluatorName']) && newData.child('updatedBy').val() === auth.uid && newData.child('updatedAt').val() === now && newData.child('evaluatorName').val() === root.child('maximusInic/users').child(auth.uid).child('name').val()",
+              "score": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+              },
+              "feedback": {
+                ".validate": "newData.isString() && newData.val().length <= 3000"
+              },
+              "updatedBy": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "updatedAt": {
+                ".validate": "newData.isNumber() && newData.val() === now"
+              },
+              "evaluatorName": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100 && newData.val() === root.child('maximusInic/users').child(auth.uid).child('name').val()"
+              },
+              "$other": {
+                ".validate": false
+              },
+              ".read": "auth != null && root.child('maximusInic/groups').child($gid).exists() && ((root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) || (auth.uid === $uid && root.child('maximusInic/groups').child($gid).child('members').child(auth.uid).val() === true))",
+              ".write": "auth != null && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting') && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && (!newData.exists() || newData.parent().parent().parent().parent().child('groups').child($gid).child('members').child($uid).val() === true)"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "memberRevocations": {
+        "$gid": {
+          ".read": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid))",
+          ".write": "auth != null && !newData.exists() && root.child('maximusInic/groups').child($gid).child('status').val() === 'deleting' && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && !newData.parent().parent().child('groups').child($gid).exists()",
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)))",
+            ".write": "auth != null && (root.child('maximusInic/roles').child(auth.uid).val() === 'coordinator' || (root.child('maximusInic/roles').child(auth.uid).val() === 'advisor' && root.child('maximusInic/groups').child($gid).child('advisorId').val() === auth.uid)) && (root.child('maximusInic/groups').child($gid).exists() && root.child('maximusInic/groups').child($gid).child('status').val() !== 'deleting') && newData.isNumber() && newData.val() === now && !newData.parent().parent().parent().child('groups').child($gid).child('members').child($uid).exists()",
+            ".validate": "newData.isNumber() && newData.val() === now"
           }
         }
       }

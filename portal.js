@@ -6,12 +6,14 @@ const hashes = {dashboard:'inicio',groups:'grupos',invitations:'convites',calend
 const state = {user:null,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],ready:false,error:null};
 const groupData = new Map();
 const groupListeners = new Map();
+const groupAccess = new Map();
 let service;
 let sessionUnsubscribe = () => {};
 let appUnsubscribe = () => {};
 let currentRoute = {view:'dashboard',groupId:'',tab:'overview'};
 let renderedKey = '';
 let dialogHandler = null;
+let dialogVersion = 0;
 let groupSearch = '';
 let groupAdvisorFilter = 'all';
 let taskFilter = 'all';
@@ -62,9 +64,18 @@ function isListedAdvisor(uid = state.user?.uid) { return state.advisors.some(per
 function advisorLabel(person) { return person.name + (person.id===state.user?.uid?' (eu)':''); }
 function advisorName(group) { return state.advisors.find(p => p.id === group.advisorId)?.name || state.users.find(p => p.id === group.advisorId)?.name || (group.advisorId ? 'Orientador(a) do grupo' : 'Aguardando orientador(a)'); }
 function groupName(id) { return state.groups.find(g => g.id === id)?.name || 'Grupo de pesquisa'; }
-function canManage(group) { return state.role === 'coordinator' || group.advisorId === state.user?.uid || group.createdBy === state.user?.uid; }
-function canManageTasks(group) { return state.role === 'coordinator' || (state.role === 'advisor' && group.advisorId === state.user?.uid); }
-function canManageMembers(group) { return state.role === 'coordinator' || group.advisorId === state.user?.uid; }
+function isGroupManager(group) { return state.role === 'coordinator' || (state.role === 'advisor' && group.advisorId === state.user?.uid); }
+function canManage(group) { return group.status !== 'deleting' && (isGroupManager(group) || group.createdBy === state.user?.uid); }
+function canEditGroup(group) { return group.status !== 'deleting' && (isGroupManager(group) || (state.role === 'student' && group.createdBy === state.user?.uid)); }
+function canManageTasks(group) { return group.status !== 'deleting' && isGroupManager(group); }
+function canManageMembers(group) { return group.status !== 'deleting' && isGroupManager(group); }
+function requireManagedGroup(groupId, allowDeleting = false) {
+  const group=state.groups.find(item=>item.id===groupId);
+  if(!group||!isGroupManager(group))throw new Error('Somente a coordenação e o orientador deste grupo podem realizar esta ação.');
+  if(group.status==='deleting'&&!allowDeleting)throw new Error('Este grupo está em exclusão. Conclua a exclusão antes de continuar.');
+  return group;
+}
+function memberName(group,uid) { return group.memberNames?.[uid]||(uid===state.user?.uid?myName():'Integrante do grupo'); }
 function canCreateGroup() { return Boolean(state.user) && !(state.profile?.requestedRole === 'advisor' && state.role === 'student'); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
@@ -126,7 +137,7 @@ function readRoute() {
   if (parts[0] === 'grupo' && parts[1]) {
     let id;
     try {id = decodeURIComponent(parts[1]);} catch {id = '';}
-    currentRoute = {view:'group',groupId:id,tab:['overview','tasks','messages'].includes(parts[2]) ? parts[2] : 'overview'};
+    currentRoute = {view:'group',groupId:id,tab:['overview','tasks','messages','evaluations'].includes(parts[2]) ? parts[2] : 'overview'};
   } else currentRoute = {view:Object.entries(hashes).find(([,hash]) => hash === parts[0])?.[0] || 'dashboard',groupId:'',tab:'overview'};
   renderedKey = '';
   render();
@@ -148,6 +159,8 @@ function makeField(labelText, name, options = {}) {
   if (options.minLength) field.minLength = options.minLength;
   if (options.min !== undefined) field.min = options.min;
   if (options.max !== undefined) field.max = options.max;
+  if (options.step !== undefined) field.step = options.step;
+  if (options.inputMode) field.inputMode = options.inputMode;
   if (options.placeholder) field.placeholder = options.placeholder;
   if (options.value !== undefined) field.value = options.value;
   if (options.autocomplete) field.autocomplete = options.autocomplete;
@@ -155,13 +168,17 @@ function makeField(labelText, name, options = {}) {
   if (options.help) label.append(node('small','',options.help));
   return {label,field};
 }
-function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',handler}) {
+function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = false,handler}) {
+  dialogVersion++;
   $('#dialog-heading').textContent = title;
   $('#dialog-kicker').textContent = kicker;
   $('#dialog-fields').replaceChildren(...fields);
   $('#dialog-status').textContent = '';
   $('#dialog-submit').textContent = submit;
   $('#dialog-submit').disabled = false;
+  $('#dialog-submit').removeAttribute('aria-busy');
+  $('#dialog-submit').classList.toggle('danger-button',danger);
+  $('#dialog-submit').classList.toggle('primary',!danger);
   dialogHandler = handler;
   $('#form-dialog').showModal();
 }
@@ -170,14 +187,17 @@ $('#dialog-form').addEventListener('submit',async event => {
   event.preventDefault();
   if (!dialogHandler) return;
   const submit = $('#dialog-submit');
+  if(submit.disabled)return;
+  const version=dialogVersion;
+  const handler=dialogHandler;
   submit.disabled = true;
   submit.setAttribute('aria-busy','true');
   $('#dialog-status').textContent = '';
   try {
-    const result = await dialogHandler(new FormData(event.currentTarget));
-    if (result !== false) $('#form-dialog').close();
-  } catch(error) {$('#dialog-status').textContent = errorText(error);}
-  finally {submit.disabled = false;submit.removeAttribute('aria-busy');}
+    const result = await handler(new FormData(event.currentTarget));
+    if (version===dialogVersion&&result !== false) $('#form-dialog').close();
+  } catch(error) {if(version===dialogVersion)$('#dialog-status').textContent = errorText(error);}
+  finally {if(version===dialogVersion){submit.disabled = false;submit.removeAttribute('aria-busy');}}
 });
 function confirmAction(title, description, callback, submit = 'Confirmar') {
   openForm({title,fields:[node('p','dialog-note',description)],submit,handler:callback});
@@ -253,12 +273,20 @@ function showProfileForm() {
 
 function syncGroupListeners() {
   const allowed = new Set(state.groups.map(g => g.id));
-  for (const [id,unsubscribe] of groupListeners) if (!allowed.has(id)) {unsubscribe();groupListeners.delete(id);groupData.delete(id);}
+  for (const [id,unsubscribe] of groupListeners) if (!allowed.has(id)) {unsubscribe();groupListeners.delete(id);groupAccess.delete(id);groupData.delete(id);}
+  for(const id of groupAccess.keys())if(!allowed.has(id)){groupAccess.delete(id);groupData.delete(id);}
   state.groups.forEach(group => {
-    if (groupListeners.has(group.id)) return;
+    const accessKey=`${state.user.uid}/${state.role}/${group.advisorId||''}/${Boolean(group.members?.[state.user.uid])}/${group.status||''}`;
+    if (groupListeners.has(group.id)&&groupAccess.get(group.id)===accessKey) return;
+    groupListeners.get(group.id)?.();groupListeners.delete(group.id);groupData.delete(group.id);groupAccess.set(group.id,accessKey);
+    if(group.status==='deleting')return;
     groupListeners.set(group.id,() => {});
     const unsubscribe = service.subscribeGroup(group.id,data => {
-      groupData.set(group.id,{tasks:data.tasks || [],messages:data.messages || [],error:data.error});
+      if(groupAccess.get(group.id)!==accessKey)return;
+      const currentGroup=state.groups.find(item=>item.id===group.id);
+      if(!currentGroup||currentGroup.status==='deleting')return;
+      const evaluations=Array.isArray(data.memberEvaluations)?data.memberEvaluations:[];
+      groupData.set(group.id,{tasks:data.tasks || [],messages:data.messages || [],groupEvaluation:data.error?null:data.groupEvaluation||null,memberEvaluations:data.error?[]:isGroupManager(currentGroup)?evaluations:evaluations.filter(item=>item.id===state.user.uid),error:data.error});
       if (data.error) notice(errorText(data.error),'error',true);
       if (!calendarSelected) {
         const first = allTasks().filter(t => parseDate(t.dueDate) && !t.completed).sort((a,b) => a.dueDate.localeCompare(b.dueDate))[0];
@@ -292,7 +320,7 @@ function sessionChanged(user) {
   appUnsubscribe();
   appUnsubscribe = () => {};
   for (const unsubscribe of groupListeners.values()) unsubscribe();
-  groupListeners.clear();groupData.clear();
+  groupListeners.clear();groupAccess.clear();groupData.clear();
   Object.assign(state,{user,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],ready:false,error:null});
   renderedKey = '';
   $('.skip-link').href = user ? '#workspace-main' : '#main';
@@ -363,7 +391,8 @@ function groupCard(group) {
   const tasks=groupData.get(group.id)?.tasks || [];
   const card=node('article','group-card');const top=node('div','card-top');top.append(node('span','badge',`INIC ${group.year || 2027}`),node('span','count-label',`${Object.values(group.members || {}).filter(Boolean).length} integrante(s)`));
   card.append(top,node('h3','',group.name),node('p','group-topic',group.topic || 'Tema em definição'),node('p','advisor-line',`Orientação: ${advisorName(group)}`));
-  if(groupData.has(group.id))card.append(progressBlock(tasks));else card.append(node('p','loading-task','Carregando entregas…'));
+  if(group.status==='deleting')card.append(node('p','deletion-warning','Exclusão em andamento'));
+  else if(groupData.has(group.id))card.append(progressBlock(tasks));else card.append(node('p','loading-task','Carregando entregas…'));
   const footer=node('div','card-footer');footer.append(node('span','',tasks.length ? `${tasks.filter(t=>t.completed).length} de ${tasks.length} etapas` : 'Organize as próximas etapas'),link('Abrir grupo',routeHref('group',group.id)));card.append(footer);return card;
 }
 function taskPreview(task) {
@@ -428,10 +457,109 @@ function showCreateGroup() {
   }});
 }
 function showEditGroup(group) {
+  if(!canEditGroup(group))return;
   const fields=[makeField('Nome do grupo','name',{value:group.name,required:true,minLength:2,maxLength:100}).label,makeField('Tema da pesquisa','topic',{value:group.topic,required:true,minLength:3,maxLength:240}).label,makeField('Descrição','description',{value:group.description||'',type:'textarea',maxLength:3000}).label,makeField('Edição do INIC','year',{type:'number',value:group.year||2027,min:2027,max:2100,required:true}).label];
   openForm({title:'Editar grupo',fields,handler:async data=>{
+    const current=state.groups.find(item=>item.id===group.id);
+    if(!current||!canEditGroup(current))throw new Error('Você não pode editar este grupo no momento.');
     await service.updateGroup(group.id,{name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:String(data.get('description')).trim(),year:Number(data.get('year'))});notice('Informações do grupo atualizadas.');
   }});
+}
+function showDeleteGroup(group) {
+  if(!isGroupManager(group))return;
+  const description=node('p','dialog-note',`Excluir “${group.name}” remove permanentemente o grupo, seus integrantes, entregas, mensagens, convites e avaliações. As contas cadastradas continuam disponíveis.`);
+  const warning=node('p','deletion-warning',group.status==='deleting'?'A exclusão foi iniciada. Confirme para concluir a remoção dos dados restantes.':'Esta ação não pode ser desfeita.');
+  openForm({title:group.status==='deleting'?'Concluir exclusão do grupo':'Excluir grupo',fields:[description,warning],submit:'Excluir grupo',danger:true,handler:async()=>{
+    requireManagedGroup(group.id,true);
+    await service.deleteGroup(group.id);
+    groupListeners.get(group.id)?.();groupListeners.delete(group.id);groupAccess.delete(group.id);groupData.delete(group.id);
+    state.groups=state.groups.filter(item=>item.id!==group.id);
+    state.invitations=state.invitations.filter(item=>item.groupId!==group.id);
+    if(calendarGroup===group.id)calendarGroup='all';
+    navigate('groups');notice('Grupo excluído.');
+  }});
+}
+function showEditMember(group,uid) {
+  if(!canManageMembers(group)||!group.members?.[uid])return;
+  const name=makeField('Nome no grupo','name',{value:memberName(group,uid),required:true,minLength:2,maxLength:100,help:'Este nome identifica a pessoa neste grupo e nas mensagens.'});
+  openForm({title:'Editar integrante',fields:[name.label],submit:'Salvar nome',handler:async data=>{
+    const current=requireManagedGroup(group.id);
+    if(!current.members?.[uid])throw new Error('Esta pessoa não faz mais parte do grupo.');
+    await service.updateMember(group.id,uid,{name:String(data.get('name')).trim()});notice('Nome do integrante atualizado neste grupo.');
+  }});
+}
+function showRemoveMember(group,uid) {
+  if(!canManageMembers(group)||!group.members?.[uid])return;
+  openForm({title:'Remover integrante',fields:[node('p','dialog-note',`Remover ${memberName(group,uid)} da lista de integrantes de “${group.name}” também exclui sua avaliação individual neste grupo. A conta da pessoa permanece cadastrada.`)],submit:'Remover integrante',danger:true,handler:async()=>{
+    const current=requireManagedGroup(group.id);
+    if(!current.members?.[uid])throw new Error('Esta pessoa não faz mais parte do grupo.');
+    await service.removeMember(group.id,uid);notice('Integrante removido do grupo.');
+  }});
+}
+function hasEvaluation(evaluation) { return Boolean(evaluation&&typeof evaluation.score==='number'&&Number.isFinite(evaluation.score)); }
+function evaluationScore(evaluation) { return hasEvaluation(evaluation)?new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2}).format(evaluation.score):'Sem nota'; }
+function showEvaluationForm(group,uid = '') {
+  if(!canManageMembers(group)||(uid&&!group.members?.[uid]))return;
+  const data=groupData.get(group.id)||{};
+  const evaluation=uid?(data.memberEvaluations||[]).find(item=>item.id===uid):data.groupEvaluation;
+  const score=makeField('Nota de 0 a 10','score',{type:'number',required:true,min:0,max:10,step:'any',inputMode:'decimal',value:hasEvaluation(evaluation)?evaluation.score:'',placeholder:'Ex.: 8,5'});
+  const feedback=makeField('Comentário (opcional)','feedback',{type:'textarea',maxLength:3000,value:evaluation?.feedback||'',placeholder:'Registre o retorno sobre o trabalho.'});
+  openForm({title:uid?`Nota de ${memberName(group,uid)}`:'Nota do grupo',kicker:'AVALIAÇÕES',fields:[node('p','dialog-note',uid?'Esta nota será visível para este integrante, o orientador e a coordenação.':'Esta nota e o comentário ficam disponíveis para todo o grupo.'),score.label,feedback.label],submit:'Salvar avaliação',handler:async form=>{
+    const current=requireManagedGroup(group.id);
+    if(uid&&!current.members?.[uid])throw new Error('Esta pessoa não faz mais parte do grupo.');
+    const raw=String(form.get('score')??'').trim();const value=Number(raw.replace(',','.'));
+    if(!raw||!Number.isFinite(value)||value<0||value>10)throw new Error('Informe uma nota entre 0 e 10.');
+    const payload={score:value,feedback:String(form.get('feedback')||'').trim()};
+    if(uid)await service.saveMemberEvaluation(group.id,uid,payload);else await service.saveEvaluation(group.id,payload);
+    notice('Avaliação salva.');
+  }});
+}
+function showDeleteEvaluation(group,uid = '') {
+  if(!canManageMembers(group)||(uid&&!group.members?.[uid]))return;
+  const title=uid?`a nota de ${memberName(group,uid)}`:'a nota do grupo';
+  openForm({title:'Excluir avaliação',fields:[node('p','dialog-note',`Excluir ${title} remove a nota e o comentário. Você poderá registrar uma nova avaliação depois.`)],submit:'Excluir avaliação',danger:true,handler:async()=>{
+    const current=requireManagedGroup(group.id);
+    if(uid&&!current.members?.[uid])throw new Error('Esta pessoa não faz mais parte do grupo.');
+    await service.deleteEvaluation(group.id,uid||undefined);notice('Avaliação excluída.');
+  }});
+}
+function evaluationCard(group,title,evaluation,uid = '') {
+  const card=node('article','panel evaluation-card');const head=node('div','evaluation-heading');head.append(node('h3','',title));
+  const score=node('p',`evaluation-score${hasEvaluation(evaluation)?'':' is-empty'}`,evaluationScore(evaluation));
+  if(hasEvaluation(evaluation))score.append(node('span','',' / 10'));
+  card.append(head,score);
+  if(evaluation?.feedback)card.append(node('p','evaluation-feedback',evaluation.feedback));
+  else card.append(node('p','evaluation-feedback is-empty',hasEvaluation(evaluation)?'Sem comentário.':'A avaliação ainda não foi registrada.'));
+  if(hasEvaluation(evaluation)){
+    const by=evaluation.evaluatorName?`Por ${evaluation.evaluatorName}`:'';
+    const date=typeof evaluation.updatedAt==='number'?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(evaluation.updatedAt)):'';
+    if(by||date)card.append(node('p','evaluation-audit',[by,date].filter(Boolean).join(' · ')));
+  }
+  if(canManageMembers(group)){
+    const actions=node('div','evaluation-actions');
+    actions.append(button(hasEvaluation(evaluation)?'Editar nota':'Lançar nota','button secondary compact',()=>showEvaluationForm(group,uid)));
+    if(hasEvaluation(evaluation))actions.append(button('Excluir nota','text-button destructive-action',()=>showDeleteEvaluation(group,uid)));
+    card.append(actions);
+  }
+  return card;
+}
+function renderGroupEvaluations(group,data) {
+  const fragment=document.createDocumentFragment();
+  fragment.append(heading('Avaliações',isGroupManager(group)?'Registre a nota do trabalho e as avaliações individuais.':'Consulte a avaliação do grupo e sua nota individual.'));
+  if(data.error){
+    fragment.append(emptyState('Não foi possível carregar as avaliações',errorText(data.error),[button('Tentar novamente','button secondary',()=>{groupListeners.get(group.id)?.();groupListeners.delete(group.id);groupAccess.delete(group.id);groupData.delete(group.id);syncGroupListeners();render();})]));
+    $('#group-panel').replaceChildren(fragment);return;
+  }
+  const groupGrade=evaluationCard(group,'Nota do grupo',data.groupEvaluation);groupGrade.classList.add('evaluation-card--group');fragment.append(groupGrade);
+  const section=node('section','individual-evaluations');section.append(node('h3','',isGroupManager(group)?'Notas individuais':'Sua nota individual'));
+  const members=isGroupManager(group)?Object.keys(group.members||{}).filter(uid=>group.members[uid]):group.members?.[state.user.uid]?[state.user.uid]:[];
+  const grid=node('div','evaluation-grid');
+  members.sort((a,b)=>memberName(group,a).localeCompare(memberName(group,b),'pt-BR')).forEach(uid=>{
+    const evaluation=(data.memberEvaluations||[]).find(item=>item.id===uid);
+    grid.append(evaluationCard(group,uid===state.user.uid?'Você':memberName(group,uid),evaluation,uid));
+  });
+  if(members.length)section.append(grid);else section.append(node('p','empty-small','Não há integrantes para avaliar.'));
+  fragment.append(section);$('#group-panel').replaceChildren(fragment);
 }
 function showInviteForm(initialGroupId = '') {
   const manageable=state.groups.filter(canManage);
@@ -451,6 +579,11 @@ function showInviteForm(initialGroupId = '') {
 function renderGroup() {
   const group=state.groups.find(g=>g.id===currentRoute.groupId);
   if(!group){$('#view-content').replaceChildren(emptyState('Este grupo não está disponível','Você precisa fazer parte do grupo, orientá-lo ou ter acesso da coordenação. Se acabou de aceitar um convite, aguarde a sincronização.',[link('Meus grupos','#grupos','button secondary'),link('Ver convites','#convites','button primary')]));renderedKey='';return;}
+  if(group.status==='deleting'){
+    const actions=[link('Voltar aos grupos','#grupos','button secondary')];
+    if(isGroupManager(group))actions.push(button('Concluir exclusão','button danger-button',()=>showDeleteGroup(group)));
+    $('#view-content').replaceChildren(emptyState('Exclusão em andamento',`O grupo “${group.name}” está sendo removido. ${isGroupManager(group)?'Se a exclusão foi interrompida, use “Concluir exclusão” para tentar novamente.':'A coordenação ou o orientador concluirá a exclusão.'}`,actions));renderedKey='';return;
+  }
   const key=`group/${group.id}/${currentRoute.tab}`;
   if(renderedKey!==key){
     const fragment=document.createDocumentFragment();fragment.append(link('Voltar aos grupos','#grupos','back-link'));
@@ -458,18 +591,22 @@ function renderGroup() {
     const meta=node('div','group-summary-meta');meta.id='group-meta';copy.append(meta);head.append(copy);
     const actions=node('div','actions');actions.id='group-header-actions';head.append(actions);fragment.append(head);
     const prog=node('div','group-progress-panel');prog.id='group-progress';fragment.append(prog);
-    const tabs=node('nav','group-tabs');tabs.setAttribute('aria-label','Áreas do grupo');[['overview','Resumo'],['tasks','Entregas'],['messages','Mensagens']].forEach(([tab,label])=>{const a=link(label,routeHref('group',group.id,tab));if(tab===currentRoute.tab)a.setAttribute('aria-current','page');tabs.append(a);});fragment.append(tabs);
+    const tabs=node('nav','group-tabs');tabs.setAttribute('aria-label','Áreas do grupo');[['overview','Resumo'],['tasks','Entregas'],['messages','Mensagens'],['evaluations','Avaliações']].forEach(([tab,label])=>{const a=link(label,routeHref('group',group.id,tab));if(tab===currentRoute.tab)a.setAttribute('aria-current','page');tabs.append(a);});fragment.append(tabs);
     const content=node('div');content.id='group-panel';fragment.append(content);$('#view-content').replaceChildren(fragment);renderedKey=key;
     if(currentRoute.tab==='messages')buildMessagesView(group);
   }
   const copy=$('#group-heading-copy');copy.querySelector('.badge').textContent=`INIC ${group.year||2027}`;copy.querySelector('h2').textContent=group.name;copy.querySelector('p').textContent=group.topic||'Tema em definição';
   $('#group-meta').replaceChildren(node('span','',`Orientação: ${advisorName(group)}`),node('span','',`${Object.values(group.members||{}).filter(Boolean).length} integrante(s)`));
-  const actions=$('#group-header-actions');actions.replaceChildren();if(canManage(group)){actions.append(button('Editar grupo','button secondary compact',()=>showEditGroup(group)),button('Convidar +','button primary compact',()=>showInviteForm(group.id)));}
+  const actions=$('#group-header-actions');actions.replaceChildren();
+  if(canEditGroup(group))actions.append(button('Editar grupo','button secondary compact',()=>showEditGroup(group)));
+  if(canManage(group))actions.append(button('Convidar +','button primary compact',()=>showInviteForm(group.id)));
+  if(isGroupManager(group))actions.append(button('Excluir grupo','text-button destructive-action',()=>showDeleteGroup(group)));
   const data=groupData.get(group.id);const tasks=data?.tasks||[];const prog=$('#group-progress');prog.replaceChildren(progressBlock(tasks,'Progresso da pesquisa'),node('p','',`${tasks.filter(t=>t.completed).length} de ${tasks.length} entregas concluídas.`));
   const late=tasks.filter(t=>statusOf(t).key==='late').length;prog.append(node('div','due-summary',late?`${late} ${late===1?'etapa precisa':'etapas precisam'} de atenção.`:'Um passo de cada vez. Mantenha o grupo em dia.'));
   if(!data){$('#group-panel').replaceChildren(loadingPanel('Carregando as entregas e mensagens do grupo…'));return;}
   if(currentRoute.tab==='overview')renderGroupOverview(group,tasks);
   else if(currentRoute.tab==='tasks')renderGroupTasks(group,tasks);
+  else if(currentRoute.tab==='evaluations')renderGroupEvaluations(group,data);
   else {if(!$('#messages-list'))buildMessagesView(group);paintMessages(data.messages||[]);}
 }
 function renderGroupOverview(group,tasks) {
@@ -478,8 +615,14 @@ function renderGroupOverview(group,tasks) {
   const team=node('section','panel');const teamHeading=node('div','panel-heading');teamHeading.append(node('h3','','Pessoas do grupo'));team.append(teamHeading);
   if(group.advisorId){const row=node('div','team-member');row.append(node('span','avatar',initials(advisorName(group))));const info=node('div','member-info');info.append(node('strong','',advisorName(group)),node('p','','Orientador(a)'));row.append(info);team.append(row);}
   Object.entries(group.members||{}).filter(([,member])=>member).forEach(([uid])=>{
-    const name=group.memberNames?.[uid]||(uid===state.user.uid?myName():'Integrante do grupo');const row=node('div','team-member');row.append(node('span','avatar',initials(name)));const info=node('div','member-info');info.append(node('strong','',name),node('p','',uid===group.createdBy?'Criou o grupo':'Integrante'));row.append(info);
-    if(canManageMembers(group)&&uid!==group.createdBy&&uid!==state.user.uid)row.append(button('Remover','text-button',()=>confirmAction('Remover integrante?',`${name} deixará de acessar este grupo. Um novo convite será necessário para retornar.`,async()=>{if(service.removeMember)await service.removeMember(group.id,uid);else await service.updateGroup(group.id,{[`members/${uid}`]:null,[`memberNames/${uid}`]:null});notice('Integrante removido do grupo.');})));
+    const name=memberName(group,uid);const row=node('div','team-member');row.append(node('span','avatar',initials(name)));const info=node('div','member-info');info.append(node('strong','',name),node('p','',uid===group.createdBy?'Criou o grupo':'Integrante'));row.append(info);
+    if(canManageMembers(group)){
+      const actions=node('div','member-actions');
+      const edit=button('Editar','button secondary compact',()=>showEditMember(group,uid));edit.setAttribute('aria-label',`Editar nome de ${name} neste grupo`);
+      const grade=button('Nota','button secondary compact',()=>showEvaluationForm(group,uid));grade.setAttribute('aria-label',`Avaliar ${name}`);
+      const remove=button('Remover','text-button destructive-action',()=>showRemoveMember(group,uid));remove.setAttribute('aria-label',`Remover ${name} deste grupo`);
+      actions.append(edit,grade,remove);row.append(actions);
+    }
     team.append(row);
   });
   if(!Object.values(group.members||{}).some(Boolean))team.append(node('p','empty-small','Ainda não há integrantes cadastrados. Envie um convite para começar.'));
@@ -532,7 +675,9 @@ function buildMessagesView(group) {
 }
 function paintMessages(messages) {
   const list=$('#messages-list');if(!list)return;
-  const signature=messages.map(m=>`${m.id}:${m.createdAt}`).join('|');
+  const group=state.groups.find(item=>item.id===currentRoute.groupId);
+  const senderName=message=>message.senderId===state.user.uid?'Você':group?.memberNames?.[message.senderId]||message.senderName||'Participante';
+  const signature=JSON.stringify(messages.map(message=>[message.id,message.createdAt,senderName(message)]));
   if(list.dataset.signature===signature)return;
   const wasNearEnd=list.scrollHeight-list.scrollTop-list.clientHeight<100||!list.dataset.signature;
   list.dataset.signature=signature;
@@ -545,9 +690,11 @@ function paintMessages(messages) {
     if(!item){
       item=node('article',`message${message.senderId===state.user.uid?' mine':''}`);
       item.dataset.messageId=message.id;
-      item.append(node('span','message-author',message.senderId===state.user.uid?'Você':message.senderName||'Participante'),node('p','message-text',message.text),node('time','message-time',messageTime(message.createdAt)));
+      item.append(node('span','message-author',senderName(message)),node('p','message-text',message.text),node('time','message-time',messageTime(message.createdAt)));
       list.append(item);
     }
+    const author=item.querySelector('.message-author');
+    if(author.textContent!==senderName(message))author.textContent=senderName(message);
     const time=item.querySelector('time');
     const formatted=messageTime(message.createdAt);
     if(time.textContent!==formatted)time.textContent=formatted;
@@ -636,7 +783,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261105-4');
+  service = await import('./firebase-service.js?v=20261105-7');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

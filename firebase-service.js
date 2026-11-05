@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, sendPasswordResetEmail, sendEmailVerification, reload, updateProfile, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import { getDatabase, ref, get, set, update, remove, push, onValue, query, orderByChild, equalTo, limitToLast } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
+import { getDatabase, ref, get, set, update, remove, push, onValue, query, orderByChild, equalTo, limitToLast, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js';
 
 // This public Firebase configuration identifies the project; authorization is
 // enforced by database.rules.json, never by an email check in this client.
@@ -172,14 +172,43 @@ export function subscribeApp(user, callback) {
   return () => {stopped=true; lifecycleStops.forEach(stop=>stop()); scopeStops.forEach(stop=>stop());};
 }
 export function subscribeGroup(groupId, callback) {
-  const state = {tasks:[],messages:[]};
+  const user=needUser();
+  const state = {tasks:[],messages:[],groupEvaluation:null,memberEvaluations:[]};
   let stopped=false;
+  let group=null;
+  let role='student';
+  let evaluationMode='';
+  let evaluationVersion=0;
+  let evaluationStops=[];
+  const emit=()=>{if(!stopped)callback({...state});};
   const report = error => !stopped && callback({...state,error});
+  const attachEvaluations=()=>{
+    const manager=role==='coordinator'||(role==='advisor'&&group?.advisorId===user.uid);
+    const mode=!group||group.status==='deleting'?'none':manager?'manager':group.members?.[user.uid]?'member':'none';
+    if(mode===evaluationMode)return;
+    evaluationMode=mode;
+    const version=++evaluationVersion;
+    evaluationStops.forEach(stop=>stop());evaluationStops=[];
+    // Discard privileged cached grades before changing to a student scope.
+    state.groupEvaluation=null;state.memberEvaluations=[];
+    if(mode!=='none') {
+      const watchEvaluation=(target,apply)=>evaluationStops.push(onValue(target,snapshot=>{
+        if(stopped||version!==evaluationVersion)return;
+        apply(snapshot);emit();
+      },error=>{if(version===evaluationVersion){state.groupEvaluation=null;state.memberEvaluations=[];report(error);}}));
+      watchEvaluation(path(`evaluations/${groupId}/group`),snapshot=>{state.groupEvaluation=snapshot.val();});
+      if(mode==='manager')watchEvaluation(path(`evaluations/${groupId}/members`),snapshot=>{state.memberEvaluations=collection(snapshot);});
+      else watchEvaluation(path(`evaluations/${groupId}/members/${user.uid}`),snapshot=>{state.memberEvaluations=snapshot.exists()?[{...snapshot.val(),id:user.uid}]:[];});
+    }
+    emit();
+  };
   const stops = [
     onValue(path(`tasks/${groupId}`), snap => {state.tasks=collection(snap).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));if(!stopped)callback({...state});}, report),
-    onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report)
+    onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report),
+    onValue(path(`groups/${groupId}`),snapshot=>{group=snapshot.val();attachEvaluations();},error=>{group=null;attachEvaluations();report(error);}),
+    onValue(path(`roles/${user.uid}`),snapshot=>{role=snapshot.val()||'student';attachEvaluations();},report)
   ];
-  return () => {stopped=true;stops.forEach(stop=>stop());};
+  return () => {stopped=true;evaluationVersion++;stops.forEach(stop=>stop());evaluationStops.forEach(stop=>stop());};
 }
 export async function saveProfile(patch) {
   const user=needUser();
@@ -227,13 +256,75 @@ export async function updateGroup(groupId,patch) {
   for(const [key,value] of Object.entries(patch)) {
     if(['name','topic','description','status'].includes(key))allowed[key]=clean(value,key==='description'?3000:key==='topic'?240:100);
     else if(key==='year') {if(!Number.isInteger(Number(value)))throw new Error('O ano da edição precisa ser inteiro.'); allowed.year=Number(value);}
-    else if(key.startsWith('members/') || key.startsWith('memberNames/'))allowed[key]=value;
   }
   await update(path(`groups/${groupId}`),allowed);
 }
+function checkIdentifier(value) {
+  if(typeof value!=='string'||!value||value.length>128||/[.#$\[\]/]/.test(value))throw new Error('Identificação inválida.');
+  return value;
+}
+async function managedGroup(groupId,{allowDeleting=false}={}) {
+  const user=needUser();checkIdentifier(groupId);
+  const [groupSnapshot,roleSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${user.uid}`))]);
+  const group=groupSnapshot.val();
+  if(!group)throw new Error('Grupo não encontrado.');
+  const role=roleSnapshot.val();
+  if(role!=='coordinator'&&!(role==='advisor'&&group.advisorId===user.uid))throw new Error('Somente a coordenação ou o orientador deste grupo pode realizar esta ação.');
+  if(group.status==='deleting'&&!allowDeleting)throw new Error('A exclusão deste grupo está em andamento. Conclua a exclusão antes de continuar.');
+  return group;
+}
+export async function updateMember(groupId,uid,{name}) {
+  checkIdentifier(uid);
+  const group=await managedGroup(groupId);
+  if(!group.members?.[uid])throw new Error('Este integrante não pertence ao grupo.');
+  const alias=clean(name,100);
+  if(!alias)throw new Error('Informe o nome do integrante.');
+  await set(path(`groups/${groupId}/memberNames/${uid}`),alias);
+}
 export async function removeMember(groupId,uid) {
-  needUser();
-  await update(path(),{[`groups/${groupId}/members/${uid}`]:null,[`groups/${groupId}/memberNames/${uid}`]:null,[`userGroups/${uid}/${groupId}`]:null});
+  checkIdentifier(uid);
+  const group=await managedGroup(groupId);
+  if(!group.members?.[uid])throw new Error('Este integrante não pertence ao grupo.');
+  await update(path(),{[`groups/${groupId}/members/${uid}`]:null,[`groups/${groupId}/memberNames/${uid}`]:null,[`userGroups/${uid}/${groupId}`]:null,[`evaluations/${groupId}/members/${uid}`]:null,[`admissions/${groupId}/${uid}`]:null,[`memberRevocations/${groupId}/${uid}`]:serverTimestamp()});
+}
+export async function deleteGroup(groupId) {
+  const group=await managedGroup(groupId,{allowDeleting:true});
+  // Lock all new group activity before taking the cleanup snapshot. Retrying a
+  // deletion after a lost connection safely resumes the same operation.
+  if(group.status!=='deleting')await update(path(`groups/${groupId}`),{status:'deleting'});
+  const [lockedGroup,invitationSnapshot]=await Promise.all([
+    get(path(`groups/${groupId}`)),
+    get(query(path('invitations'),orderByChild('groupId'),equalTo(groupId)))
+  ]);
+  const frozen=lockedGroup.val();
+  if(!frozen)return;
+  const changes={};
+  for(const resource of ['groups','tasks','messages','evaluations','admissions','memberRevocations'])changes[`${resource}/${groupId}`]=null;
+  const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));
+  for(const uid of relatedUsers)changes[`userGroups/${uid}/${groupId}`]=null;
+  for(const invitation of collection(invitationSnapshot))changes[`invitations/${invitation.id}`]=null;
+  await update(path(),changes);
+}
+async function evaluationRecord({score,feedback=''}) {
+  const user=needUser();
+  if(typeof score!=='number'||!Number.isFinite(score)||score<0||score>10)throw new Error('Informe uma nota entre 0 e 10.');
+  const profile=(await get(path(`users/${user.uid}`))).val();
+  return {score,feedback:clean(feedback,3000),updatedBy:user.uid,updatedAt:serverTimestamp(),evaluatorName:clean(profile?.name,100)};
+}
+export async function saveEvaluation(groupId,evaluation) {
+  await managedGroup(groupId);
+  await set(path(`evaluations/${groupId}/group`),await evaluationRecord(evaluation));
+}
+export async function saveMemberEvaluation(groupId,uid,evaluation) {
+  checkIdentifier(uid);
+  const group=await managedGroup(groupId);
+  if(!group.members?.[uid])throw new Error('Este integrante não pertence ao grupo.');
+  await set(path(`evaluations/${groupId}/members/${uid}`),await evaluationRecord(evaluation));
+}
+export async function deleteEvaluation(groupId,uid) {
+  await managedGroup(groupId);
+  if(uid!==undefined)checkIdentifier(uid);
+  await remove(path(`evaluations/${groupId}/${uid===undefined?'group':`members/${uid}`}`));
 }
 export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   const user=needUser();
@@ -243,7 +334,7 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   if(type==='advisor' && !toUid)throw new Error('Selecione um orientador aprovado.');
   if(type==='member' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
   const invitationRef=push(path('invitations'));
-  await set(invitationRef,{groupId,groupName:group.name,toEmail:clean(toEmail,254).toLowerCase(),toUid:clean(toUid,128),type,senderId:user.uid,senderName:profileCache?.name || user.displayName || 'Participante',status:'pending',createdAt:Date.now()});
+  await set(invitationRef,{groupId,groupName:group.name,toEmail:clean(toEmail,254).toLowerCase(),toUid:clean(toUid,128),type,senderId:user.uid,senderName:profileCache?.name || user.displayName || 'Participante',status:'pending',createdAt:serverTimestamp()});
   return invitationRef.key;
 }
 export async function respondInvitation(invitationId,accept) {

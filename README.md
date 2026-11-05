@@ -59,4 +59,12 @@ Ao criar um grupo, oito marcos de planejamento são gerados para o ano escolhido
 
 ### Validação
 
-58 cenários aprovados no Firebase Realtime Database Emulator, incluindo isolamento de aluno/orientador, papéis protegidos, aceite atômico dos convites, validação de dados e revogação de acesso. Instruções reproduzíveis em `tests/README.md`. Verificação adicional das permissões no banco publicado: visitantes impedidos de ler perfis/grupos e ambos os coordenadores com acesso autorizado. Não há notificações push em segundo plano; os recados são internos ao aplicativo.
+131 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, isolamento de notas, edição e remoção de integrantes, exclusão de grupos com retomada após interrupção, convites e papéis protegidos. Instruções reproduzíveis em `tests/README.md`. Verificação adicional das permissões no banco publicado: visitantes impedidos de ler perfis/grupos e ambos os coordenadores com acesso autorizado. Não há notificações push em segundo plano; os recados são internos ao aplicativo.
+
+### Grupos, integrantes e avaliações
+
+A coordenação gerencia todos os grupos. O orientador gerencia apenas os grupos atribuídos a ele. Dentro do grupo, **Editar grupo** altera nome, tema, descrição e edição; em **Resumo → Pessoas do grupo** é possível editar o nome de um integrante naquele grupo, removê-lo ou avaliá-lo. A remoção preserva a conta global da pessoa e apaga sua avaliação individual naquele grupo. Um convite anterior à remoção não permite retornar; é necessário um novo convite.
+
+A aba **Avaliações** reúne a nota coletiva e as notas individuais, de 0 a 10, com comentário opcional, autor e data. Cada aluno consulta a nota coletiva e a própria nota individual. Orientador e coordenação podem editar ou excluir essas avaliações.
+
+**Excluir grupo** pede confirmação e remove integrantes, entregas, mensagens, convites, índices e avaliações do grupo. Se a conexão cair durante a exclusão, o grupo fica bloqueado e a opção **Concluir exclusão** permite terminar a limpeza. Perfis e outros grupos permanecem cadastrados.
