@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {loadService} from './service-runtime.mjs';
+import {runOnboardingContractEventTests} from './onboarding-contracts-events.mjs';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
 import {ref,set,get,update,query,orderByChild,equalTo,serverTimestamp} from 'firebase/database';
 const env=await initializeTestEnvironment({projectId:'demo-maximus-inic',database:{host:'127.0.0.1',port:9000,rules:readFileSync(new URL('../database.rules.json', import.meta.url),'utf8')}});
@@ -144,7 +145,7 @@ try{
  const cascade={'groups/g1':null,'tasks/g1':null,'messages/g1':null,'evaluations/g1':null,'admissions/g1':null,'memberRevocations/g1':null,'userGroups/s1/g1':null,'userGroups/a3/g1':null};
  for(const id of Object.keys(invitationsToDelete))cascade[`invitations/${id}`]=null;
  await ok('advisor atomically deletes locked group and all resources',update(ref(db('a3'),'maximusInic'),cascade));
- await env.withSecurityRulesDisabled(async context=>{for(const resource of ['groups','tasks','messages','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/g1`))).exists())throw new Error(`Cascade left ${resource}`);});
+ await env.withSecurityRulesDisabled(async context=>{for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/g1`))).exists())throw new Error(`Cascade left ${resource}`);});
  for(const id of Object.keys(invitationsToDelete))if((await get(ref(db('c'),`maximusInic/invitations/${id}`))).exists())throw new Error('Cascade left invitation');
  await ok('coordinator replaces advisor on another creator group',set(ref(db('c'),'maximusInic/groups/teacherGroup/advisorId'),'a2'));
  await no('former advisor creator cannot edit metadata after replacement',set(ref(db('a3'),'maximusInic/groups/teacherGroup/topic'),'Former advisor edit'));
@@ -158,6 +159,7 @@ try{
    'groups/serviceGroup':{...group('Serviço real','s2','a2'),createdBy:'s1',members:{s2:true,s3:true},memberNames:{s2:'Aluno 2',s3:'Aluno 3'}},
    'userGroups/s1/serviceGroup':true,'userGroups/s2/serviceGroup':true,'userGroups/s3/serviceGroup':true,'userGroups/a2/serviceGroup':true,
    'tasks/serviceGroup/t1':{...task,createdBy:'a2'},
+   'events/serviceGroup/review':{title:'Reunião de orientação',date:'2027-06-15',description:'Conferir artigo',createdBy:'a2',createdAt:stamp,updatedAt:stamp},
    'messages/serviceGroup/m1':{text:'Conversa do grupo',senderId:'s2',senderName:'Aluno 2',createdAt:stamp},
    'admissions/serviceGroup/s2':'serviceInvite1','admissions/serviceGroup/outside':'serviceInvite2',
    'invitations/serviceInvite1':{...invitation,createdAt:stamp,groupId:'serviceGroup',groupName:'Serviço real',senderId:'s2',toEmail:'s3@example.com'},
@@ -198,12 +200,13 @@ try{
  passed++;console.log('PASS actual service leaves recoverable lock after interrupted deletion');
  await ok('actual service retries and completes full deletion payload',staffService('deleteGroup','serviceGroup'));
  await env.withSecurityRulesDisabled(async context=>{
-  for(const resource of ['groups','tasks','messages','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/serviceGroup`))).exists())throw new Error('Service cascade left '+resource);
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/serviceGroup`))).exists())throw new Error('Service cascade left '+resource);
   for(const uid of ['s1','s2','s3','a2'])if((await get(ref(context.database(),`maximusInic/userGroups/${uid}/serviceGroup`))).exists())throw new Error('Service cascade left index '+uid);
   for(const id of ['serviceInvite1','serviceInvite2'])if((await get(ref(context.database(),`maximusInic/invitations/${id}`))).exists())throw new Error('Service cascade left invitation '+id);
   if((await get(ref(context.database(),'maximusInic/users/s2/name'))).val()!=='Aluno 2')throw new Error('Service changed global profile');
   if((await get(ref(context.database(),'items/preserved'))).val()!=='existing')throw new Error('Legacy items modified');
  });
  passed++;console.log('PASS actual cascade removes resources from other senders and nonmember admissions without touching profiles or legacy data');
+ await runOnboardingContractEventTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  console.log(`SECURITY TESTS PASSED: ${passed}`);
 }finally{await env.cleanup();}

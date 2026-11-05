@@ -1,8 +1,11 @@
 'use strict';
 
+import { createCalendarView } from './calendar.js?v=20261105-8';
+import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
+
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
-const hashes = {dashboard:'inicio',groups:'grupos',invitations:'convites',calendar:'calendario',admin:'coordenacao'};
+const hashes = {dashboard:'inicio',groups:'grupos',invitations:'convites',calendar:'calendario',agreements:'termo',admin:'coordenacao'};
 const state = {user:null,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],ready:false,error:null};
 const groupData = new Map();
 const groupListeners = new Map();
@@ -10,6 +13,17 @@ const groupAccess = new Map();
 let service;
 let sessionUnsubscribe = () => {};
 let appUnsubscribe = () => {};
+let agreementsUnsubscribe = () => {};
+let agreementScope = '';
+let agreementSubscription = 0;
+let agreements = [];
+let agreementsReady = false;
+let agreementsError = null;
+let agreementSearch = '';
+let agreementUploadBusy = false;
+let notificationsBusy = false;
+const AGREEMENT_YEAR = 2027;
+const AGREEMENT_LIMIT = 3 * 1024 * 1024;
 let currentRoute = {view:'dashboard',groupId:'',tab:'overview'};
 let renderedKey = '';
 let dialogHandler = null;
@@ -18,9 +32,6 @@ let groupSearch = '';
 let groupAdvisorFilter = 'all';
 let taskFilter = 'all';
 let invitationFilter = 'incoming';
-let calendarDate = new Date(2027,0,1,12);
-let calendarGroup = 'all';
-let calendarSelected = false;
 let noticeTimer;
 let renderTimer;
 
@@ -65,7 +76,7 @@ function advisorLabel(person) { return person.name + (person.id===state.user?.ui
 function advisorName(group) { return state.advisors.find(p => p.id === group.advisorId)?.name || state.users.find(p => p.id === group.advisorId)?.name || (group.advisorId ? 'Orientador(a) do grupo' : 'Aguardando orientador(a)'); }
 function groupName(id) { return state.groups.find(g => g.id === id)?.name || 'Grupo de pesquisa'; }
 function isGroupManager(group) { return state.role === 'coordinator' || (state.role === 'advisor' && group.advisorId === state.user?.uid); }
-function canManage(group) { return group.status !== 'deleting' && (isGroupManager(group) || group.createdBy === state.user?.uid); }
+function canManage(group) { return group.status !== 'deleting' && (isGroupManager(group) || (state.role === 'student' && group.createdBy === state.user?.uid && group.members?.[state.user?.uid])); }
 function canEditGroup(group) { return group.status !== 'deleting' && (isGroupManager(group) || (state.role === 'student' && group.createdBy === state.user?.uid)); }
 function canManageTasks(group) { return group.status !== 'deleting' && isGroupManager(group); }
 function canManageMembers(group) { return group.status !== 'deleting' && isGroupManager(group); }
@@ -77,6 +88,7 @@ function requireManagedGroup(groupId, allowDeleting = false) {
 }
 function memberName(group,uid) { return group.memberNames?.[uid]||(uid===state.user?.uid?myName():'Integrante do grupo'); }
 function canCreateGroup() { return Boolean(state.user) && !(state.profile?.requestedRole === 'advisor' && state.role === 'student'); }
+function canUseAgreements() { return state.role === 'coordinator' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor'); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
   if (parseDate(task.dueDate) && task.dueDate < todayString()) return {key:'late',text:'Em atraso',className:'danger'};
@@ -255,7 +267,10 @@ $('#forgot-password').addEventListener('click',() => {
     authStatus('Se houver uma conta nesse endereço, as instruções de recuperação serão enviadas.','success');
   }});
 });
-$('#logout').addEventListener('click',event => action(event.currentTarget,() => service.logout()));
+$('#logout').addEventListener('click',event => action(event.currentTarget,async() => {
+  try {await disableNotifications(service,state.user);} catch(error) {console.warn('Avisos:',error.code||'desativação indisponível');}
+  await service.logout();
+}));
 $('#profile-button').addEventListener('click',showProfileForm);
 
 function showProfileForm() {
@@ -286,12 +301,8 @@ function syncGroupListeners() {
       const currentGroup=state.groups.find(item=>item.id===group.id);
       if(!currentGroup||currentGroup.status==='deleting')return;
       const evaluations=Array.isArray(data.memberEvaluations)?data.memberEvaluations:[];
-      groupData.set(group.id,{tasks:data.tasks || [],messages:data.messages || [],groupEvaluation:data.error?null:data.groupEvaluation||null,memberEvaluations:data.error?[]:isGroupManager(currentGroup)?evaluations:evaluations.filter(item=>item.id===state.user.uid),error:data.error});
+      groupData.set(group.id,{tasks:data.tasks || [],messages:data.messages || [],events:data.events || [],groupEvaluation:data.error?null:data.groupEvaluation||null,memberEvaluations:data.error?[]:isGroupManager(currentGroup)?evaluations:evaluations.filter(item=>item.id===state.user.uid),error:data.error});
       if (data.error) notice(errorText(data.error),'error',true);
-      if (!calendarSelected) {
-        const first = allTasks().filter(t => parseDate(t.dueDate) && !t.completed).sort((a,b) => a.dueDate.localeCompare(b.dueDate))[0];
-        if (first) {const d=parseDate(first.dueDate);calendarDate=new Date(d.getFullYear(),d.getMonth(),1,12);}
-      }
       scheduleRender();
     });
     groupListeners.set(group.id,unsubscribe || (() => {}));
@@ -319,6 +330,8 @@ function verificationNotice() {
 function sessionChanged(user) {
   appUnsubscribe();
   appUnsubscribe = () => {};
+  agreementsUnsubscribe();agreementsUnsubscribe = () => {};agreementScope='';agreementSubscription++;
+  agreements=[];agreementsReady=false;agreementsError=null;agreementUploadBusy=false;agreementSearch='';
   for (const unsubscribe of groupListeners.values()) unsubscribe();
   groupListeners.clear();groupAccess.clear();groupData.clear();
   Object.assign(state,{user,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],ready:false,error:null});
@@ -340,6 +353,7 @@ function sessionChanged(user) {
     state.error = data.error || null;
     state.ready = true;
     if (data.error) notice(errorText(data.error),'error',true);
+    syncAgreementSubscription();
     syncGroupListeners();
     verificationNotice();
     scheduleRender();
@@ -348,7 +362,7 @@ function sessionChanged(user) {
 
 function updateShell() {
   const route = currentRoute.view === 'group' ? 'groups' : currentRoute.view;
-  const titles = {dashboard:'Visão geral',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',admin:'Coordenação',group:'Meu grupo'};
+  const titles = {dashboard:'Visão geral',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',agreements:state.role==='coordinator'?'Termos assinados':'Meu termo',admin:'Coordenação',group:'Meu grupo'};
   $('#view-title').textContent = titles[currentRoute.view] || 'Visão geral';
   $('#view-kicker').textContent = state.role === 'coordinator' ? 'ACOMPANHAMENTO DA ESCOLA' : 'SEU ESPAÇO DE PESQUISA';
   $('#user-name').textContent = myName();
@@ -356,6 +370,10 @@ function updateShell() {
   $('#user-avatar').textContent = initials(myName());
   $('#admin-nav').hidden = state.role !== 'coordinator';
   $('#mobile-admin-nav').hidden = state.role !== 'coordinator';
+  $('#agreements-nav').hidden = !canUseAgreements();
+  $('#mobile-agreements-nav').hidden = !canUseAgreements();
+  $('#agreements-nav-label').textContent = state.role === 'coordinator' ? 'Termos assinados' : 'Meu termo';
+  $('#mobile-agreements-label').textContent = state.role === 'coordinator' ? 'Termos' : 'Termo';
   $('#invite-badge').hidden = !pendingInvitations().length;
   $('#invite-badge').textContent = pendingInvitations().length;
   $('#pending-advisor-note').hidden = !(state.role === 'student' && state.profile?.requestedRole === 'advisor');
@@ -366,6 +384,11 @@ function render() {
   if (currentRoute.view === 'admin' && state.role !== 'coordinator' && state.ready) {navigate('dashboard');return;}
   updateShell();
   if (!state.ready) {$('#view-content').replaceChildren(loadingPanel('Carregando seus grupos e convites…'));return;}
+  if (state.profile?.onboardingRequired === true) {renderGoogleOnboarding();return;}
+  if (currentRoute.view === 'agreements') {
+    if(!canUseAgreements()){navigate('dashboard');return;}
+    renderAgreements();return;
+  }
   if (currentRoute.view === 'group') {renderGroup();return;}
   renderedKey = currentRoute.view;
   const views = {dashboard:renderDashboard,groups:renderGroups,invitations:renderInvitations,calendar:renderCalendar,admin:renderAdmin};
@@ -381,6 +404,128 @@ function emptyState(title, text, actions = []) {
 function heading(title, description, actions = []) {
   const section=node('div','section-title');const copy=node('div');copy.append(node('h2','',title));if(description)copy.append(node('p','',description));section.append(copy);
   if(actions.length){const area=node('div','actions');area.append(...actions);section.append(area);}return section;
+}
+function renderGoogleOnboarding() {
+  const key=`google-onboarding/${state.user.uid}`;
+  $('#view-title').textContent='Complete seu cadastro';
+  if(renderedKey===key)return;
+  renderedKey=key;
+  const panel=node('section','panel onboarding-panel');
+  panel.append(node('p','eyebrow','PRIMEIRO ACESSO COM GOOGLE'),node('h2','','Você é estudante ou professor(a)?'),node('p','onboarding-intro','Escolha seu perfil para organizar o acesso à plataforma.'));
+  const form=node('form','onboarding-form');
+  const name=makeField('Nome completo','name',{value:myName(),required:true,minLength:2,maxLength:100,autocomplete:'name'});
+  const role=makeField('Eu sou','requestedRole',{required:true,options:[{value:'',label:'Selecione seu perfil'},{value:'student',label:'Estudante'},{value:'advisor',label:'Professor(a) orientador(a)'}]});
+  const year=makeField('Série escolar','year',{required:true,options:[{value:'',label:'Selecione a série'},'1º ano','2º ano','3º ano']});year.label.hidden=true;year.field.disabled=true;
+  const note=node('p','form-note','O acesso de professor(a) precisa ser aprovado pela coordenação. Sua conta ficará disponível enquanto aguarda.');note.hidden=true;
+  role.field.addEventListener('change',()=>{const student=role.field.value==='student';year.label.hidden=!student;year.field.disabled=!student;note.hidden=role.field.value!=='advisor';});
+  const status=node('p','form-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const submit=node('button','button primary','Concluir cadastro');submit.type='submit';
+  form.append(name.label,role.label,year.label,note,status,submit);
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();if(submit.disabled)return;
+    const uid=state.user?.uid;const profile={name:name.field.value.trim(),requestedRole:role.field.value,year:role.field.value==='student'?year.field.value:''};
+    if(!['student','advisor'].includes(profile.requestedRole)){status.textContent='Escolha estudante ou professor(a).';return;}
+    submit.disabled=true;submit.setAttribute('aria-busy','true');status.textContent='Salvando seu perfil…';
+    try {
+      await service.completeGoogleProfile(profile);
+      if(state.user?.uid!==uid)return;
+      state.profile={...state.profile,...profile,onboardingRequired:false};
+      renderedKey='';syncAgreementSubscription();render();notice(profile.requestedRole==='advisor'?'Cadastro concluído. Aguarde a aprovação da coordenação para orientar grupos.':'Cadastro concluído. Você já pode criar um grupo ou aceitar um convite.');
+    }catch(error){if(state.user?.uid===uid)status.textContent=errorText(error);}
+    finally{submit.disabled=false;submit.removeAttribute('aria-busy');}
+  });
+  panel.append(form);$('#view-content').replaceChildren(panel);
+}
+function syncAgreementSubscription() {
+  const scope=state.user&&state.profile&&state.profile.onboardingRequired!==true&&canUseAgreements()?`${state.user.uid}/${state.role}/${AGREEMENT_YEAR}`:'';
+  if(scope===agreementScope)return;
+  agreementsUnsubscribe();agreementsUnsubscribe=()=>{};agreementScope=scope;
+  const version=++agreementSubscription;
+  agreements=[];agreementsReady=false;agreementsError=null;agreementUploadBusy=false;
+  if(!scope)return;
+  if(typeof service?.subscribeAgreements!=='function'){agreementsError=new Error('O envio de termos não está disponível. Atualize a página.');agreementsReady=true;return;}
+  agreementsUnsubscribe=service.subscribeAgreements(AGREEMENT_YEAR,data=>{
+    if(version!==agreementSubscription||scope!==agreementScope)return;
+    agreementsError=data?.error||null;
+    agreements=agreementsError?[]:(data?.agreements||[]).filter(item=>state.role==='coordinator'||(item.uid||item.id)===state.user?.uid);
+    agreementsReady=true;
+    if(currentRoute.view==='agreements')scheduleRender();
+  })||(()=>{});
+}
+function agreementTimestamp(value) {
+  return typeof value==='number'?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'Confirmando envio…';
+}
+function agreementSize(value) {
+  return Number(value)>=1024*1024?`${new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(Number(value)/(1024*1024))} MB`:`${Math.max(1,Math.ceil(Number(value||0)/1024))} KB`;
+}
+async function downloadAgreement(record,control) {
+  const uid=state.user?.uid;const version=agreementSubscription;
+  if(control){control.disabled=true;control.setAttribute('aria-busy','true');}
+  try {
+    const result=await service.downloadAgreement(record.uid||record.id,AGREEMENT_YEAR);
+    if(state.user?.uid!==uid||version!==agreementSubscription)return;
+    if(!(result?.blob instanceof Blob))throw new Error('O arquivo não pôde ser aberto. Tente novamente.');
+    const url=URL.createObjectURL(result.blob);
+    const download=link('',url);download.download=result.filename||record.filename||'Termo_INIC_2027.pdf';document.body.append(download);download.click();download.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(error){if(state.user?.uid===uid&&version===agreementSubscription)notice(errorText(error),'error',true);}
+  finally{if(control){control.disabled=false;control.removeAttribute('aria-busy');}}
+}
+function buildAgreementUpload() {
+  const panel=node('section','panel agreement-upload');panel.append(node('h3','','Enviar contrato assinado'),node('p','','Fotografe com nitidez ou digitalize todas as assinaturas. A coordenação terá acesso ao arquivo.'));
+  const form=node('form','agreement-upload-form');form.id='agreement-upload-form';
+  const label=node('label','field','Contrato assinado');const input=node('input');input.type='file';input.name='agreement';input.required=true;input.accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';label.append(input,node('small','','PDF, JPG ou PNG · até 3 MB. Para várias páginas, envie um único PDF.'));
+  const status=node('p','form-status');status.id='agreement-upload-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const submit=node('button','button primary','Enviar para a coordenação');submit.type='submit';submit.disabled=agreementUploadBusy;input.disabled=agreementUploadBusy;
+  form.append(label,status,submit,node('p','agreement-privacy','Somente você e a coordenação podem acessar este arquivo. Um novo envio substitui a versão anterior.'));
+  input.addEventListener('change',()=>{status.classList.remove('error');status.textContent=input.files?.[0]?`Selecionado: ${input.files[0].name}`:'';});
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();if(agreementUploadBusy)return;
+    const file=input.files?.[0];
+    if(!file){status.classList.add('error');status.textContent='Selecione o contrato assinado.';return;}
+    if(file.size>AGREEMENT_LIMIT){status.classList.add('error');status.textContent='O arquivo ultrapassa 3 MB. Reduza o tamanho e tente novamente.';return;}
+    if(file.type&&!['application/pdf','image/jpeg','image/png'].includes(file.type)){status.classList.add('error');status.textContent='Envie um arquivo PDF, JPG ou PNG.';return;}
+    const uid=state.user?.uid;const version=agreementSubscription;
+    agreementUploadBusy=true;submit.disabled=true;input.disabled=true;submit.setAttribute('aria-busy','true');status.classList.remove('error');status.textContent='Enviando contrato… Aguarde a confirmação.';
+    try {
+      await service.uploadAgreement(file,{year:AGREEMENT_YEAR});
+      if(state.user?.uid!==uid||version!==agreementSubscription)return;
+      status.textContent='Contrato enviado. A coordenação já pode acessar.';input.value='';notice('Contrato assinado enviado para a coordenação.');
+    }catch(error){if(state.user?.uid===uid&&version===agreementSubscription){status.classList.add('error');status.textContent=errorText(error);}}
+    finally{
+      if(state.user?.uid===uid&&version===agreementSubscription)agreementUploadBusy=false;
+      submit.disabled=false;input.disabled=false;submit.removeAttribute('aria-busy');
+    }
+  });
+  panel.append(form);return panel;
+}
+function renderAgreements() {
+  const key=`agreements/${state.user.uid}/${state.role}`;
+  if(renderedKey!==key){
+    renderedKey=key;
+    const fragment=document.createDocumentFragment();
+    fragment.append(heading(state.role==='coordinator'?'Contratos assinados · 2027':'Meu contrato · 2027',state.role==='coordinator'?'Consulte os arquivos enviados pelos estudantes.':'Preencha, recolha as assinaturas e envie o contrato.',[link('Ler e imprimir o termo','conformidade.html','button secondary')]));
+    if(state.role!=='coordinator')fragment.append(buildAgreementUpload());
+    else {
+      const search=node('input');search.type='search';search.className='agreement-search';search.placeholder='Buscar estudante ou arquivo';search.setAttribute('aria-label','Buscar contratos assinados');search.value=agreementSearch;search.addEventListener('input',()=>{agreementSearch=search.value;paintAgreements();});fragment.append(search);
+    }
+    const list=node('section','agreement-list');list.id='agreement-list';list.setAttribute('aria-label',state.role==='coordinator'?'Arquivos dos estudantes':'Seu arquivo enviado');fragment.append(list);
+    $('#view-content').replaceChildren(fragment);
+  }
+  paintAgreements();
+}
+function paintAgreements() {
+  const list=$('#agreement-list');if(!list)return;
+  if(!agreementsReady){list.replaceChildren(loadingPanel('Carregando contratos…'));return;}
+  if(agreementsError){list.replaceChildren(emptyState('Não foi possível carregar os contratos',errorText(agreementsError),[button('Tentar novamente','button secondary',()=>{agreementScope='';syncAgreementSubscription();render();})]));return;}
+  const term=normalize(agreementSearch).trim();
+  const records=agreements.filter(item=>state.role!=='coordinator'||!term||normalize(`${item.ownerName||''} ${item.filename||''}`).includes(term)).slice().sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0));
+  list.replaceChildren();
+  if(!records.length){list.append(emptyState(state.role==='coordinator'?(term?'Nenhum contrato encontrado':'Nenhum contrato enviado'):'Você ainda não enviou o contrato',state.role==='coordinator'?(term?'Tente outro nome de estudante ou arquivo.':'Os arquivos aparecerão aqui assim que os estudantes enviarem.'):'Depois do envio, o nome do arquivo e a confirmação ficam aqui.'));return;}
+  records.forEach(record=>{
+    const card=node('article','panel agreement-record');const copy=node('div','agreement-record-copy');copy.append(node('span','badge','Arquivo recebido'),node('h3','',state.role==='coordinator'?record.ownerName||'Estudante':'Contrato enviado'),node('p','agreement-filename',record.filename||'Contrato assinado'),node('p','agreement-file-meta',`${agreementSize(record.size)} · Enviado em ${agreementTimestamp(record.uploadedAt)}`));
+    const download=button('Baixar arquivo','button secondary compact',event=>downloadAgreement(record,event.currentTarget));card.append(copy,download);list.append(card);
+  });
 }
 function progressBlock(tasks, label = 'Entregas concluídas') {
   const wrap=node('div','progress-block');const top=node('div','progress-head');top.append(node('span','',label),node('strong','',`${progress(tasks)}%`));
@@ -446,6 +591,7 @@ function paintFilteredGroups() {
 }
 
 function showCreateGroup() {
+  if(!canCreateGroup()){notice('Aguarde a aprovação da coordenação para criar um grupo como professor(a).','info');return;}
   const name=makeField('Nome do grupo','name',{required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
   const topic=makeField('Tema da pesquisa','topic',{required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
   const description=makeField('Conte um pouco sobre a ideia','description',{type:'textarea',maxLength:3000,placeholder:'Qual problema vocês querem compreender ou resolver?'});
@@ -475,7 +621,6 @@ function showDeleteGroup(group) {
     groupListeners.get(group.id)?.();groupListeners.delete(group.id);groupAccess.delete(group.id);groupData.delete(group.id);
     state.groups=state.groups.filter(item=>item.id!==group.id);
     state.invitations=state.invitations.filter(item=>item.groupId!==group.id);
-    if(calendarGroup===group.id)calendarGroup='all';
     navigate('groups');notice('Grupo excluído.');
   }});
 }
@@ -563,7 +708,11 @@ function renderGroupEvaluations(group,data) {
 }
 function showInviteForm(initialGroupId = '') {
   const manageable=state.groups.filter(canManage);
-  if(!manageable.length){notice('Crie um grupo ou abra um grupo que você orienta para enviar convites.','info');return;}
+  if(!manageable.length){
+    if(canCreateGroup())openForm({title:'Crie um grupo para enviar convites',fields:[node('p','dialog-note',state.role==='advisor'?'Você ainda não orienta um grupo. Crie o grupo com seu tema e depois convide os estudantes pelo e-mail. Também é possível receber e aceitar um convite de orientação nesta área.':'Os convites precisam estar vinculados a um grupo. Crie o grupo primeiro e depois convide estudantes ou um orientador.')],submit:'Criar grupo',handler:()=>{showCreateGroup();return false;}});
+    else openForm({title:'Seu cadastro de professor está em análise',fields:[node('p','dialog-note','A coordenação precisa aprovar o perfil de professor(a). Depois da aprovação, você poderá orientar grupos, enviar convites aos estudantes e aceitar convites de orientação.')],submit:'Entendi',handler:()=>{}});
+    return;
+  }
   const group=makeField('Grupo','groupId',{required:true,value:initialGroupId||manageable[0].id,options:manageable.map(g=>({value:g.id,label:g.name}))});
   const type=makeField('Convidar como','type',{options:[{value:'member',label:'Estudante / integrante'},{value:'advisor',label:'Orientador(a)'}]});
   const advisor=makeField('Orientador(a) cadastrado(a)','toUid',{options:[{value:'',label:'Selecione o orientador'},...state.advisors.map(p=>({value:p.id,label:advisorLabel(p)}))]});advisor.label.hidden=true;
@@ -705,7 +854,7 @@ function paintMessages(messages) {
 }
 
 function renderInvitations() {
-  const fragment=document.createDocumentFragment();fragment.append(heading('Convites','Entre em um grupo ou convide integrantes e orientadores.',state.groups.some(canManage)?[button('Enviar convite +','button primary',()=>showInviteForm())]:[]));
+  const fragment=document.createDocumentFragment();fragment.append(heading('Convites',state.role==='advisor'?'Envie convites aos estudantes e responda aos convites para orientar grupos.':'Convide pessoas para seu grupo e responda aos convites recebidos.',[button('Enviar convite +','button primary',()=>showInviteForm())]));
   const filters=node('div','filter-pills invite-tabs');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=button(label,'',()=>{invitationFilter=value;render();});b.setAttribute('aria-pressed',String(value===invitationFilter));filters.append(b);});fragment.append(filters);
   const invitations=state.invitations.filter(i=>invitationFilter==='incoming'?i.status==='pending'&&isRecipient(i):invitationFilter==='sent'?i.senderId===state.user.uid&&i.status==='pending':i.status!=='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(!invitations.length){fragment.append(emptyState(invitationFilter==='incoming'?'Nenhum convite aguardando resposta':invitationFilter==='sent'?'Nenhum convite pendente enviado':'O histórico aparece aqui',invitationFilter==='incoming'?'Quando um orientador ou grupo convidar você, o convite aparecerá aqui. Confira se está usando o mesmo e-mail informado.':'Você poderá acompanhar o grupo, o destinatário e a situação de cada convite.'));return fragment;}
@@ -719,51 +868,73 @@ function renderInvitations() {
     const status={pending:'Aguardando resposta',accepted:'Aceito',declined:'Recusado',cancelled:'Cancelado'}[invite.status]||invite.status;
     card.append(border,avatar,node('h3','invitation-card__name',name),node('p','invitation-card__role',invite.type==='advisor'?'Convite para orientar o grupo':'Convite para participar do grupo'),node('p','invitation-card__details',`De: ${invite.senderName||'Participante'}\nPara: ${recipient}${date?'\nEnviado em '+date:''}`),node('span','invitation-card__status',status));
     if(invite.status==='pending'&&isRecipient(invite)) {
-      const actions=node('div','invitation-card__actions');const accept=button('Aceitar convite','button primary',event=>action(event.currentTarget,()=>service.respondInvitation(invite.id,true),'Convite aceito. O grupo ficará disponível em “Meus grupos”.'));const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified);if(requiresVerification){accept.disabled=true;accept.title='Confirme seu e-mail primeiro';}
+      const actions=node('div','invitation-card__actions');const accept=button('Aceitar convite','button primary',event=>action(event.currentTarget,()=>service.respondInvitation(invite.id,true),'Convite aceito. O grupo ficará disponível em “Meus grupos”.'));const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified);const requiresApproval=invite.type==='advisor'&&!['advisor','coordinator'].includes(state.role);if(requiresVerification||requiresApproval){accept.disabled=true;accept.title=requiresApproval?'Aguarde a aprovação da coordenação para orientar.':'Confirme seu e-mail primeiro';}
       actions.append(accept,button('Recusar','button secondary',()=>confirmAction('Recusar convite?',`O convite para “${invite.groupName||'este grupo'}” será recusado. Um novo convite poderá ser enviado depois.`,async()=>{await service.respondInvitation(invite.id,false);notice('Convite recusado.');},'Recusar convite')));card.append(actions);
       if(requiresVerification)card.append(node('p','invitation-card__notice','Confirme seu e-mail para aceitar. Use “Enviar confirmação” no aviso acima.'));
+      if(requiresApproval)card.append(node('p','invitation-card__notice','A coordenação precisa aprovar seu perfil de professor(a) antes do aceite.'));
     } else if(invite.status==='pending')card.append(node('p','invitation-card__notice','Aguardando o aceite do destinatário.'));
     grid.append(card);
   });fragment.append(grid);return fragment;
 }
 
 function renderCalendar() {
-  if(calendarGroup!=='all'&&!state.groups.some(g=>g.id===calendarGroup))calendarGroup='all';
-  const fragment=document.createDocumentFragment();fragment.append(heading('Um calendário para não perder o próximo passo','As entregas dos grupos aparecem aqui automaticamente.'));
-  const toolbar=node('div','calendar-toolbar');const monthNav=node('div','calendar-nav');const previous=button('Anterior','icon-button calendar-step',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()-1,1,12);render();});previous.setAttribute('aria-label','Mês anterior');const next=button('Próximo','icon-button calendar-step',()=>{calendarSelected=true;calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+1,1,12);render();});next.setAttribute('aria-label','Próximo mês');monthNav.append(previous,node('h3','',new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(calendarDate)),next);toolbar.append(monthNav);
-  const actions=node('div','actions');const select=node('select','calendar-group-filter');select.setAttribute('aria-label','Filtrar calendário por grupo');[{id:'all',name:'Todos os meus grupos'},...state.groups].forEach(g=>{const option=node('option','',g.name);option.value=g.id;select.append(option);});select.value=calendarGroup;select.addEventListener('change',event=>{calendarGroup=event.target.value;render();});
-  actions.append(button('Hoje','button secondary compact',()=>{const now=new Date();calendarDate=new Date(now.getFullYear(),now.getMonth(),1,12);calendarSelected=true;render();}),button('Exportar agenda','button secondary compact',exportCalendar));toolbar.append(actions);fragment.append(toolbar,select);select.style.marginBottom='20px';
-  const tasks=allTasks().filter(t=>calendarGroup==='all'||t.groupId===calendarGroup);
-  const first=new Date(calendarDate.getFullYear(),calendarDate.getMonth(),1,12);const start=new Date(first);start.setDate(first.getDate()-first.getDay());
-  const grid=node('div','calendar-grid');grid.setAttribute('aria-label','Calendário mensal de entregas');['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(day=>grid.append(node('div','weekday',day)));
-  for(let i=0;i<42;i++){
-    const date=new Date(start);date.setDate(start.getDate()+i);const dateString=civilDate(date);const outside=date.getMonth()!==calendarDate.getMonth();const day=node('div',`calendar-day${outside?' outside':''}${dateString===todayString()?' today':''}`);day.append(node('span','day-number',date.getDate()));
-    tasks.filter(t=>t.dueDate===dateString).forEach(task=>{const status=statusOf(task);const event=button(task.title,`calendar-event ${status.key==='done'?'done':status.key==='late'?'late':''}`,()=>showCalendarTask(task));event.title=`${task.groupName}: ${task.title}`;event.setAttribute('aria-label',`${dateLabel(task.dueDate,true)}: ${task.title}, grupo ${task.groupName}, ${status.text}`);day.append(event);});grid.append(day);
-  }
-  fragment.append(grid);const legend=node('div','calendar-legend');[['','Pendente'],['done','Concluída'],['late','Em atraso']].forEach(([className,text])=>{const item=node('span');item.append(node('i',`legend-dot ${className}`),document.createTextNode(text));legend.append(item);});fragment.append(legend,node('p','schedule-note','Calendário de trabalho da escola. Datas de inscrição, apresentação e impressão previstas para 2027 são estimativas internas e devem ser ajustadas após a divulgação do evento.'));
-  const monthPrefix=`${calendarDate.getFullYear()}-${String(calendarDate.getMonth()+1).padStart(2,'0')}`;const monthTasks=tasks.filter(t=>(t.dueDate||'').startsWith(monthPrefix)).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));const list=node('section','calendar-list');list.append(node('h3','','Entregas do mês'));
-  if(monthTasks.length)list.append(...monthTasks.map(taskPreview));else list.append(node('p','empty-small','Nenhuma entrega neste mês. Use as setas para explorar o cronograma ou selecione outro grupo.'));fragment.append(list);return fragment;
+  const fragment=document.createDocumentFragment();
+  const events=state.groups.flatMap(group=>(groupData.get(group.id)?.events||[]).map(event=>({...event,groupId:group.id,groupName:group.name})));
+  const calendar=createCalendarView({groups:state.groups.filter(group=>group.status!=='deleting'),tasks:allTasks(),events,canManageGroup:group=>canManageTasks(group),onAddEvent:(groupId,date)=>showEventForm(groupId,date),onEditEvent:event=>showEventForm(event.groupId,event.date,event),onTask:showCalendarTask,onNotice:notice,initialDate:new Date(2027,0,1,12)});
+  fragment.append(calendar,buildNotificationPanel());
+  return fragment;
+}
+function showEventForm(initialGroupId='',initialDate=todayString(),event=null) {
+  const manageable=state.groups.filter(canManageTasks);
+  if(!manageable.length){notice('A coordenação e os orientadores podem criar eventos dos grupos.','info');return;}
+  const initial=manageable.find(group=>group.id===initialGroupId)||manageable[0];
+  const group=makeField('Grupo','groupId',{value:initial.id,required:true,options:manageable.map(item=>({value:item.id,label:item.name}))});
+  if(event)group.field.disabled=true;
+  const title=makeField('Nome do evento','title',{value:event?.title||'',required:true,minLength:2,maxLength:160,placeholder:'Ex.: Encontro de orientação'});
+  const date=makeField('Data do evento','date',{value:event?.date||initialDate||todayString(),required:true,type:'date'});
+  const description=makeField('Descrição (opcional)','description',{value:event?.description||'',type:'textarea',maxLength:2000,placeholder:'Local, materiais ou orientações para o encontro.'});
+  const fields=[group.label,title.label,date.label,description.label,node('p','dialog-note','O evento será visível aos integrantes, ao orientador e à coordenação. Feriados oficiais são apenas de consulta.')];
+  if(event)fields.push(button('Excluir evento','text-button destructive-action',()=>confirmAction('Excluir evento?',`“${event.title}” será removido do calendário deste grupo.`,async()=>{requireManagedGroup(event.groupId);await service.deleteEvent(event.groupId,event.id);notice('Evento excluído.');},'Excluir evento')));
+  openForm({title:event?'Editar evento':'Novo evento',fields,submit:event?'Salvar evento':'Criar evento',handler:async data=>{
+    const groupId=event?.groupId||String(data.get('groupId'));requireManagedGroup(groupId);
+    const payload={title:String(data.get('title')).trim(),date:String(data.get('date')),description:String(data.get('description')||'').trim()};
+    if(event)await service.updateEvent(groupId,event.id,payload);else await service.addEvent({groupId,...payload});
+    notice(event?'Evento atualizado.':'Evento criado no calendário do grupo.');
+  }});
+}
+function buildNotificationPanel() {
+  const uid=state.user?.uid;const panel=node('section','panel notification-panel');
+  const copy=node('div');copy.append(node('h3','','Avisos neste aparelho'),node('p','','Receba lembretes de entregas e avisos dos grupos. O envio pode levar alguns minutos.'));
+  const status=node('p','notification-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.textContent='Verificando disponibilidade…';
+  const control=button('Ativar avisos','button secondary compact',async()=>{
+    if(control.disabled||notificationsBusy||state.user?.uid!==uid)return;
+    notificationsBusy=true;
+    control.disabled=true;control.setAttribute('aria-busy','true');
+    let result;
+    try {
+      result=control.dataset.enabled==='true'?await disableNotifications(service,state.user):await enableNotifications(service,state.user);
+      if(state.user?.uid!==uid||!panel.isConnected)return;
+      paint(result);
+    }catch(error){if(state.user?.uid===uid&&panel.isConnected)status.textContent=errorText(error);}
+    finally{
+      notificationsBusy=false;control.removeAttribute('aria-busy');
+      if(state.user?.uid===uid){if(panel.isConnected){if(result)paint(result);else control.disabled=false;}else if(currentRoute.view==='calendar')scheduleRender();}
+    }
+  });control.disabled=true;
+  function paint(result){status.textContent=result.message||'';control.dataset.enabled=String(Boolean(result.enabled));control.textContent=result.enabled?'Desativar avisos':result.setupRequired?'Ativação pendente':'Ativar avisos';control.disabled=notificationsBusy||(!result.enabled&&(!result.supported||Boolean(result.needsInstall)||Boolean(result.setupRequired)||result.permission==='denied'));}
+  const actions=node('div','notification-actions');actions.append(control,link('Como instalar no celular','instalar.html','text-button'));panel.append(copy,status,actions);
+  getNotificationState().then(result=>{if(state.user?.uid===uid&&panel.isConnected)paint(result);}).catch(()=>{if(panel.isConnected){status.textContent='Não foi possível verificar os avisos. Atualize a página para tentar novamente.';control.disabled=false;}});
+  return panel;
 }
 function showCalendarTask(task) {
   const detail=node('div','dialog-details');detail.append(node('strong','',task.title),node('span','',`Grupo: ${task.groupName}`),node('span','',`Prazo: ${dateLabel(task.dueDate,true)}`),node('span','',`Situação: ${statusOf(task).text}`));
-  openForm({title:'Entrega do cronograma',fields:[detail],submit:'Abrir grupo',handler:()=>{navigate('group',task.groupId,'tasks');}});
+  const fields=[detail];const group=state.groups.find(item=>item.id===task.groupId);
+  if(group&&canManageTasks(group))fields.push(button('Alterar prazo ou nome da entrega','button secondary',()=>showTaskForm(group,task)));
+  openForm({title:'Entrega do cronograma',fields,submit:'Abrir grupo',handler:()=>{navigate('group',task.groupId,'tasks');}});
 }
-function exportCalendar() {
-  const tasks=allTasks().filter(t=>parseDate(t.dueDate)&&(calendarGroup==='all'||t.groupId===calendarGroup));
-  if(!tasks.length){notice('Não há entregas com data para exportar neste filtro.','info');return;}
-  const escape=value=>String(value||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/;/g,'\\;').replace(/,/g,'\\,');
-  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Maximus//Meu INIC//PT-BR','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Meu INIC - Máximu’s'];
-  tasks.forEach(task=>{
-    const end=parseDate(task.dueDate);end.setDate(end.getDate()+1);
-    lines.push('BEGIN:VEVENT',`UID:${escape(task.id)}-${escape(task.groupId)}@maximus-inic`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${task.dueDate.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${civilDate(end).replace(/-/g,'')}`,`SUMMARY:${escape(task.title)}`,`DESCRIPTION:${escape(`Grupo: ${task.groupName}\nSituação: ${statusOf(task).text}\nPlanejamento interno da escola; datas oficiais do evento a confirmar.`)}`,`URL:${new URL(routeHref('group',task.groupId,'tasks'),location.href).href}`,'END:VEVENT');
-  });lines.push('END:VCALENDAR');
-  const fold=line=>{let output='',bytes=0;const encoder=new TextEncoder();for(const character of line){const size=encoder.encode(character).length;if(bytes+size>75){output+='\r\n ';bytes=1;}output+=character;bytes+=size;}return output;};
-  const url=URL.createObjectURL(new Blob([lines.map(fold).join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'}));const download=link('','');download.href=url;download.download='Meu_INIC_Calendario.ics';document.body.append(download);download.click();download.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('Agenda exportada. Abra o arquivo .ics no calendário de sua preferência.');
-}
-
 function renderAdmin() {
   const fragment=document.createDocumentFragment();const intro=node('section','admin-intro');intro.append(node('h3','','Acompanhe toda a escola'),node('p','','A coordenação tem acesso a todos os grupos, orientadores, cronogramas e conversas. Aprove os cadastros de professores e abra um grupo para acompanhar cada pesquisa.'));fragment.append(intro);
+  intro.append(link('Consultar contratos assinados','#termo','button secondary compact'));
   const pending=state.users.filter(p=>p.requestedRole==='advisor'&&p.role!=='advisor'&&p.role!=='coordinator');const panel=node('section','panel');const head=node('div','panel-heading');head.append(node('h3','','Solicitações de orientadores'),node('span','badge',pending.length));panel.append(head);
   pending.forEach(person=>{const row=node('div','approval-row');const copy=node('div');copy.append(node('strong','',person.name||'Professor(a)'),node('p','',person.email||''));row.append(copy,button('Aprovar acesso','button primary compact',event=>action(event.currentTarget,()=>service.approveAdvisor(person.id),'Acesso de orientador liberado.')));panel.append(row);});
   if(!pending.length)panel.append(node('p','empty-small','Nenhum cadastro de orientador aguardando aprovação.'));fragment.append(panel);
@@ -783,11 +954,11 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261105-7');
+  service = await import('./firebase-service.js?v=20261105-8');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {
   authStatus('Não foi possível conectar ao serviço de acesso. Confira a conexão e recarregue esta página.','error');
   const retry=button('Tentar novamente','text-button',()=>location.reload());$('#auth-status').append(document.createTextNode(' '),retry);
 }
-window.addEventListener('pagehide',event=>{if(!event.persisted){sessionUnsubscribe();appUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});

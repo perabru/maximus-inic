@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='maximus-inic-public-v10';
-const SHELL=['./','assets/photos/photo-28.webp','index.html','styles.css','uiverse-components.css','experience.css','experience.css?v=20261105-5','uiverse-components.css?v=20261105-5','carousel.css','carousel.css?v=20261105-5','app.js?v=20261105-5','portal.js?v=20261105-7','firebase-service.js?v=20261105-7','experience.js','assets/maximus-banner.png','public-platform.css','public-platform.css?v=20261105-6','portal.css?v=20261105-7','header-login.css','header-login.css?v=20261105-6','responsive.css','responsive.css?v=20261105-6','brand-typography.css','brand-typography.css?v=20261105-6','assets/fonts/montserrat-latin-800-italic.woff2','assets/fonts/montserrat-latin-ext-800-italic.woff2','app.js','theme.js','pwa.js','photos.json','articles.json','portal.html','portal.css','portal.js','firebase-service.js','manifest.webmanifest','instalar.html','conformidade.html','conformidade.css','assets/logo-maximus.png','assets/logo-mark.png','assets/spark.svg','assets/icons/icon-192.png','assets/icons/icon-512.png','assets/icons/apple-touch-icon.png','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf'];
+const CACHE='maximus-inic-public-v11';
+const SHELL=['./','calendar.js','calendar.js?v=20261105-8','calendar.css','calendar.css?v=20261105-8','notifications.js','notifications.js?v=20261105-8','notification-config.json','assets/photos/photo-28.webp','index.html','styles.css','uiverse-components.css','experience.css','experience.css?v=20261105-5','uiverse-components.css?v=20261105-5','carousel.css','carousel.css?v=20261105-5','app.js?v=20261105-5','portal.js?v=20261105-8','firebase-service.js?v=20261105-8','experience.js','assets/maximus-banner.png','public-platform.css','public-platform.css?v=20261105-6','portal.css?v=20261105-8','header-login.css','header-login.css?v=20261105-6','responsive.css','responsive.css?v=20261105-6','brand-typography.css','brand-typography.css?v=20261105-6','assets/fonts/montserrat-latin-800-italic.woff2','assets/fonts/montserrat-latin-ext-800-italic.woff2','app.js','theme.js','pwa.js','photos.json','articles.json','portal.html','portal.css','portal.js','firebase-service.js','manifest.webmanifest','instalar.html','conformidade.html','conformidade.css','assets/logo-maximus.png','assets/logo-mark.png','assets/spark.svg','assets/icons/icon-192.png','assets/icons/icon-512.png','assets/icons/apple-touch-icon.png','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('maximus-inic-public-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
@@ -12,4 +12,38 @@ self.addEventListener('fetch',event=>{
   const publicAsset=SHELL.includes(path)||path===''||path.startsWith('assets/photos/');
   if(!publicAsset)return;
   event.respondWith(fetch(request,{cache:'no-cache'}).then(response=>{if(response.ok&&response.type==='basic'){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;}).catch(async()=>{const cached=await caches.match(request,{ignoreSearch:true});if(cached)return cached;if(request.mode==='navigate')return caches.match(new URL('./index.html',self.registration.scope));return new Response('Sem conexão',{status:503,headers:{'Content-Type':'text/plain;charset=utf-8'}});}));
+});
+
+// Web Push is delivered by the browser even when the installed app is closed.
+// Signed documents and private Firebase responses never enter this public cache.
+self.addEventListener('push',event=>{
+  let payload={};
+  try {payload=event.data?event.data.json():{};} catch {payload={};}
+  const title='Máximu’s · INIC';
+  const body=typeof payload.body==='string'&&payload.body.trim()?payload.body.trim().slice(0,220):'Confira suas entregas e eventos no calendário do INIC.';
+  const scope=new URL(self.registration.scope);
+  const destination=new URL('portal.html#calendario',scope);
+  try {
+    const requested=new URL(payload.url||destination.href,scope);
+    if(requested.origin===scope.origin&&requested.pathname===destination.pathname)destination.hash=requested.hash;
+  } catch { /* Keep the calendar destination for malformed or external links. */ }
+  event.waitUntil(self.registration.showNotification(title,{
+    body,icon:new URL('assets/icons/icon-192.png',scope).href,
+    badge:new URL('assets/icons/icon-192.png',scope).href,
+    tag:typeof payload.tag==='string'?payload.tag.slice(0,100):'maximus-inic-calendar',
+    data:{url:destination.href},renotify:false
+  }));
+});
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const destination=new URL('portal.html#calendario',self.registration.scope);
+  try {
+    const supplied=new URL(event.notification.data?.url||destination.href);
+    if(supplied.origin===destination.origin&&supplied.pathname===destination.pathname)destination.hash=supplied.hash;
+  } catch { /* Open the calendar for stale notifications. */ }
+  event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{
+    const existing=clients.find(client=>{try{return new URL(client.url).origin===destination.origin&&new URL(client.url).pathname===destination.pathname;}catch{return false;}});
+    if(existing){if('navigate' in existing)await existing.navigate(destination.href);return existing.focus();}
+    return self.clients.openWindow(destination.href);
+  }));
 });

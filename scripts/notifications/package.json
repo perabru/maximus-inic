@@ -1,0 +1,8 @@
+{
+  "name": "maximus-inic-notifications",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "send": "node send.mjs", "test": "node --test ../../tests/push-sender.test.mjs ../../tests/push-client.test.mjs" },
+  "dependencies": { "web-push": "3.6.7" }
+}

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -15,7 +15,7 @@
     "logout()": "Promise<void>",
     "resetPassword(email)": "Promise<void>",
     "subscribeApp(user,callback)": "Unsubscribe; callback recebe {profile,role,users,advisors,groups,invitations,error?}; todas as coleções são arrays com id; users apenas coordenação",
-    "subscribeGroup(groupId,callback)": "Unsubscribe; callback recebe {tasks,messages,groupEvaluation:null|evaluation,memberEvaluations:array,error?}; gestor recebe todas avaliações individuais; aluno assina apenas a própria. Mudanças de papel/vínculo descartam o cache privilegiado.",
+    "subscribeGroup(groupId,callback)": "Unsubscribe; callback recebe {tasks,messages,events,groupEvaluation:null|evaluation,memberEvaluations:array,error?}; gestor recebe todas avaliações individuais; aluno assina apenas a própria. Mudanças de papel/vínculo descartam o cache privilegiado.",
     "saveProfile(patch)": "Promise<void>; name,year,requestedRole",
     "approveAdvisor(uid)": "Promise<void>; lista orientador aprovado; preserva papel coordinator quando já existente",
     "setUserRole(uid,role)": "Promise<void>; exclusivo coordenação",
@@ -35,10 +35,19 @@
     "refreshSession()": "Promise<User>; atualiza emailVerified e token",
     "currentUser()": "Firebase User|null",
     "updateMember(groupId,uid,{name})": "Promise<void>; coordenador/orientador atribuído; muda só alias memberNames no grupo, sem editar perfil global",
-    "deleteGroup(groupId)": "Promise<void>; gestor atual; bloqueia atividade com status deleting e remove atomicamente grupo, tarefas, mensagens, avaliações, admissões, todos convites do grupo e índices dos membros/criador/orientador. Uma nova chamada retoma exclusão interrompida. Inclui memberRevocations na limpeza.",
+    "deleteGroup(groupId)": "Promise<void>; gestor atual; bloqueia atividade com status deleting e remove atomicamente grupo, tarefas, mensagens, eventos, avaliações, admissões, todos convites do grupo e índices dos membros/criador/orientador. Uma nova chamada retoma exclusão interrompida. Inclui memberRevocations na limpeza.",
     "saveEvaluation(groupId,{score,feedback})": "Promise<void>; gestor; nota coletiva numérica 0..10 e feedback até3000",
     "saveMemberEvaluation(groupId,uid,{score,feedback})": "Promise<void>; gestor; nota individual apenas de integrante atual",
-    "deleteEvaluation(groupId,uid?)": "Promise<void>; gestor; sem uid remove nota coletiva, com uid remove nota individual"
+    "deleteEvaluation(groupId,uid?)": "Promise<void>; gestor; sem uid remove nota coletiva, com uid remove nota individual",
+    "completeGoogleProfile({requestedRole,year,name})": "Promise<profile>; primeiro acesso Google exige escolher student/advisor; só requestedRole, ano e nome do próprio perfil; nunca altera roles. Perfis existentes sem onboardingRequired permanecem preservados.",
+    "subscribeAgreements(year,callback)": "Unsubscribe; {agreements:[{id:uid,...metadata}],error?}; coordenação recebe metadados da edição, aluno apenas os próprios; troca de papel descarta lista anterior, nunca assina bytes.",
+    "uploadAgreement(file,{year=2027})": "Promise<metadata>; estudante com cadastro concluído, PDF/JPEG/PNG até3MiB; verifica assinatura dos bytes e publica metadados+base64 atomicamente; nova cópia substitui a própria.",
+    "downloadAgreement(uid,year=2027)": "Promise<{blob,filename,contentType}>; leitura autenticada pontual por proprietário/coordenação; verifica tamanho, MIME e versão; força extensão segura; sem URL pública persistente.",
+    "addEvent({groupId,title,date,description})": "Promise<eventId>; coordenação ou orientador atribuído; date YYYY-MM-DD válida, auditoria do servidor.",
+    "updateEvent(groupId,eventId,patch)": "Promise<void>; título, data e descrição; preserves createdBy/createdAt, atualiza updatedAt do servidor.",
+    "deleteEvent(groupId,eventId)": "Promise<void>; apenas gestor e grupo ativo.",
+    "savePushSubscription(subscriptionJSON,deviceId)": "Promise<void>; dispositivo próprio, ID SHA256hex64, endpoint HTTPS nas origens FCM/Firefox/Apple e chaves de Web Push validadas; updatedAt do servidor.",
+    "removePushSubscription(deviceId)": "Promise<void>; apaga inscrição do próprio dispositivo."
   },
   "schema": {
     "users/{uid}": {
@@ -46,7 +55,8 @@
       "email": "string",
       "requestedRole": "student|advisor",
       "year": "série texto",
-      "createdAt": "epoch ms"
+      "createdAt": "epoch ms",
+      "onboardingRequired": "boolean opcional; true no novo cadastro Google até escolher perfil; ausente para contas antigas"
     },
     "roles/{uid}": "coordinator|advisor|student; apenas coordenação escreve",
     "advisorDirectory/{uid}": {
@@ -111,17 +121,52 @@
       "updatedAt": "server timestamp epoch ms",
       "evaluatorName": "nome do gestor no próprio perfil"
     },
-    "memberRevocations/{gid}/{uid}": "server timestamp da última remoção; só gestor grava na remoção atômica. Novo convite precisa createdAt posterior ao cutoff; barreira não é removida ao reentrar."
+    "memberRevocations/{gid}/{uid}": "server timestamp da última remoção; só gestor grava na remoção atômica. Novo convite precisa createdAt posterior ao cutoff; barreira não é removida ao reentrar.",
+    "events/{gid}/{id}": {
+      "title": "string1..160",
+      "date": "YYYY-MM-DD",
+      "description": "string até3000",
+      "createdBy": "UID gestor autenticado",
+      "createdAt": "server timestamp epoch ms imutável",
+      "updatedAt": "server timestamp epoch ms"
+    },
+    "agreements/{year}/{uid}": {
+      "uid": "UID proprietário",
+      "year": "edição numérica 2027..2100 igual chave",
+      "filename": "nome sanitizado até180 caracteres e extensão derivada do MIME",
+      "size": "bytes inteiros1..3145728",
+      "contentType": "application/pdf|image/jpeg|image/png",
+      "ownerName": "nome do proprietário no próprio perfil",
+      "uploadedAt": "server timestamp epoch ms; igual ao registro dos bytes"
+    },
+    "agreementFiles/{year}/{uid}": {
+      "base64": "conteúdo até4194304 caracteres, alfabeto e tamanho compatíveis com size",
+      "size": "bytes inteiros1..3145728",
+      "contentType": "application/pdf|image/jpeg|image/png",
+      "uploadedAt": "server timestamp epoch ms igual aos metadados"
+    },
+    "notificationWorkers/{uid}": "true; somente administração Firebase define, clientes não podem conceder; não é papel regular nem perfil de professor/aluno",
+    "pushSubscriptions/{uid}/{deviceId}": {
+      "endpoint": "HTTPS FCM/Firefox/Apple até2048chars",
+      "keys": {
+        "p256dh": "base64URL chave pública87/88chars",
+        "auth": "base64URL22/24chars"
+      },
+      "updatedAt": "server timestamp epoch ms"
+    },
+    "notificationDeliveries": "marcadores e checkpoint privados do worker para evitar envio duplicado; sem acesso de usuários/coordenadores"
   },
   "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
   "securityNotice": "Convites por e-mail exigem e-mail verificado. Solicitar perfil orientador não concede papel: liberação pela coordenação. Remover integrante também invalida convites anteriores à remoção, sem consultar perfis globais ou e-mails alheios.",
   "verification": {
     "sdkCDN": "13.2.0 respondeu HTTP200 em 05/11/2026",
-    "securityTests": 131,
+    "securityTests": 225,
     "engine": "Firebase Realtime Database Emulator 4.11.2",
     "cli": "Firebase CLI 15.35.0",
-    "result": "Todos os 131 cenários passaram, incluindo serviço real contra regras do emulador, isolamento de avaliações, remoção, convites revogados, exclusão com limpeza e retomada após interrupção."
+    "result": "Todos os 225 cenários passaram no emulador local demo-maximus-inic: Google por popup/redirecionamento e escolha de perfil sem autopromoção; contratos privados até 3 MiB com metadados e bytes atômicos; convites pelo professor; eventos e exclusão; worker Web Push restrito; todos os 131 casos anteriores. Auth é simulado e o runtime recusa banco fora do emulador local."
   },
   "evaluationPrivacy": "Só coordenador ou orientador atualmente atribuído lê todas avaliações individuais. Integrante lê nota coletiva e sua própria nota. Nenhum aluno escreve notas; remover o integrante revoga a leitura e apaga sua avaliação.",
-  "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação."
+  "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação.",
+  "agreementPrivacy": "Metadados e bytes só podem ser lidos pelo estudante proprietário ou coordenação. Orientadores não recebem acesso. A coordenação lista apenas metadados; bytes não têm leitura coletiva. Só estudantes de cadastro concluído publicam as próprias cópias. Regras exigem par consistente, bloqueiam deleções parciais e campos extras; o app não determina validade jurídica de assinaturas.",
+  "notificationWorkerPrivacy": "Worker técnico autenticado lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries; não lê perfis, convites, mensagens, notas ou contratos. Pode atualizar marcadores e remover inscrições expiradas; não cria grupos/perfis nem altera inscrições de usuários."
 }

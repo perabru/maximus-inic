@@ -1,7 +1,4 @@
 {
-  "database": {
-    "rules": "../database.rules.json"
-  },
   "emulators": {
     "database": {
       "port": 9000
@@ -10,5 +7,8 @@
       "enabled": false
     },
     "singleProjectMode": true
+  },
+  "database": {
+    "rules": "emulator-deny.rules.json"
   }
 }

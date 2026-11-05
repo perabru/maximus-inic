@@ -44,11 +44,12 @@ async function writeProfile(user, supplied = {}) {
     await set(path(`users/${user.uid}`), {
       name, email: clean(user.email, 254).toLowerCase(),
       requestedRole: supplied.requestedRole === 'advisor' ? 'advisor' : 'student',
-      year: clean(supplied.year, 30), createdAt: Date.now()
+      year: clean(supplied.year, 30), createdAt: Date.now(),
+      onboardingRequired: !supplied.name && user.providerData?.some(item=>item.providerId==='google.com') === true
     });
   } else if (supplied.name) {
     await update(path(`users/${user.uid}`), {
-      name: clean(supplied.name,100), requestedRole: supplied.requestedRole === 'advisor' ? 'advisor' : 'student', year: clean(supplied.year,30)
+      name: clean(supplied.name,100), requestedRole: supplied.requestedRole === 'advisor' ? 'advisor' : 'student', year: clean(supplied.year,30), onboardingRequired:false
     });
   }
 }
@@ -92,6 +93,26 @@ export async function loginGoogle() {
   }
 }
 getRedirectResult(auth).then(result => result?.user && ensureProfile(result.user)).catch(error => console.warn('Login Google: ', error.code));
+// A Google account is authenticated first. Its role request is chosen once in
+// the application, so popup, redirect and auth observer ordering cannot silently
+// assign a new teacher the student profile. Requested roles never grant access.
+export async function completeGoogleProfile({requestedRole,year='',name=''}={}) {
+  const user=needUser();
+  if(!['student','advisor'].includes(requestedRole))throw new Error('Escolha se você é estudante ou professor(a).');
+  const snapshot=await get(path(`users/${user.uid}`));
+  const profile=snapshot.val();
+  if(!profile)throw new Error('Seu perfil ainda está carregando. Tente novamente.');
+  if(profile.onboardingRequired!==true)return profile;
+  const fullName=clean(name||profile.name||user.displayName,100);
+  if(fullName.length<2)throw new Error('Informe seu nome completo.');
+  const schoolYear=requestedRole==='student'?clean(year,30):'';
+  if(requestedRole==='student'&&!['1º ano','2º ano','3º ano'].includes(schoolYear))throw new Error('Escolha sua série escolar.');
+  const changes={name:fullName,requestedRole,year:schoolYear,onboardingRequired:false};
+  await update(path(`users/${user.uid}`),changes);
+  await updateProfile(user,{displayName:fullName});
+  profileCache={...profile,...changes};
+  return profileCache;
+}
 export const logout = () => signOut(auth);
 export const resetPassword = email => sendPasswordResetEmail(auth, clean(email,254).toLowerCase());
 export const currentUser = () => auth.currentUser;
@@ -173,7 +194,7 @@ export function subscribeApp(user, callback) {
 }
 export function subscribeGroup(groupId, callback) {
   const user=needUser();
-  const state = {tasks:[],messages:[],groupEvaluation:null,memberEvaluations:[]};
+  const state = {tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[]};
   let stopped=false;
   let group=null;
   let role='student';
@@ -203,6 +224,7 @@ export function subscribeGroup(groupId, callback) {
     emit();
   };
   const stops = [
+    onValue(path(`events/${groupId}`),snap=>{state.events=collection(snap).sort((a,b)=>a.date.localeCompare(b.date));if(!stopped)callback({...state});},report),
     onValue(path(`tasks/${groupId}`), snap => {state.tasks=collection(snap).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));if(!stopped)callback({...state});}, report),
     onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report),
     onValue(path(`groups/${groupId}`),snapshot=>{group=snapshot.val();attachEvaluations();},error=>{group=null;attachEvaluations();report(error);}),
@@ -299,7 +321,7 @@ export async function deleteGroup(groupId) {
   const frozen=lockedGroup.val();
   if(!frozen)return;
   const changes={};
-  for(const resource of ['groups','tasks','messages','evaluations','admissions','memberRevocations'])changes[`${resource}/${groupId}`]=null;
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])changes[`${resource}/${groupId}`]=null;
   const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));
   for(const uid of relatedUsers)changes[`userGroups/${uid}/${groupId}`]=null;
   for(const invitation of collection(invitationSnapshot))changes[`invitations/${invitation.id}`]=null;
@@ -328,8 +350,12 @@ export async function deleteEvaluation(groupId,uid) {
 }
 export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   const user=needUser();
-  const group=(await get(path(`groups/${groupId}`))).val();
+  checkIdentifier(groupId);
+  const [groupSnapshot,roleSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${user.uid}`))]);
+  const group=groupSnapshot.val(),role=roleSnapshot.val()||'student';
   if(!group)throw new Error('Grupo não encontrado.');
+  if(group.status==='deleting')throw new Error('A exclusão deste grupo está em andamento.');
+  if(!(role==='coordinator'||(role==='advisor'&&group.advisorId===user.uid)||(role!=='advisor'&&group.members?.[user.uid])))throw new Error('Você não pode enviar convites para este grupo.');
   if(!['member','advisor'].includes(type))throw new Error('Tipo de convite inválido.');
   if(type==='advisor' && !toUid)throw new Error('Selecione um orientador aprovado.');
   if(type==='member' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
@@ -357,6 +383,106 @@ export async function respondInvitation(invitationId,accept) {
   // Only the admission is separate; it grants no data access. All effective
   // membership changes and the final invitation status commit atomically.
   await update(path(),changes);
+}
+
+export async function addEvent({groupId,title,date,description=''}={}) {
+  const user=needUser();await managedGroup(groupId);
+  checkDate(date);
+  const eventTitle=clean(title,160);if(!eventTitle)throw new Error('Informe o título do evento.');
+  const event=push(path(`events/${groupId}`));
+  await set(event,{title:eventTitle,date,description:clean(description,3000),createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  return event.key;
+}
+export async function updateEvent(groupId,eventId,patch={}) {
+  await managedGroup(groupId);checkIdentifier(eventId);
+  if(!(await get(path(`events/${groupId}/${eventId}`))).exists())throw new Error('Evento não encontrado.');
+  const changes={updatedAt:serverTimestamp()};
+  if(patch.title!==undefined){changes.title=clean(patch.title,160);if(!changes.title)throw new Error('Informe o título do evento.');}
+  if(patch.date!==undefined){checkDate(patch.date);changes.date=patch.date;}
+  if(patch.description!==undefined)changes.description=clean(patch.description,3000);
+  await update(path(`events/${groupId}/${eventId}`),changes);
+}
+export async function deleteEvent(groupId,eventId) {
+  await managedGroup(groupId);checkIdentifier(eventId);
+  await remove(path(`events/${groupId}/${eventId}`));
+}
+
+export const agreementLimits=Object.freeze({maxBytes:3*1024*1024,contentTypes:['application/pdf','image/jpeg','image/png']});
+function agreementYear(year=2027) {
+  const value=Number(year);if(!Number.isInteger(value)||value<2027||value>2100)throw new Error('Escolha uma edição válida para o termo.');return value;
+}
+export function subscribeAgreements(year=2027,callback) {
+  const user=needUser(),edition=agreementYear(year);let stopped=false,stopData=()=>{};let generation=0;
+  const roleStop=onValue(path(`roles/${user.uid}`),snapshot=>{
+    const current=++generation;stopData();stopData=()=>{};
+    if(!stopped)callback({agreements:[]});
+    const coordinator=snapshot.val()==='coordinator';
+    const target=coordinator?path(`agreements/${edition}`):path(`agreements/${edition}/${user.uid}`);
+    stopData=onValue(target,snap=>{
+      if(stopped||current!==generation)return;
+      const list=coordinator?collection(snap):snap.exists()?[{...snap.val(),id:user.uid}]:[];
+      callback({agreements:list.sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0))});
+    },error=>{if(!stopped&&current===generation)callback({agreements:[],error});});
+  },error=>{if(!stopped)callback({agreements:[],error});});
+  return()=>{stopped=true;generation++;roleStop();stopData();};
+}
+function bytesToBase64(bytes) {
+  let binary='';for(let offset=0;offset<bytes.length;offset+=32768)binary+=String.fromCharCode(...bytes.subarray(offset,offset+32768));return btoa(binary);
+}
+function detectAgreementType(bytes) {
+  if(bytes.length>=5&&String.fromCharCode(...bytes.subarray(0,5))==='%PDF-')return 'application/pdf';
+  if(bytes.length>=3&&bytes[0]===255&&bytes[1]===216&&bytes[2]===255)return 'image/jpeg';
+  if(bytes.length>=8&&[137,80,78,71,13,10,26,10].every((byte,i)=>bytes[i]===byte))return 'image/png';
+  return '';
+}
+function agreementFilename(name,contentType,year) {
+  const extension={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png'}[contentType];
+  const safe=clean(name||`termo-${year}`,180).replace(/[\\/\u0000-\u001f\u007f<>:\"|?*]/g,'_').replace(/^\.+/,'').replace(/\.[^.]*$/,'');
+  return `${safe.slice(0,170)||`termo-${year}`}.${extension}`;
+}
+export async function uploadAgreement(file,{year=2027}={}) {
+  const user=needUser(),edition=agreementYear(year);
+  if(!file||typeof file.arrayBuffer!=='function'||!Number.isInteger(file.size)||file.size<=0||file.size>agreementLimits.maxBytes)throw new Error('Escolha um PDF ou uma imagem JPG/PNG de até 3 MB.');
+  const [profileSnapshot,roleSnapshot]=await Promise.all([get(path(`users/${user.uid}`)),get(path(`roles/${user.uid}`))]);
+  const profile=profileSnapshot.val(),role=roleSnapshot.val()||'student';
+  if(!profile||profile.requestedRole!=='student'||role!=='student'||profile.onboardingRequired===true)throw new Error('O envio do termo está disponível para estudantes com cadastro concluído.');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  if(bytes.length!==file.size)throw new Error('Não foi possível ler o arquivo completo. Selecione-o novamente.');
+  const contentType=detectAgreementType(bytes);
+  if(!contentType||file.type&&file.type!==contentType)throw new Error('Formato inválido. Envie um PDF, JPG ou PNG.');
+  const filename=agreementFilename(file.name,contentType,edition);
+  const uploadedAt=serverTimestamp();
+  const metadata={uid:user.uid,year:edition,filename,size:bytes.length,contentType,ownerName:clean(profile.name,100),uploadedAt};
+  const payload={base64:bytesToBase64(bytes),size:bytes.length,contentType,uploadedAt};
+  // Only metadata is listed. File bytes are fetched individually with Auth and
+  // never exposed through a persistent download token or public URL.
+  await update(path(),{[`agreements/${edition}/${user.uid}`]:metadata,[`agreementFiles/${edition}/${user.uid}`]:payload});
+  return metadata;
+}
+export async function downloadAgreement(uid,year=2027) {
+  needUser();checkIdentifier(uid);const edition=agreementYear(year);
+  const [metadataSnapshot,fileSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementFiles/${edition}/${uid}`))]);
+  const metadata=metadataSnapshot.val(),file=fileSnapshot.val();
+  if(!metadata||!file)throw new Error('O termo ainda não foi enviado.');
+  if(file.uploadedAt!==metadata.uploadedAt||file.size!==metadata.size||file.contentType!==metadata.contentType)throw new Error('O termo foi atualizado. Tente baixar novamente.');
+  const binary=atob(file.base64),bytes=Uint8Array.from(binary,character=>character.charCodeAt(0));
+  if(bytes.length!==metadata.size||detectAgreementType(bytes)!==metadata.contentType)throw new Error('O arquivo não pôde ser validado. Envie uma nova cópia.');
+  return {blob:new Blob([bytes],{type:metadata.contentType}),filename:agreementFilename(metadata.filename,metadata.contentType,edition),contentType:metadata.contentType};
+}
+
+function pushDevice(value) {
+  if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw new Error('Identificação do dispositivo inválida.');return value;
+}
+export async function savePushSubscription(subscriptionJSON,deviceId) {
+  const user=needUser();pushDevice(deviceId);
+  const endpoint=subscriptionJSON?.endpoint,keys=subscriptionJSON?.keys;
+  if(typeof endpoint!=='string'||endpoint.length>2048||!/^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com)\/[^\s]+$/.test(endpoint))throw new Error('Serviço de notificações não reconhecido.');
+  if(typeof keys?.p256dh!=='string'||!/^[A-Za-z0-9_-]{87}=?$/.test(keys.p256dh)||typeof keys?.auth!=='string'||!/^[A-Za-z0-9_-]{22}(==)?$/.test(keys.auth))throw new Error('As chaves de notificação deste dispositivo são inválidas.');
+  await set(path(`pushSubscriptions/${user.uid}/${deviceId}`),{endpoint,keys:{p256dh:keys.p256dh,auth:keys.auth},updatedAt:serverTimestamp()});
+}
+export async function removePushSubscription(deviceId) {
+  const user=needUser();pushDevice(deviceId);
+  await remove(path(`pushSubscriptions/${user.uid}/${deviceId}`));
 }
 
 export const defaultSchedule = (year=2027) => [

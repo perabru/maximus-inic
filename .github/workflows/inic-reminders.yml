@@ -1,0 +1,43 @@
+name: Avisos do INIC
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GitHub schedules are best effort and may start later during busy periods.
+    - cron: '7,22,37,52 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inic-notification-sender
+  cancel-in-progress: false
+
+jobs:
+  reminders:
+    if: github.repository == 'perabru/maximus-inic' && github.ref == 'refs/heads/main' && vars.INIC_NOTIFICATIONS_READY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter código
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Preparar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Instalar remetente
+        working-directory: scripts/notifications
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validar remetente
+        working-directory: scripts/notifications
+        run: npm test
+      - name: Enviar lembretes
+        working-directory: scripts/notifications
+        env:
+          INIC_NOTIFY_EMAIL: ${{ secrets.INIC_NOTIFY_EMAIL }}
+          INIC_NOTIFY_PASSWORD: ${{ secrets.INIC_NOTIFY_PASSWORD }}
+          INIC_VAPID_PUBLIC_KEY: ${{ secrets.INIC_VAPID_PUBLIC_KEY }}
+          INIC_VAPID_PRIVATE_KEY: ${{ secrets.INIC_VAPID_PRIVATE_KEY }}
+        run: npm run send

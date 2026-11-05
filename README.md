@@ -51,15 +51,29 @@ Projeto Firebase informado para este aplicativo. Email/Password e Google habilit
 
 Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam acesso de orientação no cadastro e aguardam aprovação da coordenação. Convites para alunos exigem confirmação do próprio endereço de e-mail; o login Google já fornece um e-mail verificado. O convite aparece dentro da plataforma: não há disparo automático de e-mail de convite.
 
+No primeiro cadastro com Google, a pessoa escolhe **Estudante** ou **Professor(a)** e conclui seu perfil. A escolha de professor solicita a aprovação da coordenação; não concede permissões administrativas. Contas existentes mantêm seu perfil e papel. Professores aprovados enviam convites aos integrantes dos seus grupos e recebem convites para orientar outras equipes. O botão **Enviar convite +** também encaminha à criação de um grupo quando ainda não há uma equipe disponível.
+
 As regras do servidor controlam os papéis, a entrada em grupos e o acesso aos dados. Ser coordenador na interface não depende de uma comparação de email no JavaScript. Os coordenadores veem todos os grupos e orientadores; cada orientador vê as equipes sob sua orientação. Consulte `service-contract.json` e `database.rules.json`.
 
 ### Cronograma e calendário
 
 Ao criar um grupo, oito marcos de planejamento são gerados para o ano escolhido. Datas do INIC 2027 e valores do termo continuam sujeitos à confirmação oficial. Orientadores/coordenadores ajustam os prazos; o progresso ponderado e a situação de atraso são calculados a partir das entregas. A exportação ICS permite importar o calendário nos aplicativos de agenda. Mensagens e convites sincronizam em tempo real enquanto a plataforma está aberta e conectada.
 
+O calendário destaca os nove feriados nacionais federais de 2027 e reúne as entregas e os eventos dos grupos acessíveis à conta. Orientadores e coordenação podem criar, editar e excluir eventos dos grupos que gerenciam. Alterar uma entrega atualiza sua data no calendário. A exportação ICS inclui feriados, eventos e entregas conforme o ano e o filtro escolhido. Fontes oficiais em `research/calendar-2027.md`.
+
+### Contratos assinados
+
+Em **Meu termo**, cada estudante envia um PDF, JPG ou PNG de até 3 MiB com todas as assinaturas. Um novo envio substitui o anterior. A coordenação consulta e baixa os arquivos em **Termos assinados**, com busca pelo nome do estudante ou arquivo. Professores e outros alunos não têm acesso. O serviço valida o formato do arquivo, mantém metadados separados dos bytes e baixa o conteúdo com autenticação, sem URL pública ou cache offline.
+
+### Avisos no aplicativo instalado
+
+O cliente Web Push, o service worker e o remetente agendado estão implementados. **A ativação do remetente está pendente de autorização para guardar suas credenciais restritas nos secrets do GitHub Actions.** `senderReady:false` mantém o botão desabilitado, e o workflow é ignorado enquanto `INIC_NOTIFICATIONS_READY` estiver ausente. O calendário funciona normalmente.
+
+Após a ativação administrativa, cada aluno poderá autorizar avisos neste aparelho. No iPhone/iPad, é necessário abrir o aplicativo adicionado à Tela de Início, com sistema compatível. Os avisos serão genéricos, sem dados do aluno na tela bloqueada. O remetente verifica mudanças e prazos a cada 15 minutos; execuções do GitHub podem atrasar. Detalhes e configuração em `scripts/notifications/README.md`.
+
 ### Validação
 
-131 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, isolamento de notas, edição e remoção de integrantes, exclusão de grupos com retomada após interrupção, convites e papéis protegidos. Instruções reproduzíveis em `tests/README.md`. Verificação adicional das permissões no banco publicado: visitantes impedidos de ler perfis/grupos e ambos os coordenadores com acesso autorizado. Não há notificações push em segundo plano; os recados são internos ao aplicativo.
+225 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 20 regressões de interface, sete testes de calendário e 29 testes de Web Push sem envios reais. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
 ### Grupos, integrantes e avaliações
 
