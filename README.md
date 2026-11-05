@@ -67,9 +67,9 @@ Em **Meu termo**, cada estudante envia um PDF, JPG ou PNG de até 3 MiB com toda
 
 ### Avisos no aplicativo instalado
 
-O cliente Web Push, o service worker e o remetente agendado estão implementados. **A ativação do remetente está pendente de autorização para guardar suas credenciais restritas nos secrets do GitHub Actions.** `senderReady:false` mantém o botão desabilitado, e o workflow é ignorado enquanto `INIC_NOTIFICATIONS_READY` estiver ausente. O calendário funciona normalmente.
+O cliente Web Push, o service worker e o remetente agendado usam credenciais restritas guardadas nos secrets protegidos do GitHub Actions. A chave privada e a senha da conta técnica não são publicadas no código. A ativação administrativa exige `senderReady:true`, a variável `INIC_NOTIFICATIONS_READY:true` e os quatro secrets do remetente.
 
-Após a ativação administrativa, cada aluno poderá autorizar avisos neste aparelho. No iPhone/iPad, é necessário abrir o aplicativo adicionado à Tela de Início, com sistema compatível. Os avisos serão genéricos, sem dados do aluno na tela bloqueada. O remetente verifica mudanças e prazos a cada 15 minutos; execuções do GitHub podem atrasar. Detalhes e configuração em `scripts/notifications/README.md`.
+Em **Calendário → Ativar avisos**, cada aluno autoriza o recebimento neste aparelho. No iPhone/iPad, é necessário abrir o aplicativo adicionado à Tela de Início, com sistema compatível. Os avisos são genéricos, sem dados do aluno na tela bloqueada. O remetente verifica mudanças e prazos a cada 15 minutos; execuções do GitHub podem atrasar. O botão **Desativar avisos** cancela a inscrição do aparelho, e sair da conta também a desativa. Detalhes e configuração em `scripts/notifications/README.md`.
 
 ### Validação
 
