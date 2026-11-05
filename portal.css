@@ -9,3 +9,13 @@ html[data-theme="dark"]{color-scheme:dark;--primary:#a7aaff;--primary-hover:#c6c
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 
 @media(min-width:761px){.auth-story-copy h1{font-size:clamp(38px,3.7vw,52px);line-height:1.08}}@media(min-width:761px) and (max-width:1050px){.auth-story{padding:36px 30px}.auth-story-copy h1{font-size:34px}}
+/* The shared nine-square loader is visible only while an operation is pending. */
+.loading-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.loading-panel>.book-loader{margin:0 auto}
+.auth-status.is-loading{display:flex;align-items:center;gap:12px;min-height:24px}
+.auth-status.is-loading>.book-loader{transform:scale(.3);transform-origin:left top;margin-right:-50px;margin-bottom:-50px}
+.auth-status.is-loading>span{flex:1;min-width:0}
+.invitation-card__details{white-space:pre-line}
+.invitation-card__actions>.button{font-size:11px;padding:9px 14px}
+.invitation-card__actions>.button.primary:not(.uiverse-button){background:#f38635;color:#201c46}
+.invitation-card__actions>.button.secondary:not(.uiverse-button){background:transparent;color:#ffe2ca;border-color:#f38635}

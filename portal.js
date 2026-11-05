@@ -94,9 +94,17 @@ function notice(text, kind = 'success', persistent = false) {
   target.hidden = false;
   if (!persistent) noticeTimer = setTimeout(() => target.hidden = true,9000);
 }
-function authStatus(text, kind = '') {
-  $('#auth-status').textContent = text;
-  $('#auth-status').className = `auth-status ${kind}`;
+function bookLoader() {
+  const loader = node('div','book-loader');
+  loader.setAttribute('aria-hidden','true');
+  for (let i=0;i<9;i++) loader.append(node('div','book-loader__box box'));
+  return loader;
+}
+function authStatus(text, kind = '', busy = false) {
+  const status = $('#auth-status');
+  status.replaceChildren(...(busy ? [bookLoader(),node('span','',text)] : [document.createTextNode(text)]));
+  status.className = `auth-status ${kind}${busy ? ' is-loading' : ''}`;
+  status.setAttribute('aria-busy',String(busy));
 }
 async function action(control, callback, successText = '') {
   if (!service) {notice('O serviço de acesso ainda não está disponível. Recarregue a página.','error');return false;}
@@ -179,8 +187,8 @@ function setAuthMode(mode) {
   $('#login-form').hidden = registration;
   $('#register-tab').setAttribute('aria-selected',String(registration));
   $('#login-tab').setAttribute('aria-selected',String(!registration));
-  $('#auth-heading').textContent = registration ? 'Vamos começar?' : 'Que bom ter você aqui.';
-  $('.auth-subtitle').textContent = registration ? 'Crie sua conta para fazer parte do Meu INIC.' : 'Entre para acompanhar sua pesquisa.';
+  $('#auth-heading').textContent = registration ? 'Criar conta' : 'Entrar no Meu INIC';
+  $('.auth-subtitle').textContent = registration ? 'Cadastre-se como estudante ou solicite acesso de orientador.' : 'Acesse seus grupos, entregas e mensagens.';
   authStatus('');
 }
 $('#login-tab').addEventListener('click',() => setAuthMode('login'));
@@ -201,8 +209,8 @@ async function authAction(form, callback) {
   if (!service) {authStatus('Não foi possível conectar ao serviço de acesso. Recarregue a página.','error');return;}
   const buttons = [...document.querySelectorAll('#auth-screen button')];
   buttons.forEach(b => b.disabled = true);
-  authStatus('Conectando…');
-  try {await callback();if(form) form.reset();authStatus('Acesso confirmado. Carregando seu espaço…','success');}
+  authStatus('Conectando…','',true);
+  try {await callback();if(form) form.reset();authStatus('Acesso confirmado.','success');}
   catch(error) {authStatus(errorText(error),'error');}
   finally {buttons.forEach(b => b.disabled = false);}
 }
@@ -333,7 +341,7 @@ function render() {
   const views = {dashboard:renderDashboard,groups:renderGroups,invitations:renderInvitations,calendar:renderCalendar,admin:renderAdmin};
   $('#view-content').replaceChildren((views[currentRoute.view] || renderDashboard)());
 }
-function loadingPanel(text) {const panel=node('div','loading-panel');panel.append(node('span','loader'),node('p','',text));return panel;}
+function loadingPanel(text) {const panel=node('div','loading-panel');panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');panel.setAttribute('aria-busy','true');panel.append(bookLoader(),node('p','',text));return panel;}
 function emptyState(title, text, actions = []) {
   const panel = node('div','empty-state');
   panel.append(node('span','empty-icon','＋'),node('h3','',title),node('p','',text));
@@ -548,20 +556,24 @@ function paintMessages(messages) {
 }
 
 function renderInvitations() {
-  const fragment=document.createDocumentFragment();fragment.append(heading('Convites aproximam as ideias','Aceite o convite para começar a trabalhar com o grupo.',state.groups.some(canManage)?[button('Enviar convite +','button primary',()=>showInviteForm())]:[]));
+  const fragment=document.createDocumentFragment();fragment.append(heading('Convites','Entre em um grupo ou convide integrantes e orientadores.',state.groups.some(canManage)?[button('Enviar convite +','button primary',()=>showInviteForm())]:[]));
   const filters=node('div','filter-pills invite-tabs');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=button(label,'',()=>{invitationFilter=value;render();});b.setAttribute('aria-pressed',String(value===invitationFilter));filters.append(b);});fragment.append(filters);
   const invitations=state.invitations.filter(i=>invitationFilter==='incoming'?i.status==='pending'&&isRecipient(i):invitationFilter==='sent'?i.senderId===state.user.uid&&i.status==='pending':i.status!=='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(!invitations.length){fragment.append(emptyState(invitationFilter==='incoming'?'Nenhum convite aguardando resposta':invitationFilter==='sent'?'Nenhum convite pendente enviado':'O histórico aparece aqui',invitationFilter==='incoming'?'Quando um orientador ou grupo convidar você, o convite aparecerá aqui. Confira se está usando o mesmo e-mail informado.':'Você poderá acompanhar o grupo, o destinatário e a situação de cada convite.'));return fragment;}
   const grid=node('div','invite-grid');
   invitations.forEach(invite=>{
-    const card=node('article','invite-card');const meta=node('div','invite-meta');meta.append(node('span','badge',invite.type==='advisor'?'Orientação':'Integrante'),node('span','count-label',typeof invite.createdAt==='number'?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(invite.createdAt)):''));
-    card.append(meta,node('h3','',invite.groupName||groupName(invite.groupId)),node('p','',`Enviado por: ${invite.senderName||'Participante'}`));
-    const recipient=invite.toEmail||state.advisors.find(a=>a.id===invite.toUid)?.name||(invite.toUid===state.user.uid?myName():'Orientador(a) convidado(a)');card.append(node('p','',`Para: ${recipient}`));
+    const name=invite.groupName||groupName(invite.groupId);
+    const card=node('article','invitation-card');const border=node('div','invitation-card__border-top');border.setAttribute('aria-hidden','true');
+    const avatar=node('div','invitation-card__avatar',initials(name));avatar.setAttribute('aria-hidden','true');
+    const recipient=invite.toEmail||state.advisors.find(a=>a.id===invite.toUid)?.name||(invite.toUid===state.user.uid?myName():'Orientador(a) convidado(a)');
+    const date=typeof invite.createdAt==='number'?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(invite.createdAt)):'';
+    const status={pending:'Aguardando resposta',accepted:'Aceito',declined:'Recusado',cancelled:'Cancelado'}[invite.status]||invite.status;
+    card.append(border,avatar,node('h3','invitation-card__name',name),node('p','invitation-card__role',invite.type==='advisor'?'Convite para orientar o grupo':'Convite para participar do grupo'),node('p','invitation-card__details',`De: ${invite.senderName||'Participante'}\nPara: ${recipient}${date?'\nEnviado em '+date:''}`),node('span','invitation-card__status',status));
     if(invite.status==='pending'&&isRecipient(invite)) {
-      card.append(node('p','',`Você foi convidado(a) para participar como ${invite.type==='advisor'?'orientador(a)':'integrante'} deste grupo.`));
-      const actions=node('div','actions');const accept=button('Aceitar convite','button primary',event=>action(event.currentTarget,()=>service.respondInvitation(invite.id,true),'Convite aceito. O grupo ficará disponível em “Meus grupos”.'));const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified);if(requiresVerification){accept.disabled=true;accept.title='Confirme seu e-mail primeiro';card.append(node('p','form-note','Confirme seu e-mail para aceitar. Use “Enviar confirmação” no aviso acima.'));}
+      const actions=node('div','invitation-card__actions');const accept=button('Aceitar convite','button primary',event=>action(event.currentTarget,()=>service.respondInvitation(invite.id,true),'Convite aceito. O grupo ficará disponível em “Meus grupos”.'));const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified);if(requiresVerification){accept.disabled=true;accept.title='Confirme seu e-mail primeiro';}
       actions.append(accept,button('Recusar','button secondary',()=>confirmAction('Recusar convite?',`O convite para “${invite.groupName||'este grupo'}” será recusado. Um novo convite poderá ser enviado depois.`,async()=>{await service.respondInvitation(invite.id,false);notice('Convite recusado.');},'Recusar convite')));card.append(actions);
-    } else card.append(node('p','',`Situação: ${{pending:'Aguardando resposta',accepted:'Aceito',declined:'Recusado',cancelled:'Cancelado'}[invite.status]||invite.status}`));
+      if(requiresVerification)card.append(node('p','invitation-card__notice','Confirme seu e-mail para aceitar. Use “Enviar confirmação” no aviso acima.'));
+    } else if(invite.status==='pending')card.append(node('p','invitation-card__notice','Aguardando o aceite do destinatário.'));
     grid.append(card);
   });fragment.append(grid);return fragment;
 }
@@ -623,7 +635,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 readRoute();
 try {
   service = await import('./firebase-service.js');
-  authStatus('');
+  authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {
   authStatus('Não foi possível conectar ao serviço de acesso. Confira a conexão e recarregue esta página.','error');

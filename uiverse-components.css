@@ -1,0 +1,927 @@
+/*
+UIverse components adapted for Escola Máximu’s.
+Card: Copyright (c) 2026 ElSombrero2 (Rakotondrasoa Nirilala)
+https://uiverse.io/ElSombrero2/tricky-robin-67
+Loader: Copyright (c) 2026 Nawsome
+https://uiverse.io/Nawsome/blue-dragon-70
+Theme switch: Copyright (c) 2026 rishichawda (Rishi Kumar Chawda)
+https://uiverse.io/rishichawda/fluffy-robin-48
+Button: Copyright (c) 2026 cssbuttons-io (cssbuttons.io)
+https://uiverse.io/cssbuttons-io/nice-walrus-6
+Original code: https://github.com/uiverse-io/galaxy
+
+MIT License
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+/* From Uiverse.io by ElSombrero2 - Tags: card, flip */
+.research-card {
+  overflow: visible;
+  width: 190px;
+  height: 254px;
+}
+
+.research-card__content {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 300ms;
+  box-shadow: 0px 0px 10px 1px #000000ee;
+  border-radius: 5px;
+}
+
+.research-card__front, .research-card__back {
+  background-color: #252456;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.research-card__back {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.research-card__back::before {
+  position: absolute;
+  content: ' ';
+  display: block;
+  width: 160px;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, #f38635, #f38635, #f38635, #f38635, transparent);
+  animation: research-card-spin 5000ms infinite linear;
+}
+
+.research-card__back-content {
+  position: absolute;
+  width: 99%;
+  height: 99%;
+  background-color: #252456;
+  border-radius: 5px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+}
+
+.research-card:hover .research-card__content {
+  transform: rotateY(180deg);
+}
+
+@keyframes research-card-spin {
+  0% {
+    transform: rotateZ(0deg);
+  }
+
+  100% {
+    transform: rotateZ(360deg);
+  }
+}
+
+.research-card__front {
+  transform: rotateY(180deg);
+  color: white;
+}
+
+.research-card__front .research-card__front-content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.research-card__front-content .research-card__badge {
+  background-color: #00000055;
+  padding: 2px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+  width: fit-content;
+}
+
+.research-card__description {
+  box-shadow: 0px 0px 10px 5px #00000088;
+  width: 100%;
+  padding: 10px;
+  background-color: #00000099;
+  backdrop-filter: blur(5px);
+  border-radius: 5px;
+}
+
+.research-card__title {
+  font-size: 11px;
+  max-width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.research-card__title p {
+  width: 50%;
+}
+
+.research-card__footer {
+  color: #ffffff88;
+  margin-top: 5px;
+  font-size: 8px;
+}
+
+.research-card__front .research-card__image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.research-card__orb {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background-color: #f8af78;
+  position: relative;
+  filter: blur(15px);
+  animation: research-card-float 2600ms infinite linear;
+}
+
+.research-card__orb--bottom {
+  background-color: #f38635;
+  left: 50px;
+  top: 0px;
+  width: 150px;
+  height: 150px;
+  animation-delay: -800ms;
+}
+
+.research-card__orb--right {
+  background-color: #595bc2;
+  left: 160px;
+  top: -80px;
+  width: 30px;
+  height: 30px;
+  animation-delay: -1800ms;
+}
+
+@keyframes research-card-float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+/* From Uiverse.io by Nawsome - Tags: loader */
+.book-loader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72px;
+  height: 72px;
+  margin-left: -36px;
+  margin-top: -36px;
+}
+
+.book-loader__box {
+  float: left;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+
+.book-loader__box:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--loader-color, #3d4094);
+}
+
+.book-loader__box:nth-child(3n) {
+  margin-right: 0;
+  margin-bottom: 6px;
+}
+
+.book-loader__box:nth-child(1):before, .book-loader__box:nth-child(4):before {
+  margin-left: 26px;
+}
+
+.book-loader__box:nth-child(3):before {
+  margin-top: 52px;
+}
+
+.book-loader__box:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes maximus-box-1 {
+  9.0909090909% {
+    transform: translate(-26px, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(0px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(0px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(26px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(26px, 26px);
+  }
+
+  54.5454545455% {
+    transform: translate(26px, 26px);
+  }
+
+  63.6363636364% {
+    transform: translate(26px, 26px);
+  }
+
+  72.7272727273% {
+    transform: translate(26px, 0px);
+  }
+
+  81.8181818182% {
+    transform: translate(0px, 0px);
+  }
+
+  90.9090909091% {
+    transform: translate(-26px, 0px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(1) {
+  animation: maximus-box-1 4s infinite;
+}
+
+@keyframes maximus-box-2 {
+  9.0909090909% {
+    transform: translate(0, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(0px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(26px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(26px, 26px);
+  }
+
+  54.5454545455% {
+    transform: translate(26px, 26px);
+  }
+
+  63.6363636364% {
+    transform: translate(26px, 26px);
+  }
+
+  72.7272727273% {
+    transform: translate(26px, 26px);
+  }
+
+  81.8181818182% {
+    transform: translate(0px, 26px);
+  }
+
+  90.9090909091% {
+    transform: translate(0px, 26px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(2) {
+  animation: maximus-box-2 4s infinite;
+}
+
+@keyframes maximus-box-3 {
+  9.0909090909% {
+    transform: translate(-26px, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(-26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(0px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(-26px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(-26px, 0);
+  }
+
+  54.5454545455% {
+    transform: translate(-26px, 0);
+  }
+
+  63.6363636364% {
+    transform: translate(-26px, 0);
+  }
+
+  72.7272727273% {
+    transform: translate(-26px, 0);
+  }
+
+  81.8181818182% {
+    transform: translate(-26px, -26px);
+  }
+
+  90.9090909091% {
+    transform: translate(0px, -26px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(3) {
+  animation: maximus-box-3 4s infinite;
+}
+
+@keyframes maximus-box-4 {
+  9.0909090909% {
+    transform: translate(-26px, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(-26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(-26px, -26px);
+  }
+
+  36.3636363636% {
+    transform: translate(0px, -26px);
+  }
+
+  45.4545454545% {
+    transform: translate(0px, 0px);
+  }
+
+  54.5454545455% {
+    transform: translate(0px, -26px);
+  }
+
+  63.6363636364% {
+    transform: translate(0px, -26px);
+  }
+
+  72.7272727273% {
+    transform: translate(0px, -26px);
+  }
+
+  81.8181818182% {
+    transform: translate(-26px, -26px);
+  }
+
+  90.9090909091% {
+    transform: translate(-26px, 0px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(4) {
+  animation: maximus-box-4 4s infinite;
+}
+
+@keyframes maximus-box-5 {
+  9.0909090909% {
+    transform: translate(0, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(0, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(0, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(26px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(26px, 0);
+  }
+
+  54.5454545455% {
+    transform: translate(26px, 0);
+  }
+
+  63.6363636364% {
+    transform: translate(26px, 0);
+  }
+
+  72.7272727273% {
+    transform: translate(26px, 0);
+  }
+
+  81.8181818182% {
+    transform: translate(26px, -26px);
+  }
+
+  90.9090909091% {
+    transform: translate(0px, -26px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(5) {
+  animation: maximus-box-5 4s infinite;
+}
+
+@keyframes maximus-box-6 {
+  9.0909090909% {
+    transform: translate(0, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(-26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(-26px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(0px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(0px, 0);
+  }
+
+  54.5454545455% {
+    transform: translate(0px, 0);
+  }
+
+  63.6363636364% {
+    transform: translate(0px, 0);
+  }
+
+  72.7272727273% {
+    transform: translate(0px, 26px);
+  }
+
+  81.8181818182% {
+    transform: translate(-26px, 26px);
+  }
+
+  90.9090909091% {
+    transform: translate(-26px, 0px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(6) {
+  animation: maximus-box-6 4s infinite;
+}
+
+@keyframes maximus-box-7 {
+  9.0909090909% {
+    transform: translate(26px, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(26px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(0px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(0px, -26px);
+  }
+
+  54.5454545455% {
+    transform: translate(26px, -26px);
+  }
+
+  63.6363636364% {
+    transform: translate(0px, -26px);
+  }
+
+  72.7272727273% {
+    transform: translate(0px, -26px);
+  }
+
+  81.8181818182% {
+    transform: translate(0px, 0px);
+  }
+
+  90.9090909091% {
+    transform: translate(26px, 0px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(7) {
+  animation: maximus-box-7 4s infinite;
+}
+
+@keyframes maximus-box-8 {
+  9.0909090909% {
+    transform: translate(0, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(-26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(-26px, -26px);
+  }
+
+  36.3636363636% {
+    transform: translate(0px, -26px);
+  }
+
+  45.4545454545% {
+    transform: translate(0px, -26px);
+  }
+
+  54.5454545455% {
+    transform: translate(0px, -26px);
+  }
+
+  63.6363636364% {
+    transform: translate(0px, -26px);
+  }
+
+  72.7272727273% {
+    transform: translate(0px, -26px);
+  }
+
+  81.8181818182% {
+    transform: translate(26px, -26px);
+  }
+
+  90.9090909091% {
+    transform: translate(26px, 0px);
+  }
+
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+.book-loader__box:nth-child(8) {
+  animation: maximus-box-8 4s infinite;
+}
+
+@keyframes maximus-box-9 {
+  9.0909090909% {
+    transform: translate(-26px, 0);
+  }
+
+  18.1818181818% {
+    transform: translate(-26px, 0);
+  }
+
+  27.2727272727% {
+    transform: translate(0px, 0);
+  }
+
+  36.3636363636% {
+    transform: translate(-26px, 0);
+  }
+
+  45.4545454545% {
+    transform: translate(0px, 0);
+  }
+
+  54.5454545455% {
+    transform: translate(0px, 0);
+  }
+
+  63.6363636364% {
+    transform: translate(-26px, 0);
+  }
+
+  72.7272727273% {
+    transform: translate(-26px, 0);
+  }
+
+  81.8181818182% {
+    transform: translate(-52px, 0);
+  }
+
+  90.9090909091% {
+    transform: translate(-26px, 0);
+  }
+
+  100% {
+    transform: translate(0px, 0);
+  }
+}
+
+.book-loader__box:nth-child(9) {
+  animation: maximus-box-9 4s infinite;
+}
+/* From Uiverse.io by rishichawda - Source: I had seen the design concept somewhere and Implemented it on my website (converted the image to svg, added transitions). this was a couple of years ago so i'm not able to find the dribbble or figma link (or wherever i found it).  - Tags: switch, theme-switch */
+/* The switch - the box around the slider */
+.theme-switch {
+  font-size: 17px;
+  position: relative;
+  display: inline-block;
+  width: 7em;
+  cursor: pointer;
+}
+
+/* Hide default HTML checkbox */
+.theme-switch__input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-switch [data-part="container"],
+.theme-switch [data-part="patches"],
+.theme-switch [data-part="stars"],
+.theme-switch [data-part="button"],
+.theme-switch [data-part="sun"],
+.theme-switch [data-part="moon"],
+.theme-switch [data-part="cloud"] {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.25s;
+}
+
+/* night sky background */
+.theme-switch__input:checked + svg [data-part="container"] {
+  fill: #252456;
+}
+
+/* move button to right when checked */
+.theme-switch__input:checked + svg [data-part="button"] {
+  transform: translate(28px, 2.333px);
+}
+
+/* show/hide sun and moon based on checkbox state */
+.theme-switch [data-part="sun"] {
+  opacity: 1;
+}
+
+.theme-switch__input:checked + svg [data-part="sun"] {
+  opacity: 0;
+}
+
+.theme-switch [data-part="moon"] {
+  opacity: 0;
+}
+
+.theme-switch__input:checked + svg [data-part="moon"] {
+  opacity: 1;
+}
+
+/* show or hide background items on checkbox state */
+.theme-switch [data-part="cloud"] {
+  opacity: 1;
+}
+
+.theme-switch__input:checked + svg [data-part="cloud"] {
+  opacity: 0;
+}
+
+.theme-switch [data-part="stars"] {
+  opacity: 0;
+}
+
+.theme-switch__input:checked + svg [data-part="stars"] {
+  opacity: 1;
+}
+/* From Uiverse.io by cssbuttons-io - Tags: button */
+.uiverse-button {
+  color: #000;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  padding: 0.9em 1.6em;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  z-index: 1;
+}
+
+.uiverse-button {
+  color: var(--uiverse-color, #3d4094);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border: 4px solid var(--uiverse-color, #3d4094);
+  border-radius: 0;
+  position: relative;
+  transition: all 700ms ease;
+}
+
+.uiverse-button .uiverse-button__blobs {
+  height: 100%;
+  filter: url(#maximus-goo);
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: -3px;
+  right: -1px;
+  z-index: -1;
+}
+
+.uiverse-button .uiverse-button__blobs > span {
+  background-color: var(--uiverse-color, #3d4094);
+  width: 34%;
+  height: 100%;
+  border-radius: 100%;
+  position: absolute;
+  transform: scale(1.4) translateY(125%) translateZ(0);
+  transition: all 700ms ease;
+}
+
+.uiverse-button .uiverse-button__blobs > span:nth-child(1) {
+  left: -5%;
+}
+
+.uiverse-button .uiverse-button__blobs > span:nth-child(2) {
+  left: 30%;
+  transition-delay: 60ms;
+}
+
+.uiverse-button .uiverse-button__blobs > span:nth-child(3) {
+  left: 66%;
+  transition-delay: 25ms;
+}
+
+.uiverse-button:hover {
+  color: #fff;
+}
+
+.uiverse-button:hover .uiverse-button__blobs > span {
+  transform: scale(1.4) translateY(0) translateZ(0);
+}
+
+/* Integration: readable research metadata, keyboard and touch support. */
+.research-card{position:relative;isolation:isolate;width:100%;height:390px;perspective:1200px}
+.research-card__content{position:relative;border-radius:12px;box-shadow:0 8px 22px #23245424}
+.research-card__front,.research-card__back{border-radius:12px}
+.research-card__back-content{inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);padding:24px 23px 80px;align-items:flex-start;justify-content:flex-start;gap:15px;border-radius:10px}
+.research-card__back::before{width:50%;height:165%;background:linear-gradient(90deg,transparent,#f38635,#f38635,#f38635,transparent)}
+.research-card__front-content{padding:23px 23px 80px!important;gap:16px}
+.research-card__badge{font-size:10px;line-height:1.6;letter-spacing:.02em;color:#ffca9f;background:#0e103b77;padding:4px 9px;border-radius:20px;display:inline-block;max-width:100%}
+.research-card h3{margin:0;font-size:19px;line-height:1.3;letter-spacing:-.025em;color:#fff;overflow-wrap:anywhere}
+.research-card p{margin:0;color:#dedff2;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.research-card__back-content>.research-card__authors{margin-top:auto}
+.research-card__description{box-shadow:none;background:#171937cc;border-radius:8px;padding:14px;max-height:100%;overflow:auto}
+.research-card__title{font-size:13px;display:block;color:white}
+.research-card__title p{width:auto}
+.research-card__footer{font-size:10px;color:#d6d6e9;margin-top:8px}
+.research-card__open{position:absolute;left:23px;right:23px;bottom:22px;z-index:3;min-height:43px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;background:#f38635;color:#201d46;border:1px solid #f9a363;border-radius:5px;font-size:12px;font-weight:700;line-height:1.4;text-decoration:none}
+.research-card__open:hover{background:#ffa35f;color:#171336}
+.research-card__flip{position:absolute;right:14px;top:13px;z-index:4;border:1px solid #ffffff50;color:white;background:#252456;padding:6px 8px;border-radius:5px;font-size:10px;line-height:1.4}
+.research-card.is-flipped .research-card__content{transform:rotateY(180deg)}
+.research-card__back::before{animation-duration:7s}
+.research-card__orb{animation-duration:5s}
+.research-card__orb--right{left:80%;top:-60px}
+.research-card__orb--bottom{left:30%;top:20px}
+.research-card :is(a,button):focus-visible{outline:3px solid #fff;outline-offset:4px}
+@media(hover:none){.research-card:hover .research-card__content{transform:none}.research-card.is-flipped .research-card__content{transform:rotateY(180deg)}}
+.book-loader{position:relative;left:auto;top:auto;display:block;flex:0 0 72px;margin:0;width:72px;height:72px}
+.book-loader__box:nth-child(3n+2)::before{background:var(--loader-secondary,#f38635)}
+html[data-theme="dark"] .book-loader{--loader-color:#b6b8ff;--loader-secondary:#f38635}
+.theme-switch{font-size:11px;flex:0 0 77px;line-height:0;vertical-align:middle}
+.theme-switch>svg{display:block;width:100%;height:auto;overflow:visible}
+.theme-switch .theme-switch__input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.theme-switch:has(.theme-switch__input:focus-visible){outline:3px solid #f38635;outline-offset:4px;border-radius:40px}
+.theme-switch [data-part="container"]{fill:#b8b9ef}
+.uiverse-button.uiverse-button{--uiverse-color:#3d4094;appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:12px;isolation:isolate;overflow:visible;padding:.85em 1.35em;background:transparent;border:2px solid var(--uiverse-color);border-radius:5px;color:var(--uiverse-color);font-size:12px;font-weight:650;letter-spacing:.035em;text-transform:none;text-decoration:none;line-height:1.5;transition:color .5s ease,border-color .5s ease}
+.uiverse-button .uiverse-button__blobs{border-radius:3px;pointer-events:none}
+.uiverse-button:focus-visible{outline:3px solid #f38635;outline-offset:4px}
+.uiverse-button.uiverse-button:is(:hover,:focus-visible){color:white}
+.uiverse-button:is(:hover,:focus-visible) .uiverse-button__blobs > span{transform:scale(1.4) translateY(0) translateZ(0)}
+html[data-theme="dark"] .uiverse-button.uiverse-button{--uiverse-color:#b6b8ff}
+html[data-theme="dark"] .uiverse-button.uiverse-button:is(:hover,:focus-visible){color:#20213f}
+.uiverse-button:disabled{cursor:wait;opacity:.55}
+@media(max-width:600px){.research-card{height:375px}.research-card h3{font-size:19px}.uiverse-button.uiverse-button{font-size:11px}.theme-switch{font-size:10px;flex-basis:70px}}
+@media(prefers-reduced-motion:reduce){.research-card *,.research-card::before,.research-card__back::before,.book-loader *,.theme-switch *,.uiverse-button *{animation:none!important;transition:none!important}}
+
+
+/*
+Invitation card: Copyright (c) 2026 alexmaracinaru (Alex Maracinaru).
+Source: https://uiverse.io/alexmaracinaru/white-octopus-62
+Official archive: https://github.com/uiverse-io/galaxy/blob/main/Cards/alexmaracinaru_white-octopus-62.html
+MIT License; the full permission and warranty notice at this file's header applies.
+Adapted for two invitation actions, longer group names and responsive layout.
+*/
+.invitation-card{position:relative;width:100%;min-height:320px;height:auto;padding:0 23px 25px;background:#3d4094;border-radius:15px;box-shadow:1px 5px 30px 0 #25245424;text-align:center;overflow:hidden}
+.invitation-card__border-top{width:60%;height:9px;background:#f38635;margin:0 auto;border-radius:0 0 15px 15px}
+.invitation-card__avatar{width:70px;height:80px;background:#6a6bc2;border-radius:15px;margin:25px auto 0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:25px;line-height:1;font-weight:650;overflow:hidden}
+.invitation-card__avatar svg{width:35px;height:35px;fill:none;stroke:currentColor;stroke-width:1.6}
+.invitation-card__avatar img{width:100%;height:100%;object-fit:cover}
+.invitation-card__name{font-weight:650;color:#fff;text-align:center;display:block;padding-top:15px;font-size:19px;line-height:1.3;letter-spacing:-.02em;margin:0;overflow-wrap:anywhere}
+.invitation-card__role{font-weight:400;color:#eeeefa;display:block;text-align:center;padding-top:6px;font-size:12px;line-height:1.6;margin:0}
+.invitation-card__details{font-weight:400;color:#e0def3;text-align:center;font-size:11px;line-height:1.7;margin:13px 0 0;overflow-wrap:anywhere}
+.invitation-card__status{font-size:10px;display:inline-block;padding:4px 9px;margin-top:13px;border-radius:20px;background:#1d2059;color:#ffd2ae;line-height:1.5}
+.invitation-card__actions{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin-top:23px}
+.invitation-card .uiverse-button.uiverse-button{--uiverse-color:#f38635;color:#ffe2ca;border-color:#f38635;min-height:41px;padding:8px 13px;font-size:11px}
+.invitation-card .uiverse-button.uiverse-button:is(:hover,:focus-visible){color:#201c46}
+.invitation-card__notice{font-size:10px;color:#f0ecff;line-height:1.7;padding:10px 12px;margin-top:14px;background:#25266e;border-radius:8px}
+html[data-theme="dark"] .invitation-card{background:#292b5b;box-shadow:1px 5px 24px #0002}
+html[data-theme="dark"] .invitation-card .uiverse-button.uiverse-button{--uiverse-color:#f38635;color:#ffe2ca}
+html[data-theme="dark"] .invitation-card .uiverse-button.uiverse-button:is(:hover,:focus-visible){color:#201c46}
+@media(max-width:600px){.invitation-card{min-height:300px;padding-inline:20px}.invitation-card__name{font-size:19px}.invitation-card__actions{gap:9px}.invitation-card .uiverse-button.uiverse-button{font-size:11px}}
+
+/*
+3D carousel: Copyright - 2026 ilkhoeri (ilkhoeri).
+Source: https://uiverse.io/ilkhoeri/swift-panda-38
+Original visible HTML/CSS retrieved from Uiverse on 2026-11-05.
+MIT License; the full permission and warranty notice at this file's header applies.
+Original ring geometry and rotation retained; dimensions/radius scaled for real photos.
+*/
+.photo-orbit{width:100%;height:440px;position:relative;text-align:center;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;touch-action:pan-y;border-radius:18px;background:radial-gradient(ellipse at 50% 85%,#3d409418,transparent 65%)}
+.photo-orbit__inner{--w:130px;--h:185px;--quantity:25;--translateZ:calc(var(--w) * var(--quantity) / 6.283185 + 28px);--rotateX:-15deg;--perspective:1600px;--rotation:0deg;--orbit-duration:45s;position:absolute;width:var(--w);height:var(--h);top:25%;left:calc(50% - (var(--w) / 2) - 2.5px);z-index:2;transform-style:preserve-3d;transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(var(--rotation));animation:maximus-orbit-rotating var(--orbit-duration) linear infinite;will-change:transform}
+@keyframes maximus-orbit-rotating{from{transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(var(--rotation))}to{transform:perspective(var(--perspective)) rotateX(var(--rotateX)) rotateY(calc(var(--rotation) + 1turn))}}
+.photo-orbit__card{--color-card:61,64,148;position:absolute;border:2px solid rgb(var(--color-card));border-radius:12px;overflow:hidden;inset:0;margin:0;padding:0;appearance:none;background:#20213f;cursor:pointer;transform:rotateY(calc((360deg / var(--quantity)) * var(--index))) translateZ(var(--translateZ));backface-visibility:hidden;box-shadow:0 6px 22px #17193825}
+.photo-orbit__image{display:block;width:100%;height:100%;object-fit:cover;background:#0000 radial-gradient(circle,rgba(var(--color-card),.2) 0%,rgba(var(--color-card),.6) 80%,rgba(var(--color-card),.9) 100%);pointer-events:none}
+.photo-orbit:hover .photo-orbit__inner,.photo-orbit:focus-within .photo-orbit__inner,.photo-orbit.is-paused .photo-orbit__inner{animation-play-state:paused}
+.photo-orbit.is-manual .photo-orbit__inner{animation:none;transition:transform .55s ease}
+.photo-orbit__card:is(:hover,:focus-visible,.is-selected){border-color:#f38635;box-shadow:0 0 0 2px #f38635,0 12px 28px #17193840}
+.photo-orbit__card:focus-visible{outline:3px solid #fff;outline-offset:-7px}
+html[data-theme="dark"] .photo-orbit{background:radial-gradient(ellipse at 50% 85%,#8588ef28,transparent 65%)}
+@media(max-width:600px){.photo-orbit{height:365px}.photo-orbit__inner{--w:102px;--h:153px;--perspective:1400px;top:24%}}
+/* Static strip keeps every photo keyboard/touch reachable when motion is reduced. */
+@media(prefers-reduced-motion:reduce){.photo-orbit{height:auto;min-height:210px;overflow:visible}.photo-orbit__inner{position:relative;top:auto;left:auto;width:100%;height:auto;display:flex;gap:14px;padding:16px 8px 24px;overflow-x:auto;scroll-snap-type:x proximity;transform:none!important;animation:none!important;transition:none!important;will-change:auto;perspective:none}.photo-orbit__card{position:relative;inset:auto;flex:0 0 150px;height:215px;transform:none;scroll-snap-align:center;backface-visibility:visible}.photo-orbit__image{object-fit:cover}}

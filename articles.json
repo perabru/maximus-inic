@@ -1,8 +1,7 @@
 {
-  "year": 2025,
   "checkedAt": "2026-11-05",
-  "count": 24,
-  "maximusCount": 11,
+  "count": 49,
+  "maximusCount": 16,
   "articles": [
     {
       "id": "2025-RE_0424_0158_01",
@@ -40,110 +39,118 @@
       ]
     },
     {
-      "id": "2025-RE_0664_1172_01",
+      "id": "2025-0413_0766_01",
       "year": 2025,
-      "title": "ANÁLISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
-      "indexTitle": "ANALISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
-      "students": "Cauê Brandão dos Santos, Ester de Abreu Teotônio, Matheus Henrique Ferreira e Silva",
+      "title": "A INVISIBILIDADE DO HIP HOP: O CONHECIMENTO DA SOCIEDADE SOBRE SUA INFLUÊNCIA NOS ASPECTOS GERAIS DA CULTURA",
+      "indexTitle": "A INVISIBILIDADE DO HIP HOP: O CONHECIMENTO DA SOCIEDADE SOBRE SUA INFLUÊNCIA NOS ASPECTOS GERAIS DA CULTURA",
+      "students": "Ana Luisa Ramos de Oliveira, Maria Júlia de Barros Bega",
       "authors": [
-        "Bruno Michel Pera",
-        "Cauê Brandão dos Santos",
-        "Ester de Abreu Teotônio",
-        "Matheus Henrique Ferreira e Silva"
+        "Ana Luísa Ramos de Oliveira",
+        "Maria Júlia de Barros Bega",
+        "Jhoneyrval de Souza Siqueira"
       ],
       "advisors": [
-        "Bruno Michel Pera"
+        "Jhoneyrval de Souza Siqueira"
       ],
       "supervisors": [
-        "Bruno Michel Pera"
+        "Jhoneyrval de Souza Siqueira"
       ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Tecnologia e saúde",
-      "description": "Apresenta um sistema com sensor de cor e ESP32 para observar características da pele.",
-      "keywords": "Microcontroladores , Derme, Sensores",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Sociedade e comunicação",
+      "description": "Investiga o conhecimento da sociedade sobre o hip hop e sua influência em diferentes aspectos da cultura.",
+      "keywords": "Hip Hop, Cultura, Educação, Juventude, Invisibilidade",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0413_0766_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0413_0766_01.pdf",
       "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 231688,
+      "verification": "Texto integral do PDF oficial e índice examinados; afiliação escolar confirmada no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
       "relationship": "authorship_or_advising",
       "matchedPeople": [
-        "Bruno"
-      ]
+        "Jhonneyvarl"
+      ],
+      "matchedFullNames": [
+        "Jhoneyrval de Souza Siqueira"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Jhonneyvarl",
+          "fullName": "Jhoneyrval de Souza Siqueira",
+          "actualName": "Jhoneyrval de Souza Siqueira",
+          "relationship": "authorship_or_advising",
+          "evidence": "Autoria do PDF e orientação no índice oficial.",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
+      ],
+      "note": "Jhoneyrval de Souza Siqueira consta como coautor no PDF e orientador no índice oficial.",
+      "canonicalTeacherName": "Jhoneyrval de Souza Siqueira",
+      "teacherAliases": [
+        "Jhoneyrval de Souza Siqueira"
+      ],
+      "linkStatus": 200
     },
     {
-      "id": "2025-0627_0069_01",
+      "id": "2025-RE_0412_0429_01",
       "year": 2025,
-      "title": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
-      "indexTitle": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
-      "students": "Rebeka Fernandes Rebeque, Luis Miguel de Sousa Gois, Matheus Gonçalves Oliveira",
+      "title": "ANÁLISE DA DECOMPOSIÇÃO CADAVÉRICA EM RATTUS NORVEGICUS NO MUNICÍPIO DE SÃO JOSÉ DOS CAMPOS.",
+      "indexTitle": "ANÁLISE DA DECOMPOSIÇÃO CADAVÉRICA EM RATTUS NORVEGICUS NO MUNICÍPIO DE SÃO JOSÉ DOS CAMPOS.",
+      "students": "Isabelle Landim Marcelino de Almeida, Maria Flor Santos de Castro, Brenno Ramos Lisboa",
       "authors": [
-        "Bruno Michel Pera",
-        "Luis Miguel de Sousa Gois",
-        "Matheus Gonçalves Oliveira",
-        "Rebeka Fernandes Rebeque"
+        "Ângelo Ferreira de Castro",
+        "Brenno Ramos Lisboa",
+        "Isabelle Landim Marcelino de Almeida",
+        "Maria Flor Santos de Castro"
       ],
       "advisors": [
-        "Bruno Michel Pera"
+        "Ângelo Ferreira de Castro"
       ],
       "supervisors": [
-        "Bruno Michel Pera"
+        "Ângelo Ferreira de Castro"
       ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Tecnologia e saúde",
-      "description": "Propõe um aplicativo que reúne acompanhamento do ciclo menstrual, gráficos e recomendações nutricionais.",
-      "keywords": "ciclo menstrual, inteligência artificial, nutrição personalizada, saúde feminina, aplicativo mobile.",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Analisa a decomposição cadavérica de Rattus norvegicus em São José dos Campos e suas etapas observáveis.",
+      "keywords": "Decomposição cadavérica, Roedores, Mamíferos, Forense",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0412_0429_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0412_0429_01.pdf",
       "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 248311,
+      "verification": "Texto integral do PDF oficial examinado; autoria, orientação e instituição conferidas com o índice; link oficial reconfirmado HTTP 200 em 05/11/2026.",
       "relationship": "authorship_or_advising",
       "matchedPeople": [
-        "Bruno"
-      ]
-    },
-    {
-      "id": "2025-0979_0754_01",
-      "year": 2025,
-      "title": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
-      "indexTitle": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
-      "students": "João Felipe Spada dos Santos Frangioni, Vitor Hugo dos Santos Inácio, João Vitor dos Santos Vieira",
-      "authors": [
-        "João Felipe Spada dos Santos Frangioni",
-        "Vitor Hugo dos Santos Inácio",
-        "João Vitor dos Santos Vieira",
-        "Silas Macacari de Matos",
-        "Bruno Michel Pêra"
+        "Angelo"
       ],
-      "advisors": [
-        "Bruno Michel Pêra"
+      "matchedFullNames": [
+        "Ângelo Ferreira de Castro"
       ],
-      "supervisors": [
-        "Bruno Michel Pera"
+      "nameMatches": [
+        {
+          "queryName": "Angelo",
+          "fullName": "Ângelo Ferreira de Castro",
+          "nameMatchPart": "given_name",
+          "relationship": "authorship_or_advising",
+          "roles": [
+            "author_pdf",
+            "advisor_index",
+            "acknowledgement_pdf"
+          ],
+          "context": "  ANÁLISE DA DECOMPOSIÇÃO CADAVÉRICA EM Rattus norvegicus NO                   MUNICÍPIO DE SÃO JOSÉ DOS CAMPOS.   Autores: Ângelo Ferreira de Castro, Brenno Ramos Lisboa, Isabelle Landim              Marcelino de Almeida, Maria Flor Santos de Castro. Escola Máximu’s/Instituto Ribeiro Goulart,R. Isac Newton, 37 - Jardim Oriental, São José dos Campo",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
       ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Robótica e engenharia",
-      "description": "Integra sensores e armazenamento de dados em aeronaves não tripuladas para apoiar a análise de voos.",
-      "keywords": "VANTs, Sensores embarcados, ESP32, Telemetria, Aquisição de dados",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
-      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 363058,
-      "relationship": "authorship_or_advising",
-      "matchedPeople": [
-        "Bruno"
-      ]
+      "roles": [
+        "author_pdf",
+        "advisor_index",
+        "acknowledgement_pdf"
+      ],
+      "nameMatchPart": "given_name",
+      "note": "Ângelo Ferreira de Castro consta na autoria do PDF, como orientador no índice oficial e nos agradecimentos.",
+      "matchContext": "  ANÁLISE DA DECOMPOSIÇÃO CADAVÉRICA EM Rattus norvegicus NO                   MUNICÍPIO DE SÃO JOSÉ DOS CAMPOS.   Autores: Ângelo Ferreira de Castro, Brenno Ramos Lisboa, Isabelle Landim              Marcelino de Almeida, Maria Flor Santos de Castro. Escola Máximu’s/Instituto Ribeiro Goulart,R. Isac Newton, 37 - Jardim Oriental, São José dos Campo",
+      "linkStatus": 200,
+      "alreadyInCatalog": false
     },
     {
       "id": "2025-RE_1153_1106_01",
@@ -183,6 +190,117 @@
       ]
     },
     {
+      "id": "2025-0424_0156_01",
+      "year": 2025,
+      "title": "AVALIAÇÃO MICROBIOLÓGICA NA CANTINA DA ESCOLA MAXIMUS",
+      "indexTitle": "AVALIAÇÃO MICROBIOLÓGICA NA CANTINA DA ESCOLA MAXIMUS",
+      "students": "Giovana de Godoy Arantes, Vinicius Sousa de Oliveira",
+      "authors": [
+        "Giovana de Godoy Arantes",
+        "Vinicius Sousa de Oliveira",
+        "Ângelo Ferreira de Castro"
+      ],
+      "advisors": [
+        "Angelo Ferreira de Castro"
+      ],
+      "supervisors": [
+        "Ângelo Ferreira de Castro"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Avalia a contaminação microbiológica de amostras coletadas na cantina escolar e discute práticas de higiene.",
+      "keywords": "Contaminação , Microrganismo , Higiene, Segurança",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0424_0156_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0424_0156_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria, orientação e instituição conferidas com o índice; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Angelo"
+      ],
+      "matchedFullNames": [
+        "Ângelo Ferreira de Castro"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Angelo",
+          "fullName": "Ângelo Ferreira de Castro",
+          "nameMatchPart": "given_name",
+          "relationship": "authorship_or_advising",
+          "roles": [
+            "author_pdf",
+            "advisor_index"
+          ],
+          "context": "       AVALIAÇÃO MICROBIOLÓGICA NA CANTINA DA ESCOLA MAXIMUS     Giovana de Godoy Arantes, Vinicius Sousa de Oliveira, Ângelo Ferreira de                                    Castro.  Instituto Educacional Ribeiro Goulart-Escola Máximu's, Rua Isac Newton, 37, Jardim Oriental - 12236-          240 - São José dos Campos-SP, Brasil, autor 1 giiovan",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
+      ],
+      "roles": [
+        "author_pdf",
+        "advisor_index"
+      ],
+      "nameMatchPart": "given_name",
+      "note": "Ângelo Ferreira de Castro consta na autoria do PDF e como orientador no índice oficial, onde o primeiro nome aparece sem acento.",
+      "matchContext": "       AVALIAÇÃO MICROBIOLÓGICA NA CANTINA DA ESCOLA MAXIMUS     Giovana de Godoy Arantes, Vinicius Sousa de Oliveira, Ângelo Ferreira de                                    Castro.  Instituto Educacional Ribeiro Goulart-Escola Máximu's, Rua Isac Newton, 37, Jardim Oriental - 12236-          240 - São José dos Campos-SP, Brasil, autor 1 giiovan",
+      "linkStatus": 200,
+      "alreadyInCatalog": false
+    },
+    {
+      "id": "2025-RE_0223_0171_01",
+      "year": 2025,
+      "title": "BATALHAS DE RIMA COMO EXPRESSÃO CULTURAL IMPACTO NO RAP NACIONAL E NO SURGIMENTO DE NOVOS TALENTOS",
+      "indexTitle": "BATALHAS DE RIMA COMO EXPRESSÃO CULTURAL IMPACTO NO RAP NACIONAL E NO SURGIMENTO DE NOVOS TALENTOS",
+      "students": "Daniel Alves Bueno, Isabelly de Paula Ribeiro, Pedro Henrique Sousa Morais",
+      "authors": [
+        "Daniel Alves Bueno",
+        "Isabelly De Paula Ribeiro",
+        "Pedro Henrique Sousa Morais"
+      ],
+      "advisors": [
+        "Johneyrval de Souza Siqueira"
+      ],
+      "supervisors": [
+        "Jhoneyrval de Souza Siqueira"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Sociedade e comunicação",
+      "description": "Analisa as batalhas de rima como expressão cultural e sua contribuição para o rap nacional e o surgimento de novos talentos.",
+      "keywords": "Batalhas de Rima, Cultura, Hip Hop, Resistência Cultural, Expressão Artística",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0223_0171_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0223_0171_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial e índice examinados; afiliação escolar confirmada no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Jhonneyvarl"
+      ],
+      "matchedFullNames": [
+        "Jhoneyrval de Souza Siqueira"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Jhonneyvarl",
+          "fullName": "Jhoneyrval de Souza Siqueira",
+          "actualName": "Johneyrval de Souza Siqueira",
+          "relationship": "authorship_or_advising",
+          "evidence": "Orientação no índice oficial; nome ausente da linha de autoria do PDF.",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
+      ],
+      "note": "O índice oficial registra Johneyrval de Souza Siqueira como orientador; o nome não consta na autoria do PDF. A grafia foi agrupada com Jhoneyrval de Souza Siqueira, preservando a forma original.",
+      "canonicalTeacherName": "Jhoneyrval de Souza Siqueira",
+      "teacherAliases": [
+        "Johneyrval de Souza Siqueira"
+      ],
+      "linkStatus": 200
+    },
+    {
       "id": "2025-RE_0294_0297_01",
       "year": 2025,
       "title": "BURNOUT NA ERA DIGITAL: UMA REVISÃO DE LITERATURA SOBRE O IMPACTO NOS JOVENS TRABALHADORES",
@@ -211,76 +329,6 @@
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
       "verification": "PDF oficial aberto e índice oficial conferido",
       "pdfBytes": 438271,
-      "relationship": "authorship_or_advising",
-      "matchedPeople": [
-        "Bruno"
-      ]
-    },
-    {
-      "id": "2025-0504_0048_01",
-      "year": 2025,
-      "title": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
-      "indexTitle": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
-      "students": "Cássia de Oliveira Washington Santos, Isabelly de Oliveira, Steffany Felix Lourenço",
-      "authors": [
-        "Bruno Michel Pera",
-        "Cássia de Oliveira Washington Santos",
-        "Isabelly de Oliveira",
-        "Steffany Felix Lourenço"
-      ],
-      "advisors": [
-        "Bruno Michel Pera"
-      ],
-      "supervisors": [
-        "Bruno Michel Pera"
-      ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Aplicativos e educação",
-      "description": "Propõe um calendário com inteligência artificial para organizar compromissos e apoiar o planejamento dos estudos.",
-      "keywords": "Aplicativo educacional , organização , integração de IA",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
-      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 241137,
-      "relationship": "authorship_or_advising",
-      "matchedPeople": [
-        "Bruno"
-      ]
-    },
-    {
-      "id": "2025-RE_0419_1035_01",
-      "year": 2025,
-      "title": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
-      "indexTitle": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
-      "students": "Ana Julia Souza Rodrigues, Douglas Bacelar Mourão, Isaac Gabriel dos Santos Barbosa",
-      "authors": [
-        "Ana Julia Souza Rodrigues",
-        "Douglas Bacelar Mourão",
-        "Isaac Gabriel dos Santos Barbosa",
-        "Bruno Michael Pera"
-      ],
-      "advisors": [
-        "Bruno Michael Pera"
-      ],
-      "supervisors": [
-        "Bruno Michel Pera"
-      ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Tecnologia e saúde",
-      "description": "Apresenta uma proposta de monitoramento da dilatação cervical com sensores, ESP32 e transmissão de dados.",
-      "keywords": "Parto humanizado, Monitoramento obstétrico, Sensor, Tecnologia médica",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
-      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 345470,
       "relationship": "authorship_or_advising",
       "matchedPeople": [
         "Bruno"
@@ -427,39 +475,53 @@
       ]
     },
     {
-      "id": "2025-RE_0898_0394_01",
+      "id": "2025-RE_0668_0688_01",
       "year": 2025,
-      "title": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
-      "indexTitle": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
-      "students": "Giovana Ferreira Núbile, Eloah Maria Rodrigues Rocha, Ana Julia Tenório Pedroso",
+      "title": "EXCESSO DE TRABALHO EM PROFESSORES: FATORES DE RISCO PARA A SAÚDE MENTAL NAS REDES PÚBLICA E PRIVADA",
+      "indexTitle": "EXCESSO DE TRABALHO EM PROFESSORES: FATORES DE RISCO PARA A SAÚDE MENTAL NAS REDES PÚBLICA E PRIVADA",
+      "students": "Gabrielle Chiodi Veja, Larissa Pereira Fernandes, Tainá Melo da Silva",
       "authors": [
-        "Ana Julia Tenorio Pedroso",
-        "Eloah Maria Rodrigues Rocha",
-        "Giovana Ferreira Núbile",
-        "Bruno Michel Pera"
+        "Gabrielle Chiodi Veja",
+        "Larissa Pereira Fernandes",
+        "Tainá Mélo da Silva",
+        "Adely Nádia Miranda"
       ],
       "advisors": [
-        "Bruno Michel Pera"
+        "Adely Nádia Miranda"
       ],
       "supervisors": [
-        "Bruno Michel Pera"
+        "Adely Nádia Miranda"
       ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Aplicativos e negócios",
-      "description": "Descreve uma loja virtual de moda infantil com organização de pedidos e experiência de compra acessível.",
-      "keywords": "E-commerce, Moda Infantil, Compra Intuitiva , Site de Loja",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Investiga como o excesso de trabalho afeta a saúde mental de professores das redes pública e privada.",
+      "keywords": "Excesso de trabalho, Saúde mental , Professores, Burnout, Educação básica",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0668_0688_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0668_0688_01.pdf",
       "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 328754,
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
       "relationship": "authorship_or_advising",
       "matchedPeople": [
-        "Bruno"
-      ]
+        "Adely"
+      ],
+      "matchedFullNames": [
+        "Adely Nádia Miranda"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Adely",
+          "fullName": "Adely Nádia Miranda",
+          "relationship": "authorship_or_advising",
+          "context": "SO DE TRABALHO EM PROFESSORES: FATORES DE RISCO PARA A           SAÚDE MENTAL NAS REDES PÚBLICA E PRIVADA   Gabrielle Chiodi Veja, Larissa Pereira Fernandes, Tainá Mélo da Silva e Adely                                  Nádia Miranda      Escola Máximu’s/Instituto Ribeiro Goulart, R. Isac Newton, 37 - Jardim Oriental, São José dos         Campos - SP, 12236-240, B",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
+      ],
+      "note": "Adely Nádia Miranda consta na autoria do PDF e como orientadora no índice oficial.",
+      "matchContext": "SO DE TRABALHO EM PROFESSORES: FATORES DE RISCO PARA A           SAÚDE MENTAL NAS REDES PÚBLICA E PRIVADA   Gabrielle Chiodi Veja, Larissa Pereira Fernandes, Tainá Mélo da Silva e Adely                                  Nádia Miranda      Escola Máximu’s/Instituto Ribeiro Goulart, R. Isac Newton, 37 - Jardim Oriental, São José dos         Campos - SP, 12236-240, B",
+      "linkStatus": 200
     },
     {
       "id": "2025-RE_0403_0292_01",
@@ -490,77 +552,6 @@
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
       "verification": "PDF oficial aberto e índice oficial conferido",
       "pdfBytes": 269158,
-      "relationship": "authorship_or_advising",
-      "matchedPeople": [
-        "Bruno"
-      ]
-    },
-    {
-      "id": "2025-RE_0363_0493_01",
-      "year": 2025,
-      "title": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
-      "indexTitle": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
-      "students": "Kamilly Cristina Ladislau Pinto, Sofia da Gloria Crescini Lessa",
-      "authors": [
-        "Kamilly Cristina Ladislau Pinto",
-        "Sofia da Gloria Crescini Lessa",
-        "Bruno Michel Pera",
-        "Amanda Lira Gurgel de Albuquerque"
-      ],
-      "advisors": [
-        "Bruno Michel Pera",
-        "Amanda Lira Gurgel de Albuquerque"
-      ],
-      "supervisors": [
-        "Bruno Michel Pera",
-        "Amanda Lira Gurgel de Albuquerque"
-      ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Tecnologia e saúde",
-      "description": "Descreve uma mesa experimental de desinfecção controlada por ESP32 e aplicativo Android.",
-      "keywords": "Biossegurança, Biofotônica, ESP 32, Desinfecção, Aplicativo android",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
-      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 279380,
-      "relationship": "authorship_or_advising",
-      "matchedPeople": [
-        "Bruno"
-      ]
-    },
-    {
-      "id": "2025-RE_0615_0541_01",
-      "year": 2025,
-      "title": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
-      "indexTitle": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
-      "students": "João Otavio de Lima, Lionel Mario Venturino",
-      "authors": [
-        "Lionel Mario Venturino",
-        "João Otavio de Lima",
-        "Bruno Michel Pera"
-      ],
-      "advisors": [
-        "Bruno Michel Pera"
-      ],
-      "supervisors": [
-        "Bruno Michel Pera"
-      ],
-      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
-      "school": "Univap",
-      "isMaximus": false,
-      "topic": "Aplicativos e bem-estar",
-      "description": "Desenvolve um aplicativo para registrar exercícios, organizar rotinas e acompanhar planos de musculação.",
-      "keywords": "Aplicativo, Musculação, Android, Anotação",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
-      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 289448,
       "relationship": "authorship_or_advising",
       "matchedPeople": [
         "Bruno"
@@ -602,8 +593,65 @@
       "relationship": "authorship_or_advising",
       "matchedPeople": [
         "Bruno",
-        "Taynara"
+        "Taynara",
+        "Jhonneyvarl"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera",
+        "Taynara Alves de Carvalho",
+        "Jhoneyrval de Souza Siqueira"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Jhonneyvarl",
+          "fullName": "Jhoneyrval de Souza Siqueira",
+          "actualName": "Jhoneyrval Siqueira",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautor identificado na primeira página do PDF. Nome completo confirmado em A invisibilidade do hip hop; afiliação e contato profissional coincidem.",
+          "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        }
+      ],
+      "note": "O PDF inclui o coautor Jhoneyrval Siqueira, agrupado com Jhoneyrval de Souza Siqueira pela afiliação e contato profissional coincidentes.",
+      "canonicalTeacherName": "Jhoneyrval de Souza Siqueira",
+      "teacherAliases": [
+        "Jhoneyrval Siqueira"
       ]
+    },
+    {
+      "id": "2025-RE_0417_0264_01",
+      "year": 2025,
+      "title": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
+      "indexTitle": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
+      "students": "Sarah Danielly Pavanelo, Bruna Westin Ferreira e Fiorini",
+      "authors": [
+        "Bruna Westin Ferreira e Fiorini",
+        "Sarah Danielly Pavanelo",
+        "Jéssica de Almeida Marques"
+      ],
+      "advisors": [
+        "Jéssica de Almeida Marques"
+      ],
+      "supervisors": [
+        "Jéssica de Almeida Marques"
+      ],
+      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
+      "school": "Maximus",
+      "isMaximus": true,
+      "topic": "Saúde e bem-estar",
+      "description": "Investiga pressões acadêmicas e apoio psicológico entre estudantes e apresenta um e-book de autocuidado.",
+      "keywords": "Saúde mental, Bem-estar estudantil, Apoio psicológico",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 300967,
+      "relationship": "acknowledgement",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "note": "Bruno Michel Pera é mencionado nos agradecimentos; não consta como autor ou orientador deste artigo.",
+      "matchContext": " disponivel em:\nhttps://www.educacao.sp.gov.br. acesso em: 18 jun. 2025.\n\nagradecimentos\n    agradecemos a orientadora jessica de almeida marques, ao professor bruno michel pera e ao\ninstituto educacional ribeiro goulart – escola maximu’s pelo apoio. o trabalho contou com\nfinanciamento da capes – codigo 001.\n\n\n\n\nxix encontro latino ame"
     },
     {
       "id": "2025-RE_0405_0599_01",
@@ -636,6 +684,817 @@
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
       "verification": "PDF oficial aberto e índice oficial conferido",
       "pdfBytes": 241506,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0369_1011_01",
+      "year": 2025,
+      "title": "A LOGÍSTICA REVERSA DAS EMBALAGENS PLÁSTICAS COMO VANTAGEM COMPETITIVA PARA AS EMPRESAS",
+      "indexTitle": "A LOGÍSTICA REVERSA DAS EMBALAGENS PLÁSTICAS COMO VANTAGEM COMPETITIVA PARA AS EMPRESAS",
+      "students": "Jeferson Daniel Melo da Silva, Matheus Brandão Fernandes, Yan Tanaka Xavier",
+      "authors": [
+        "Jeferson Daniel Melo da Silva",
+        "Matheus Brandão Fernandes",
+        "Yan Tanaka Xavier",
+        "Diego Misael da Silva Motta"
+      ],
+      "advisors": [
+        "Diego Misael da Silva Motta"
+      ],
+      "supervisors": [
+        "Diego Misael da Silva Motta"
+      ],
+      "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Analisa a logística reversa de embalagens plásticas como estratégia ambiental e competitiva para empresas.",
+      "keywords": "embalagens plásticas , meio ambiente, organizações",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0369_1011_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0369_1011_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Yan"
+      ],
+      "matchedFullNames": [
+        "Yan Tanaka Xavier"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Yan",
+          "fullName": "Yan Tanaka Xavier",
+          "relationship": "authorship_or_advising",
+          "context": "RSA DAS EMBALAGENS PLÁSTICAS COMO VANTAGEM                  COMPETITIVA PARA AS EMPRESAS               Jeferson Daniel Melo da Silva, Matheus Brandão Fernandes,                    Yan Tanaka Xavier, Diego Misael da Silva Motta  Fundação Vale Paraibana de Ensino, Colégio Técnico “Antônio Teixeira Fernandes”, Curso Técnico           em Administração, Rua Paraibun",
+          "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes / Fundação Valeparaibana de Ensino"
+        }
+      ],
+      "note": "Yan Tanaka Xavier consta na autoria do PDF.",
+      "matchContext": "RSA DAS EMBALAGENS PLÁSTICAS COMO VANTAGEM                  COMPETITIVA PARA AS EMPRESAS               Jeferson Daniel Melo da Silva, Matheus Brandão Fernandes,                    Yan Tanaka Xavier, Diego Misael da Silva Motta  Fundação Vale Paraibana de Ensino, Colégio Técnico “Antônio Teixeira Fernandes”, Curso Técnico           em Administração, Rua Paraibun",
+      "linkStatus": 200
+    },
+    {
+      "id": "2025-RE_0664_1172_01",
+      "year": 2025,
+      "title": "ANÁLISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
+      "indexTitle": "ANALISE DA DERME POR MEIO DE SENSORES E MICROCONTROLADORA ESP-32 WROOM",
+      "students": "Cauê Brandão dos Santos, Ester de Abreu Teotônio, Matheus Henrique Ferreira e Silva",
+      "authors": [
+        "Bruno Michel Pera",
+        "Cauê Brandão dos Santos",
+        "Ester de Abreu Teotônio",
+        "Matheus Henrique Ferreira e Silva"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Apresenta um sistema com sensor de cor e ESP32 para observar características da pele.",
+      "keywords": "Microcontroladores , Derme, Sensores",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0664_1172_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 231688,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0322_0024_01",
+      "year": 2025,
+      "title": "ANÁLISE DO FILME “MUITO LOUCA” SOB O OLHAR EXISTENCIALISTA DE ROLLO MAY",
+      "indexTitle": "ANÁLISE DO FILME “MUITO LOUCA” SOB O OLHAR EXISTENCIALISTA DE ROLLO MAY",
+      "students": "Thalita Ferreira Alves, Liliane Prado Vieira Machado",
+      "authors": [
+        "Thalita Ferreira Alves",
+        "Liliane Prado Vieira Machado"
+      ],
+      "advisors": [
+        "Mirthis Czubka de Abreu Angelo"
+      ],
+      "supervisors": [
+        "Mirthis Czubka de Abreu Ângelo"
+      ],
+      "institution": "Faculdade Anhanguera de Taubaté",
+      "school": "Anhanguera",
+      "isMaximus": false,
+      "topic": "Sociedade e comunicação",
+      "description": "Interpreta o filme Muito Louca a partir de conceitos de Rollo May e da psicologia existencialista.",
+      "keywords": "Psicologia Existencialista. , Rollo May. , Visão de homem.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0322_0024_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0322_0024_01.pdf",
+      "category": "Psicologia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria, orientação e instituição conferidas com o índice; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Angelo"
+      ],
+      "matchedFullNames": [
+        "Mirthis Czubka de Abreu Ângelo"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Angelo",
+          "fullName": "Mirthis Czubka de Abreu Ângelo",
+          "nameMatchPart": "surname",
+          "relationship": "authorship_or_advising",
+          "roles": [
+            "advisor_index",
+            "acknowledgement_pdf"
+          ],
+          "context": "essar, neste item, nossos mais sinceros agradecimentos à nossa querida coordenadora de curso e professora Mirthis Czubka de Abreu Ângelo, que nos orientou durante a escrita, processo de submissão e publicação do presente trabalho. Reconhecemos que, sua orientação e apoio foi – e continua sendo – fundamental para a nossa construção profissional enquanto f",
+          "institution": "Faculdade Anhanguera de Taubaté"
+        }
+      ],
+      "roles": [
+        "advisor_index",
+        "acknowledgement_pdf"
+      ],
+      "nameMatchPart": "surname",
+      "note": "Mirthis Czubka de Abreu Ângelo consta como orientadora no índice oficial e nos agradecimentos do PDF; não consta na linha de autoria do PDF.",
+      "matchContext": "essar, neste item, nossos mais sinceros agradecimentos à nossa querida coordenadora de curso e professora Mirthis Czubka de Abreu Ângelo, que nos orientou durante a escrita, processo de submissão e publicação do presente trabalho. Reconhecemos que, sua orientação e apoio foi – e continua sendo – fundamental para a nossa construção profissional enquanto f",
+      "linkStatus": 200,
+      "alreadyInCatalog": false,
+      "identityNote": "Ângelo é sobrenome de Mirthis Czubka de Abreu Ângelo. Ela é pessoa distinta do professor Ângelo Ferreira de Castro da Maximus."
+    },
+    {
+      "id": "2025-RE_0023_0620_01",
+      "year": 2025,
+      "title": "ANÁLISE MICROBIOLÓGICA DE MEL ARTESANAL COMERCIALIZADO NO MUNICÍPIO DE SÃO JOSÉ DOS CAMPOS- SP",
+      "indexTitle": "ANÁLISE MICROBIOLÓGICA DE MEL ARTESANAL COMERCIALIZADO NO MUNICIPIO DE SÃO JOSÉ DOS CAMPOS- SP",
+      "students": "Sarah Stephanie Paiva Silva, Nathália Cristina de Carvalho Sousa",
+      "authors": [
+        "Sarah Stephanie Paiva Silva",
+        "Nathália Cristina de Carvalho Sousa",
+        "Sônia Khouri Sibelino",
+        "Anelise Cristina Osorio Cesar Doria"
+      ],
+      "advisors": [
+        "Sônia Khouri Sibelino",
+        "Anelise Cristina Osorio Cesar Doria"
+      ],
+      "supervisors": [
+        "Sônia Khouri Sibelino",
+        "Anelise Cristina Osorio Cesar Doria"
+      ],
+      "institution": "Universidade do Vale do Paraíba — Univap / Faculdade de Ciências da Saúde — Centro de Diagnóstico Laboratorial",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Saúde e bem-estar",
+      "description": "Analisa a qualidade microbiológica de mel artesanal comercializado em São José dos Campos.",
+      "keywords": "Mel, Micologia , Contaminação de Alimentos, Microbiologia de Alimentos",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0023_0620_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0023_0620_01.pdf",
+      "category": "Biomedicina",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Stephanie"
+      ],
+      "matchedFullNames": [
+        "Sarah Stephanie Paiva Silva"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Stephanie",
+          "fullName": "Sarah Stephanie Paiva Silva",
+          "relationship": "authorship_or_advising",
+          "context": "   ANÁLISE MICROBIOLÓGICA DE MEL ARTESANAL COMERCIALIZADO NO                MUNICIPIO DE SÃO JOSÉ DOS CAMPOS- SP     Sarah Stephanie Paiva Silva1, Nathália Cristina de Carvalho Sousa1, Sônia             Khouri Sibelino2, Anelise Cristina Osorio Cesar Doria1.      1Universidade do Vale do Paraíba, Faculdade de Ciências da Saúde/ Centro de Diagnóstico               Labora",
+          "institution": "Universidade do Vale do Paraíba — Univap",
+          "matchType": "literal_token"
+        }
+      ],
+      "note": "Sarah Stephanie Paiva Silva consta na autoria do PDF e no índice oficial.",
+      "identityNote": "O nome Stephanie ocorre como parte do nome completo Sarah Stephanie Paiva Silva; não há vínculo com a Maximus informado no artigo.",
+      "matchContext": "   ANÁLISE MICROBIOLÓGICA DE MEL ARTESANAL COMERCIALIZADO NO                MUNICIPIO DE SÃO JOSÉ DOS CAMPOS- SP     Sarah Stephanie Paiva Silva1, Nathália Cristina de Carvalho Sousa1, Sônia             Khouri Sibelino2, Anelise Cristina Osorio Cesar Doria1.      1Universidade do Vale do Paraíba, Faculdade de Ciências da Saúde/ Centro de Diagnóstico               Labora",
+      "linkStatus": 200
+    },
+    {
+      "id": "2025-0627_0069_01",
+      "year": 2025,
+      "title": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
+      "indexTitle": "APLICATIVO INTEGRADO COM IA PARA MONITORAMENTO DO CICLO MENSTRUAL E PERSONALIZAÇÃO NUTRICIONAL.",
+      "students": "Rebeka Fernandes Rebeque, Luis Miguel de Sousa Gois, Matheus Gonçalves Oliveira",
+      "authors": [
+        "Bruno Michel Pera",
+        "Luis Miguel de Sousa Gois",
+        "Matheus Gonçalves Oliveira",
+        "Rebeka Fernandes Rebeque"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Propõe um aplicativo que reúne acompanhamento do ciclo menstrual, gráficos e recomendações nutricionais.",
+      "keywords": "ciclo menstrual, inteligência artificial, nutrição personalizada, saúde feminina, aplicativo mobile.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0627_0069_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 248311,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0979_0754_01",
+      "year": 2025,
+      "title": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
+      "indexTitle": "AQUISIÇÃO E ANÁLISE INTEGRADA DE DADOS EM VEÍCULOS AÉREOS NÃO TRIPULADOS (VANTS)",
+      "students": "João Felipe Spada dos Santos Frangioni, Vitor Hugo dos Santos Inácio, João Vitor dos Santos Vieira",
+      "authors": [
+        "João Felipe Spada dos Santos Frangioni",
+        "Vitor Hugo dos Santos Inácio",
+        "João Vitor dos Santos Vieira",
+        "Silas Macacari de Matos",
+        "Bruno Michel Pêra"
+      ],
+      "advisors": [
+        "Bruno Michel Pêra"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Robótica e engenharia",
+      "description": "Integra sensores e armazenamento de dados em aeronaves não tripuladas para apoiar a análise de voos.",
+      "keywords": "VANTs, Sensores embarcados, ESP32, Telemetria, Aquisição de dados",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0979_0754_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 363058,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-0504_0048_01",
+      "year": 2025,
+      "title": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
+      "indexTitle": "CALENDÁRIO INTERATIVO: APLICATIVO EDUCACIONAL FOCADO EM ORGANIZAÇÃO COM INTEGRAÇÃO DE IA",
+      "students": "Cássia de Oliveira Washington Santos, Isabelly de Oliveira, Steffany Felix Lourenço",
+      "authors": [
+        "Bruno Michel Pera",
+        "Cássia de Oliveira Washington Santos",
+        "Isabelly de Oliveira",
+        "Steffany Felix Lourenço"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e educação",
+      "description": "Propõe um calendário com inteligência artificial para organizar compromissos e apoiar o planejamento dos estudos.",
+      "keywords": "Aplicativo educacional , organização , integração de IA",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0504_0048_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 241137,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0419_1035_01",
+      "year": 2025,
+      "title": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
+      "indexTitle": "DILATAÇÃO CERVICAL EM TEMPO REAL: UMA ABORDAGEM TECNOLÓGICA PARA ASSISTÊNCIA OBSTÉTRICA HUMANIZADA",
+      "students": "Ana Julia Souza Rodrigues, Douglas Bacelar Mourão, Isaac Gabriel dos Santos Barbosa",
+      "authors": [
+        "Ana Julia Souza Rodrigues",
+        "Douglas Bacelar Mourão",
+        "Isaac Gabriel dos Santos Barbosa",
+        "Bruno Michael Pera"
+      ],
+      "advisors": [
+        "Bruno Michael Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Apresenta uma proposta de monitoramento da dilatação cervical com sensores, ESP32 e transmissão de dados.",
+      "keywords": "Parto humanizado, Monitoramento obstétrico, Sensor, Tecnologia médica",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0419_1035_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 345470,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0467_0062_01",
+      "year": 2025,
+      "title": "E-BOOK DE RECEITAS COM SARDINHA: UMA FERRAMENTA DE EDUCAÇÃO ALIMENTAR",
+      "indexTitle": "E-BOOK DE RECEITAS COM SARDINHA: UMA FERRAMENTA DE EDUCAÇÃO ALIMENTAR",
+      "students": "Daniela Moreira Moreno, Lucas Filippe de Oliveira Carmo",
+      "authors": [
+        "Daniela Moreira Moreno",
+        "Lucas Filippe de Oliveira Carmo",
+        "Flavia Aparecida Machado Cordeiro",
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "advisors": [
+        "Flavia Aparecida Machado Cordeiro",
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "supervisors": [
+        "Flavia Aparecida Machado Cordeiro",
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "institution": "Universidade do Vale do Paraíba — Univap",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Saúde e bem-estar",
+      "description": "Apresenta um e-book de receitas com sardinha como instrumento de educação alimentar acessível.",
+      "keywords": "Sardinha, Õmega-3, Alimentação saudável, Educação Nutricional, Promoção da Saúde",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0467_0062_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0467_0062_01.pdf",
+      "category": "Nutrição",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Soccio Monteiro Henrique",
+          "relationship": "authorship_or_advising",
+          "context": "RDINHA: UMA FERRAMENTA DE EDUCAÇÃO                           ALIMENTAR     Daniela Moreira Moreno, Lucas Filippe de Oliveira Carmo, Flavia Aparecida              Machado Cordeiro, Viviane Soccio Monteiro Henrique  ¹Universidade do Vale do Paraíba/Instituto de Pesquisa e Desenvolvimento, Avenida Shishima Hifumi,  2911, Urbanova - 12244-000 - São José dos Campos-SP, ",
+          "institution": "Universidade do Vale do Paraíba — Univap"
+        }
+      ],
+      "note": "Viviane Soccio Monteiro Henrique consta na autoria do PDF e como orientadora no índice oficial.",
+      "matchContext": "RDINHA: UMA FERRAMENTA DE EDUCAÇÃO                           ALIMENTAR     Daniela Moreira Moreno, Lucas Filippe de Oliveira Carmo, Flavia Aparecida              Machado Cordeiro, Viviane Soccio Monteiro Henrique  ¹Universidade do Vale do Paraíba/Instituto de Pesquisa e Desenvolvimento, Avenida Shishima Hifumi,  2911, Urbanova - 12244-000 - São José dos Campos-SP, ",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-0370_0405_01",
+      "year": 2025,
+      "title": "EDULCORANTES EM PRODUTOS ZERO AÇÚCAR: CARACTERIZAÇÃO E POTENCIAIS RISCOS À SAÚDE",
+      "indexTitle": "EDULCORANTES EM PRODUTOS ZERO AÇÚCAR: CARACTERIZAÇÃO E POTENCIAIS RISCOS À SAÚDE",
+      "students": "Letícia Temperini Gonçalves",
+      "authors": [
+        "Letícia Temperini Gonçalves",
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "advisors": [
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "supervisors": [
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "institution": "Universidade do Vale do Paraíba — Univap",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Saúde e bem-estar",
+      "description": "Discute a presença de edulcorantes em produtos zero açúcar e possíveis implicações para a saúde.",
+      "keywords": "Informação nutricional, Alimento diet, Edulcorantes, Efeitos adversos",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0370_0405_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0370_0405_01.pdf",
+      "category": "Nutrição",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Soccio Monteiro Henrique"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Soccio Monteiro Henrique",
+          "relationship": "authorship_or_advising",
+          "context": "    EDULCORANTES EM PRODUTOS ZERO AÇÚCAR: CARACTERIZAÇÃO E                    POTENCIAIS RISCOS À SAÚDE            Letícia Temperini Gonçalves, Viviane Soccio Monteiro Henrique   Universidade do Vale do Paraíba/Faculdade de Ciências da Saúde, Avenida Shishima Hifumi, 2911,       Urbanova - 12244-000 - São José dos Campos-SP, Bras",
+          "institution": "Universidade do Vale do Paraíba — Univap"
+        }
+      ],
+      "note": "Viviane Soccio Monteiro Henrique consta na autoria do PDF e como orientadora no índice oficial.",
+      "matchContext": "    EDULCORANTES EM PRODUTOS ZERO AÇÚCAR: CARACTERIZAÇÃO E                    POTENCIAIS RISCOS À SAÚDE            Letícia Temperini Gonçalves, Viviane Soccio Monteiro Henrique   Universidade do Vale do Paraíba/Faculdade de Ciências da Saúde, Avenida Shishima Hifumi, 2911,       Urbanova - 12244-000 - São José dos Campos-SP, Bras",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-RE_0999_1095_01",
+      "year": 2025,
+      "title": "EFEITOS DO CARVACROL LIVRE E ENCAPSULADO NA HISTOLOGIA TEGUMENTAR DE TELEÓGINAS DE RHIPICEPHALUS MICROPLUS",
+      "indexTitle": "EFEITOS DO CARVACROL LIVRE E ENCAPSULADO NA HISTOLOGIA TEGUMENTAR DE TELEÓGINAS DE RHIPICEPHALUS MICROPLUS",
+      "students": "Camila de Paula Rodrigues, Gabriela Rocha Assunção, Daniela de Oliveira Rocha, Barbara Rauta de Avelar, Adilson Vidal Costa",
+      "authors": [
+        "Camila de Paula Rodrigues",
+        "Gabriela Rocha Assunção",
+        "Daniela de Oliveira Rocha",
+        "Barbara Rauta de Avelar",
+        "Adilson Vidal Costa",
+        "Vagner Tebaldi de Queiroz",
+        "Erika Takagi Nunes"
+      ],
+      "advisors": [
+        "Vagner Tebaldi de Queiroz",
+        "Erika Takagi Nunes"
+      ],
+      "supervisors": [
+        "Vagner Tebaldi de Queiroz",
+        "Erika Takagi Nunes"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES / Universidade Federal Rural do Rio de Janeiro — UFRRJ",
+      "school": "UFES / UFRRJ",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Investiga alterações na estrutura externa de carrapatos após exposição a carvacrol livre e encapsulado.",
+      "keywords": "Teleógenas, Carrapaticida, Carrapato-do-boi, Morfologia, Cutícula",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0999_1095_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0999_1095_01.pdf",
+      "category": "Morfologia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "acknowledgement",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Tavares de Paula"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Tavares de Paula",
+          "relationship": "acknowledgement",
+          "context": "onal de Desenvolvimento Científico e Tecnológico (CNPq) pelo apoio financeiro, ao Prof. Fábio Barbour Scott (UFRRJ) e sua equipe pela disponibilidade dos carrapatos da colônia e a Viviane Tavares de Paula pelo suporte técnico.     XXIX Encontro Latino Americano de Iniciação Científica, XXV Encontro Latino Americano de Pós-Graduação e        6 XV Encontro de Iniciaç",
+          "institution": null
+        }
+      ],
+      "note": "Viviane Tavares de Paula é mencionada nos agradecimentos por suporte técnico; não consta como autora ou orientadora deste artigo.",
+      "matchContext": "onal de Desenvolvimento Científico e Tecnológico (CNPq) pelo apoio financeiro, ao Prof. Fábio Barbour Scott (UFRRJ) e sua equipe pela disponibilidade dos carrapatos da colônia e a Viviane Tavares de Paula pelo suporte técnico.     XXIX Encontro Latino Americano de Iniciação Científica, XXV Encontro Latino Americano de Pós-Graduação e        6 XV Encontro de Iniciaç",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-RE_0349_0510_01",
+      "year": 2025,
+      "title": "EXPOSIÇÃO DE RHINOCRICUS PADBERGI (DIPLOPODA) À SERRAPILHEIRA CONTAMINADA POR ATRAZINA E GLIFOSATO",
+      "indexTitle": "EXPOSIÇÃO DE RHINOCRICUS PADBERGI (DIPLOPODA) À SERRAPILHEIRA CONTAMINADA POR ATRAZINA E GLIFOSATO",
+      "students": "Francisco Almança Trujillo, Viviane Tavares de Paula",
+      "authors": [
+        "Francisco Almança Trujillo",
+        "Viviane Tavares de Paula",
+        "Tatiana da Silva Souza"
+      ],
+      "advisors": [
+        "Tatiana da Silva Souza"
+      ],
+      "supervisors": [
+        "Tatiana da Silva Souza"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES",
+      "school": "UFES",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Avalia efeitos de serrapilheira contaminada por herbicidas sobre o diplópode Rhinocricus padbergi.",
+      "keywords": "Ecotoxicologia, Mortalidade, Crescimento, Consumo, Assimilação",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0349_0510_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0349_0510_01.pdf",
+      "category": "Biologia Geral",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Tavares de Paula"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Tavares de Paula",
+          "relationship": "authorship_or_advising",
+          "context": "    EXPOSIÇÃO DE Rhinocricus padbergi (DIPLOPODA) À SERRAPILHEIRA              CONTAMINADA POR ATRAZINA E GLIFOSATO   Francisco Almança Trujillo, Viviane Tavares de Paula, Tatiana da Silva Souza.   Universidade Federal do Espírito Santo/Centro de Ciências Exatas, Naturais e da Saúde, Bairro Alto             Universitário – 29.500-0",
+          "institution": "Universidade Federal do Espírito Santo — UFES"
+        }
+      ],
+      "note": "Viviane Tavares de Paula consta na autoria do PDF.",
+      "matchContext": "    EXPOSIÇÃO DE Rhinocricus padbergi (DIPLOPODA) À SERRAPILHEIRA              CONTAMINADA POR ATRAZINA E GLIFOSATO   Francisco Almança Trujillo, Viviane Tavares de Paula, Tatiana da Silva Souza.   Universidade Federal do Espírito Santo/Centro de Ciências Exatas, Naturais e da Saúde, Bairro Alto             Universitário – 29.500-0",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-RE_0898_0394_01",
+      "year": 2025,
+      "title": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
+      "indexTitle": "HONEYBEE: DESENVOLVIMENTO DE UM E-COMMERCE INFANTIL COM DESIGN AFETIVO E FUNCIONALIDADE MODERNA",
+      "students": "Giovana Ferreira Núbile, Eloah Maria Rodrigues Rocha, Ana Julia Tenório Pedroso",
+      "authors": [
+        "Ana Julia Tenorio Pedroso",
+        "Eloah Maria Rodrigues Rocha",
+        "Giovana Ferreira Núbile",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e negócios",
+      "description": "Descreve uma loja virtual de moda infantil com organização de pedidos e experiência de compra acessível.",
+      "keywords": "E-commerce, Moda Infantil, Compra Intuitiva , Site de Loja",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0898_0394_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 328754,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0509_0545_01",
+      "year": 2025,
+      "title": "HOSPITALIZAÇÕES DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO",
+      "indexTitle": "HOSPITALIZAÇÕES DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO",
+      "students": "Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo, Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira",
+      "authors": [
+        "Nicole Milato da Silva Gonçalves",
+        "Viviane do Nascimento Camargo",
+        "Marcelo Matieli da Silva Filho",
+        "Eduardo Frizzera Meira",
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "advisors": [
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "supervisors": [
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES",
+      "school": "UFES",
+      "isMaximus": false,
+      "topic": "Saúde e bem-estar",
+      "description": "Analisa hospitalizações associadas à dependência do tabaco a partir de dados epidemiológicos.",
+      "keywords": "Hospitalização, Epidemiologia, Espírito Santo, Tabaco",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0509_0545_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0509_0545_01.pdf",
+      "category": "Farmácia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane do Nascimento Camargo"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane do Nascimento Camargo",
+          "relationship": "authorship_or_advising",
+          "context": "  HOSPITALIZAÇÕES DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO  Autores: Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo,  Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira, Michael Ruberson            Ribeiro da Silva, Jessica Barreto Ribeiro dos Santos.  Universidade Fed",
+          "institution": "Universidade Federal do Espírito Santo — UFES"
+        }
+      ],
+      "note": "Viviane do Nascimento Camargo consta na autoria do PDF.",
+      "matchContext": "  HOSPITALIZAÇÕES DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO  Autores: Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo,  Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira, Michael Ruberson            Ribeiro da Silva, Jessica Barreto Ribeiro dos Santos.  Universidade Fed",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-0702_0797_01",
+      "year": 2025,
+      "title": "IDENTIDADE GENÉTICA POR MARCADORES MICROSSATÉLITES DO CLONE LB80 DE COFFEA CANEPHORA",
+      "indexTitle": "IDENTIDADE GENÉTICA POR MARCADORES MICROSSATÉLITES DO CLONE LB80 DE COFFEA CANEPHORA",
+      "students": "Aline dos Santos Bergamin, Carolina Oliveira Bernardes, Viviane Alexia Correia Silva, Lidiane dos Santos Gomes Oliveira, Inorbert Melo Lima",
+      "authors": [
+        "Aline dos Santos Bergamin",
+        "Carolina Oliveira Bernardes",
+        "Viviane Alexia Correia Silva",
+        "Lidiane dos Santos Gomes Oliveira",
+        "Inorbert Melo Lima",
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "advisors": [
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "supervisors": [
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES / Instituto Capixaba de Pesquisa, Assistência Técnica e Extensão Rural — Incaper",
+      "school": "UFES / Incaper",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Utiliza marcadores genéticos para verificar a identidade de plantas do clone LB80 de café conilon.",
+      "keywords": "Café Conilon, Microssatélites, Polimorfismo, SSR",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0702_0797_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0702_0797_01.pdf",
+      "category": "Agronomia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Alexia Correia Silva"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Alexia Correia Silva",
+          "relationship": "authorship_or_advising",
+          "context": " IDENTIDADE GENÉTICA POR MARCADORES MICROSSATÉLITES DO CLONE                      LB80 DE Coffea canephora      Aline dos Santos Bergamin1, Carolina Oliveira Bernardes1, Viviane Alexia     Correia Silva1, Lidiane dos Santos Gomes Oliveira1, Inorbert Melo Lima2,                 Adésio Ferreira1, Marcia Flores da Silva Ferreira1 1Universidade Federal do Esp",
+          "institution": "Universidade Federal do Espírito Santo — UFES / Instituto Capixaba de Pesquisa, Assistência Técnica e Extensão Rural — Incaper"
+        }
+      ],
+      "note": "Viviane Alexia Correia Silva consta na autoria do PDF.",
+      "matchContext": " IDENTIDADE GENÉTICA POR MARCADORES MICROSSATÉLITES DO CLONE                      LB80 DE Coffea canephora      Aline dos Santos Bergamin1, Carolina Oliveira Bernardes1, Viviane Alexia     Correia Silva1, Lidiane dos Santos Gomes Oliveira1, Inorbert Melo Lima2,                 Adésio Ferreira1, Marcia Flores da Silva Ferreira1 1Universidade Federal do Esp",
+      "linkStatus": 200,
+      "excludedMatchNote": "Yan, L. ocorre apenas em referência bibliográfica; essa ocorrência não foi associada ao filtro Yan.",
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-RE_0363_0493_01",
+      "year": 2025,
+      "title": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
+      "indexTitle": "MESA DE DESINFECÇÃO BACTERIANA - BIOTABLE",
+      "students": "Kamilly Cristina Ladislau Pinto, Sofia da Gloria Crescini Lessa",
+      "authors": [
+        "Kamilly Cristina Ladislau Pinto",
+        "Sofia da Gloria Crescini Lessa",
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "advisors": [
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera",
+        "Amanda Lira Gurgel de Albuquerque"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Descreve uma mesa experimental de desinfecção controlada por ESP32 e aplicativo Android.",
+      "keywords": "Biossegurança, Biofotônica, ESP 32, Desinfecção, Aplicativo android",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0363_0493_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 279380,
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ]
+    },
+    {
+      "id": "2025-RE_0509_0544_01",
+      "year": 2025,
+      "title": "MORTALIDADE DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO",
+      "indexTitle": "MORTALIDADE DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO",
+      "students": "Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo, Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira",
+      "authors": [
+        "Nicole Milato da Silva Gonçalves",
+        "Viviane do Nascimento Camargo",
+        "Marcelo Matieli da Silva Filho",
+        "Eduardo Frizzera Meira",
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "advisors": [
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "supervisors": [
+        "Michael Ruberson Ribeiro da Silva",
+        "Jessica Barreto Ribeiro dos Santos"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES",
+      "school": "UFES",
+      "isMaximus": false,
+      "topic": "Saúde e bem-estar",
+      "description": "Examina dados de mortalidade associados à dependência do tabaco no Espírito Santo.",
+      "keywords": "Mortalidade, Epidemiologia, Espírito Santo, Tabaco",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0509_0544_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0509_0544_01.pdf",
+      "category": "Farmácia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane do Nascimento Camargo"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane do Nascimento Camargo",
+          "relationship": "authorship_or_advising",
+          "context": "     MORTALIDADE DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO   Autores: Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo,  Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira, Michael Ruberson            Ribeiro da Silva, Jessica Barreto Ribeiro dos Santos.  Universidade Fed",
+          "institution": "Universidade Federal do Espírito Santo — UFES"
+        }
+      ],
+      "note": "Viviane do Nascimento Camargo consta na autoria do PDF.",
+      "matchContext": "     MORTALIDADE DEVIDO À SÍNDROME DE DEPENDÊNCIA DO TABACO   Autores: Nicole Milato da Silva Gonçalves, Viviane do Nascimento Camargo,  Marcelo Matieli da Silva Filho, Eduardo Frizzera Meira, Michael Ruberson            Ribeiro da Silva, Jessica Barreto Ribeiro dos Santos.  Universidade Fed",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2025-RE_0615_0541_01",
+      "year": 2025,
+      "title": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
+      "indexTitle": "MUSCULAÇÃO 4.0: DESENVOLVIMENTO DE APLICATIVO PARA GERENCIAMENTO PERSONALIZADO DE TREINOS",
+      "students": "João Otavio de Lima, Lionel Mario Venturino",
+      "authors": [
+        "Lionel Mario Venturino",
+        "João Otavio de Lima",
+        "Bruno Michel Pera"
+      ],
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro / Fundação Valeparaibana de Ensino",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e bem-estar",
+      "description": "Desenvolve um aplicativo para registrar exercícios, organizar rotinas e acompanhar planos de musculação.",
+      "keywords": "Aplicativo, Musculação, Android, Anotação",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0615_0541_01.pdf",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "PDF oficial aberto e índice oficial conferido",
+      "pdfBytes": 289448,
       "relationship": "authorship_or_advising",
       "matchedPeople": [
         "Bruno"
@@ -675,6 +1534,60 @@
       "matchedPeople": [
         "Bruno"
       ]
+    },
+    {
+      "id": "2025-1151_0959_01",
+      "year": 2025,
+      "title": "SELEÇÃO DE MARCADORES MICROSSATÉLITES PARA IDENTIFICAÇÃO GENÉTICA DE MUDAS DE COFFEA CANEPHORA NO ESPÍRITO SANTO",
+      "indexTitle": "SELEÇÃO DE MARCADORES MICROSSATÉLITES PARA IDENTIFICAÇÃO GENÉTICA DE MUDAS DE COFFEA CANEPHORA NO ESPÍRITO SANTO",
+      "students": "Viviane Alexia Correia Silva, Aline dos Santos Bergamin, Stéffany de Freitas Badaró Rodrigues, Nayara Gonçalves Vallory",
+      "authors": [
+        "Viviane Alexia Correia Silva",
+        "Aline dos Santos Bergamin",
+        "Stéffany de Freitas Badaró Rodrigues",
+        "Nayara Gonçalves Vallory",
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "advisors": [
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "supervisors": [
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
+      ],
+      "institution": "Universidade Federal do Espírito Santo — UFES",
+      "school": "UFES",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Seleciona marcadores moleculares para identificar geneticamente mudas de café conilon.",
+      "keywords": "Café, Marcadores SSRs, DNA Fingerprinting.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1151_0959_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1151_0959_01.pdf",
+      "category": "Agronomia",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Alexia Correia Silva"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Alexia Correia Silva",
+          "relationship": "authorship_or_advising",
+          "context": "   SELEÇÃO DE MARCADORES MICROSSATÉLITES PARA IDENTIFICAÇÃO       GENÉTICA DE MUDAS DE Coffea canephora NO ESPÍRITO SANTO   Viviane Alexia Correia Silva, Aline dos Santos Bergamin, Stéffany de Freitas  Badaró Rodrigues, Nayara Gonçalves Vallory, Adésio Ferreira, Marcia Flores                                 da",
+          "institution": "Universidade Federal do Espírito Santo — UFES"
+        }
+      ],
+      "note": "Viviane Alexia Correia Silva consta na autoria do PDF.",
+      "matchContext": "   SELEÇÃO DE MARCADORES MICROSSATÉLITES PARA IDENTIFICAÇÃO       GENÉTICA DE MUDAS DE Coffea canephora NO ESPÍRITO SANTO   Viviane Alexia Correia Silva, Aline dos Santos Bergamin, Stéffany de Freitas  Badaró Rodrigues, Nayara Gonçalves Vallory, Adésio Ferreira, Marcia Flores                                 da",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
     },
     {
       "id": "2025-RE_0750_0216_01",
@@ -816,40 +1729,453 @@
       ]
     },
     {
-      "id": "2025-RE_0417_0264_01",
+      "id": "2025-0702_1047_01",
       "year": 2025,
-      "title": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
-      "indexTitle": "O IMPACTO DA SAÚDE MENTAL NO AMBIENTE ESCOLAR: DESAFIOS E ESTRATÉGIAS PARA O BEM-ESTAR DOS ESTUDANTES",
-      "students": "Sarah Danielly Pavanelo, Bruna Westin Ferreira e Fiorini",
+      "title": "TRANSFERIBILIDADE DE MICROSSATÉLITES TRINUCLEOTÍDEOS DE REGIÕES CDS PARA COFFEA CANEPHORA",
+      "indexTitle": "TRANSFERIBILIDADE DE MICROSSATÉLITES TRINUCLEOTÍDEOS DE REGIÕES CDS PARA COFFEA CANEPHORA",
+      "students": "Aline dos Santos Bergamin, Viviane Alexia Correia Silva, Stéffany de Freitas Badaró Rodrigues",
       "authors": [
-        "Bruna Westin Ferreira e Fiorini",
-        "Sarah Danielly Pavanelo",
-        "Jéssica de Almeida Marques"
+        "Aline dos Santos Bergamin",
+        "Viviane Alexia Correia Silva",
+        "Stéffany de Freitas Badaró Rodrigues",
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
       ],
       "advisors": [
-        "Jéssica de Almeida Marques"
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
       ],
       "supervisors": [
-        "Jéssica de Almeida Marques"
+        "Adésio Ferreira",
+        "Marcia Flores da Silva Ferreira"
       ],
-      "institution": "Escola Máximu’s / Instituto Educacional Ribeiro Goulart",
-      "school": "Maximus",
-      "isMaximus": true,
-      "topic": "Saúde e bem-estar",
-      "description": "Investiga pressões acadêmicas e apoio psicológico entre estudantes e apresenta um e-book de autocuidado.",
-      "keywords": "Saúde mental, Bem-estar estudantil, Apoio psicológico",
-      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
-      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0417_0264_01.pdf",
-      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "institution": "Universidade Federal do Espírito Santo — UFES",
+      "school": "UFES",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Testa a aplicação de marcadores microssatélites na caracterização genética de Coffea canephora.",
+      "keywords": "Café Conilon, DNA fingerprintiing, SSR",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0702_1047_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0702_1047_01.pdf",
+      "category": "Agronomia",
       "source": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
-      "verification": "PDF oficial aberto e índice oficial conferido",
-      "pdfBytes": 300967,
-      "relationship": "acknowledgement",
+      "verification": "Texto integral do PDF oficial examinado; autoria/instituição conferidas no cabeçalho; link oficial reconfirmado HTTP 200 em 05/11/2026.",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Viviane Alexia Correia Silva"
+      ],
+      "nameMatches": [
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Alexia Correia Silva",
+          "relationship": "authorship_or_advising",
+          "context": "      TRANSFERIBILIDADE DE MICROSSATÉLITES TRINUCLEOTÍDEOS DE                   REGIÕES CDS PARA Coffea canephora   Aline dos Santos Bergamin, Viviane Alexia Correia Silva, Stéffany de Freitas       Badaró Rodrigues, Adésio Ferreira, Marcia Flores da Silva Ferreira   Universidade Federal do Espírito Santo, Alto Universitário, S/",
+          "institution": "Universidade Federal do Espírito Santo — UFES"
+        }
+      ],
+      "note": "Viviane Alexia Correia Silva consta na autoria do PDF.",
+      "matchContext": "      TRANSFERIBILIDADE DE MICROSSATÉLITES TRINUCLEOTÍDEOS DE                   REGIÕES CDS PARA Coffea canephora   Aline dos Santos Bergamin, Viviane Alexia Correia Silva, Stéffany de Freitas       Badaró Rodrigues, Adésio Ferreira, Marcia Flores da Silva Ferreira   Universidade Federal do Espírito Santo, Alto Universitário, S/",
+      "linkStatus": 200,
+      "identityNote": "Há quatro pessoas distintas chamadas Viviane nos resultados; o nome completo e a instituição identificam esta correspondência. Não foi confirmado vínculo desta pessoa com a Maximus."
+    },
+    {
+      "id": "2024-RE_0978_0735_01",
+      "year": 2024,
+      "title": "APLICATIVO WEB PARA AVALIAÇÃO DE PROJETOS EM FEIRAS TÉCNICAS E DE CIÊNCIAS",
+      "indexTitle": "APLICATIVO WEB PARA AVALIAÇÃO DE PROJETOS EM FEIRAS TÉCNICAS E DE CIÊNCIAS",
+      "authors": [
+        "Amanda Fantine Hernandes Diniz",
+        "Eduardo Gabriel Castro Diniz",
+        "Paula Emy Tamay",
+        "Bruno Michel Pera",
+        "Hélio Lourenço Esperidião Ferreira"
+      ],
+      "students": "Eduardo Gabriel Castro Diniz, Amanda Fantine Hernandes Diniz, Paula Emy Tamay",
+      "advisors": [
+        "Bruno Michel Pera",
+        "Hélio Lourenço Esperidião Ferreira"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera",
+        "Hélio Lourenço Esperidião Ferreira"
+      ],
+      "institution": "Universidade do Vale do Paraíba / Colégios Univap — Unidade Centro",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e educação",
+      "description": "Aplicativo web para cadastrar projetos de feira técnica e registrar avaliações de professores e visitantes.",
+      "keywords": "Feira técnica, projetos, professores, alunos, visitantes.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0978_0735_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0978_0735_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
       "matchedPeople": [
         "Bruno"
       ],
-      "note": "Bruno Michel Pera é mencionado nos agradecimentos; não consta como autor ou orientador deste artigo.",
-      "matchContext": " disponivel em:\nhttps://www.educacao.sp.gov.br. acesso em: 18 jun. 2025.\n\nagradecimentos\n    agradecemos a orientadora jessica de almeida marques, ao professor bruno michel pera e ao\ninstituto educacional ribeiro goulart – escola maximu’s pelo apoio. o trabalho contou com\nfinanciamento da capes – codigo 001.\n\n\n\n\nxix encontro latino ame"
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 315852,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Universidade do Vale do Paraíba / Colégios Univap — Unidade Centro"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0776_0354_01",
+      "year": 2024,
+      "title": "CONTROLE GERENCIÁVEL DE PRÁTICAS FÍSICAS VOLTADAS À MUSCULAÇÃO POR MEIO DE DIVISÕES DE TREINO",
+      "indexTitle": "CONTROLE GERENCIÁVEL DE PRÁTICAS FÍSICAS VOLTADAS À MUSCULAÇÃO POR MEIO DE DIVISÕES DE TREINO.",
+      "authors": [
+        "Felipe Freire Rodrigues de Oliveira",
+        "Mateus Ribeiro Leite Paes Bittencourt",
+        "Pedro Felipe Machado Martins"
+      ],
+      "students": "Mateus Ribeiro Leite Paes Bittencourt, Felipe Freire Rodrigues de Oliveira, Pedro Felipe Machado Martins",
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e bem-estar",
+      "description": "Aplicação web que organiza divisões de treino e descreve exercícios, equipamentos e músculos trabalhados.",
+      "keywords": "Gerenciamento; Treinos; Musculação; Aplicação Web.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0776_0354_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0776_0354_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 237328,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Orientação no índice oficial e agradecimentos do PDF; não está na linha de autoria.",
+          "institution": "Colégios Univap — Unidade Centro"
+        }
+      ],
+      "note": "Bruno Michel Pera consta como orientador no índice oficial e nos agradecimentos do PDF; não aparece na linha de autoria."
+    },
+    {
+      "id": "2024-RE_1093_1113_01",
+      "year": 2024,
+      "title": "DESENVOLVIMENTO DE UM SITE PARA O CONTROLE FINANCEIRO DE OBRAS RESIDENCIAIS DE PEQUENO PORTE",
+      "indexTitle": "DESENVOLVIMENTO DE UM SITE PARA O CONTROLE FINANCEIRO DE OBRAS RESIDENCIAIS DE PEQUENO PORTE",
+      "authors": [
+        "Davi Reis de Carvalho",
+        "Gustavo de Melo Alves Silva",
+        "Rafaela Oliveira de Souza Lima",
+        "Alberson Wander Sá dos Santos",
+        "Bruno Michel Pera"
+      ],
+      "students": "Rafaela Oliveira de Souza Lima, Davi dos Reis Carvalho, Gustavo de Melo Alves Silva",
+      "advisors": [
+        "Alberson Wander Sá dos Santos",
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Alberson Wander Sá dos Santos",
+        "Bruno Michel Pera"
+      ],
+      "institution": "Fundação Vale Paraibana de Ensino — Unidade Centro / Informática",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e negócios",
+      "description": "Site para cadastrar obras residenciais e acompanhar orçamento, despesas e fluxo de caixa.",
+      "keywords": "Controle financeiro. Gestão de obras. Website.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_1093_1113_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_1093_1113_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 379442,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Fundação Vale Paraibana de Ensino — Unidade Centro / Informática"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0403_0850_02",
+      "year": 2024,
+      "title": "MONITORAMENTO ELETRÔNICO DE GASES POLUENTES",
+      "indexTitle": "MONITORAMENTO ELETRÔNICO DE GASES POLUENTES",
+      "authors": [
+        "Douglas Willian Dias dos Santos",
+        "Gabriel de Lima Reis",
+        "Gisele Helena Pereira da Rosa",
+        "José Eduardo Loureiro",
+        "Bruno Michel Pera"
+      ],
+      "students": "Douglas Willian Dias dos Santos, Gabriel de Lima Reis, Gisele Helena Pereira da Rosa",
+      "advisors": [
+        "José Eduardo Loureiro da Costa",
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "José Eduardo Loureiro da Costa",
+        "Bruno Michel Pera"
+      ],
+      "institution": "Fundação Vale Paraibana de Ensino — Colégios Univap",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Ciência e sustentabilidade",
+      "description": "Estuda sensores e microcontroladores para monitorar gases poluentes e publicar leituras em um site.",
+      "keywords": "Monitoramento eletrônico. Gases. Industrias petroquímicas.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0403_0850_02.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0403_0850_02.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 321540,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Fundação Vale Paraibana de Ensino — Colégios Univap"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0051_0448_01",
+      "year": 2024,
+      "title": "SISTEMA DE CADASTROS DE EQUIPAMENTOS, COMPONENTES E FERRAMENTAS DO ALMOXARIFADO DE ELETRÔNICA",
+      "indexTitle": "SISTEMA DE CADASTROS DE EQUIPAMENTOS, COMPONENTES E FERRAMENTAS DO ALMOXARIFADO DE ELETRÔNICA",
+      "authors": [
+        "Isabele Pires dos Santos",
+        "Marina Pereira Ribeiro",
+        "Mileny Sabrina da Silva",
+        "Bruno Michel Pera"
+      ],
+      "students": "Isabele Pires dos Santos, Marina Pereira Ribeiro, Mileny Sabrina da Silva",
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e educação",
+      "description": "Sistema em Python e MySQL para cadastrar e consultar equipamentos e materiais de um almoxarifado de eletrônica.",
+      "keywords": "econômico, estoque, almoxarifado, controle e eficiente.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0051_0448_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0051_0448_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 215680,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0592_0230_01",
+      "year": 2024,
+      "title": "SISTEMA DE GERENCIAMENTO DE VISITAS HOSPITALARES PARA ONG",
+      "indexTitle": "SISTEMA DE GERENCIAMENTO DE VISITAS HOSPITALARES PARA ONG",
+      "authors": [
+        "Brenda Bettini de Matos",
+        "Bruno Michel Pera",
+        "Maria Clara Diório dos Santos",
+        "Viviane Arcanjo de Morais"
+      ],
+      "students": "Brenda Bettini de Matos, Maria Clara Diório dos Santos, Viviane Arcanjo de Morais",
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e saúde",
+      "description": "Sistema em PHP e MySQL para agendar visitas hospitalares da ONG Bom Humor, organizar voluntários e registrar presenças.",
+      "keywords": "Sistema de Gerenciamento, Visitas Hospitalares, ONG, PHP, MySQL.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0592_0230_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0592_0230_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno",
+        "Viviane"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera",
+        "Viviane Arcanjo de Morais"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 216415,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes"
+        },
+        {
+          "queryName": "Viviane",
+          "fullName": "Viviane Arcanjo de Morais",
+          "relationship": "authorship_or_advising",
+          "evidence": "Autoria do PDF e índice oficial.",
+          "institution": "Colégios Univap — Colégio Técnico Antônio Teixeira Fernandes"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0595_0464_01",
+      "year": 2024,
+      "title": "SISTEMA DE RASTREAMENTO DE DOAÇÕES EMERGENCIAIS: UMA ABORDAGEM TECNOLÓGICA PARA EFICIÊNCIA E TRANSPARÊNCIA",
+      "indexTitle": "SISTEMA DE RASTREAMENTO DE DOAÇÕES EMERGENCIAIS: UMA ABORDAGEM TECNOLÓGICA PARA EFICIÊNCIA E TRANSPARÊNCIA",
+      "authors": [
+        "Leonardo Rafael dos Santos Faria",
+        "Rafael Alves Freitas da Silva",
+        "Vinícius Silva Lopes",
+        "Bruno Michel Pera"
+      ],
+      "students": "Vinícius Silva Lopes, Leonardo Rafael dos Santos Faria, Rafael Alves Freitas da Silva",
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Colégios Univap — Unidade Centro",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Aplicativos e solidariedade",
+      "description": "Sistema com QR Code para acompanhar doações emergenciais entre doadores e instituições.",
+      "keywords": "Doação. Segurança. Comunicação. Rastreio. Estímulo.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0595_0464_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0595_0464_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 303114,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Colégios Univap — Unidade Centro"
+        }
+      ]
+    },
+    {
+      "id": "2024-RE_0360_0231_01",
+      "year": 2024,
+      "title": "SISTEMA IDENTIFICADOR DE ÔNIBUS PARA AUXÍLIO DE PORTADORES DE DEFICIÊNCIAS VISUAIS E ANALFABETOS POR QR CODE",
+      "indexTitle": "SISTEMA IDENTIFICADOR DE ÔNIBUS PARA AUXÍLIO DE PORTADORES DE DEFICIÊNCIAS VISUAIS E ANALFABETOS POR QRCODE",
+      "authors": [
+        "Beatriz Faria Mendes",
+        "Bruno Michel Pera",
+        "Giovana Franco dos Santos",
+        "Matheus Cavaleiro de Freitas"
+      ],
+      "students": "Giovana Franco dos Santos, Beatriz Faria Mendes, Matheus Cavaleiro de Freitas",
+      "advisors": [
+        "Bruno Michel Pera"
+      ],
+      "supervisors": [
+        "Bruno Michel Pera"
+      ],
+      "institution": "Fundação Vale Paraibana de Ensino — Unidade Centro / Informática",
+      "school": "Univap",
+      "isMaximus": false,
+      "topic": "Tecnologia e inclusão",
+      "description": "Reconhece QR Codes de ônibus com câmera e anuncia a linha por áudio para apoiar a identificação do transporte.",
+      "keywords": "deficiências visuais, analfabetos, ônibus, inclusão.",
+      "url": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0360_0231_01.pdf",
+      "pdfUrl": "https://www.inicepg.univap.br/cd/INIC_2024/anais/arquivos/RE_0360_0231_01.pdf",
+      "source": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "category": "Seção de trabalhos Ensino Médio/Ensino Médio Técnico",
+      "relationship": "authorship_or_advising",
+      "matchedPeople": [
+        "Bruno"
+      ],
+      "matchedFullNames": [
+        "Bruno Michel Pera"
+      ],
+      "verification": "PDF oficial obtido com HTTP 200, texto integral convertido e autoria/orientação conferida com índice oficial.",
+      "pdfBytes": 239249,
+      "nameMatches": [
+        {
+          "queryName": "Bruno",
+          "fullName": "Bruno Michel Pera",
+          "relationship": "authorship_or_advising",
+          "evidence": "Coautoria no PDF e orientação no índice oficial.",
+          "institution": "Fundação Vale Paraibana de Ensino — Unidade Centro / Informática"
+        }
+      ],
+      "award": "3º lugar — área Técnico — INIC 2024",
+      "awardSource": "https://www.inicepg.univap.br/cd/INIC_2024/anais/melhores_trabalhos.html"
     }
   ],
   "method": {
@@ -876,11 +2202,316 @@
   "sources": [
     "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
     "https://www.inicepg.univap.br/cd/INIC_2025/anais/trabalhos_tecnico.php",
-    "https://www.inicepg.univap.br/cd/INIC_2025/anais/melhores_trabalhos.php"
+    "https://www.inicepg.univap.br/cd/INIC_2025/anais/melhores_trabalhos.php",
+    "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html"
   ],
   "relationshipCounts": {
-    "authorship_or_advising": 23,
-    "acknowledgement": 1,
-    "reference": 0
+    "authorship_or_advising": 47,
+    "acknowledgement": 2
+  },
+  "expandedSearch": {
+    "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+    "pdfsExamined": 1092,
+    "strategy": "Reutilizados os textos integrais dos 1.092 PDFs oficiais previamente examinados. Busca por tokens completos Viviane, Yan, Adely e Adeli, sem corresponder a substrings como Rayane. Os cabeçalhos, orientadores do índice, instituições e agradecimentos foram inspecionados. Foram incluídas autoria/orientação e menções identificadas em agradecimentos; citações e referências de terceiros foram excluídas. Os 11 links incluídos foram reconfirmados HTTP 200.",
+    "rawMatchingPdfs": 39,
+    "includedPdfs": 12,
+    "excludedPdfs": 21,
+    "excludedBibliographicPdfs": 20,
+    "excludedNotPersonPdfs": 1,
+    "variantsChecked": [
+      "Viviane",
+      "Yan",
+      "Adely",
+      "Adeli"
+    ],
+    "confirmedVariants": {
+      "Adely": "Adely Nádia Miranda"
+    },
+    "adeliMatches": 0,
+    "identityLimit": "Os pedidos informam nomes sem identificação completa. Cada correspondência incluída preserva nome completo, instituição e vínculo. Viviane corresponde a quatro pessoas distintas; não há Viviane da Maximus confirmada em 2025. Yan Tanaka Xavier consta como estudante/coautor dos Colégios Univap. Stephanie literal corresponde a Sarah Stephanie Paiva Silva, Univap; as grafias próximas não foram presumidas como a mesma pessoa. Mariana Carmona não foi localizada em 2025.",
+    "coverageLimit": "Cobertura integral dos PDFs vinculados ao índice de 2025, não de arquivos não indexados. Os anais de 2026 permanecem inacessíveis; não é possível concluir inexistência de artigos de 2026.",
+    "expandedNames": [
+      "Mariana Carmona",
+      "Stephanie"
+    ],
+    "expandedStrategy": "Busca adicional por Mariana Carmona (frase normalizada) e Stephanie (token literal), com diagnóstico de grafias próximas nos mesmos 1.092 textos integrais. Mariana Carmona não foi localizada; Carmona isolado ocorre apenas em referência sem Mariana. Stephanie literal foi localizada na autoria de Sarah Stephanie Paiva Silva. Oito artigos com Stephani/Stefany/Steffany são registrados apenas em possibleSpellingMatches, sem associação automática à pessoa buscada nem inclusão no filtro Stephanie. Quatro resultados adicionais apenas bibliográficos foram excluídos.",
+    "rawMatchingPdfsOriginalThreeNames": 28,
+    "rawMatchingPdfsExpandedNames": 13,
+    "possibleSpellingMatchPdfs": 8,
+    "possibleSpellingMatchesAlreadyIncludedForOtherNames": 2,
+    "mainCatalogExcludedPdfs": 27
+  },
+  "nameSearchStatus": {
+    "Mariana Carmona": {
+      "year2025": "not_found",
+      "year2026": "anais_not_accessible",
+      "message": "Não localizada nos 1.092 PDFs consultados de 2025. Os anais de 2026 permanecem inacessíveis, portanto a pesquisa dessa edição está pendente."
+    },
+    "Stephanie": {
+      "year2025": "one_literal_match",
+      "year2026": "anais_not_accessible",
+      "possibleSpellingMatches": 8
+    },
+    "Silvana Goes": {
+      "year2025": "not_found",
+      "year2026": "anais_not_accessible",
+      "message": "Silvana Goes/Góes não foi localizada nos artigos de 2025. Há nome Silvana Goes em foto enviada de pôster de 2026; o artigo nos anais permanece pendente de acesso."
+    },
+    "Jhonneyvarl": {
+      "year2025": "three_school_articles",
+      "year2026": "anais_not_accessible",
+      "canonicalName": "Jhoneyrval de Souza Siqueira"
+    }
+  },
+  "searchedNames": [
+    "Bruno",
+    "Taynara",
+    "Viviane",
+    "Yan",
+    "Adely",
+    "Mariana Carmona",
+    "Stephanie",
+    "Silvana Goes",
+    "Jhonneyvarl",
+    "Angelo"
+  ],
+  "schoolNameSearch": {
+    "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+    "pdfsExamined": 1092,
+    "schoolTokenMatchingPdfs": 27,
+    "schoolAffiliationPdfs": 24,
+    "schoolBodyMentionOnlyPdfs": 1,
+    "excludedTaxonomyPdfs": 2,
+    "strategy": "Aplicado o critério conjunto: afiliação Maximus/Ribeiro Goulart no cabeçalho e nome Bruno Michel Pera, Silvana Goes/Góes ou variante comprovada do docente Jhoneyrval. Busca integral nos 1.092 PDFs oficiais e índice, com normalização de acentos e variações Máximu’s/Máximus/Maximus/Instituto (Educacional) Ribeiro Goulart. Autoria, orientação e agradecimentos são distinguidos. A lista schoolInventory documenta todos os 24 artigos de afiliação escolar, sem adicionar automaticamente itens que não atendem ao filtro docente.",
+    "identityGrounding": "Jhoneyrval de Souza Siqueira é a grafia completa no PDF de A invisibilidade do hip hop. Jhoneyrval Siqueira em Neuromarketing tem a mesma afiliação e contato profissional. O índice de Batalhas de rima registra Johneyrval de Souza Siqueira, preservado como variante na nota.",
+    "limits": "Cobertura dos 1.092 PDFs vinculados no índice de 2025. Nenhum artigo de 2025 com Silvana Goes/Góes foi localizado. Os anais de 2026 permanecem inacessíveis nas rotas oficiais verificadas; isso não permite concluir ausência de artigos de Silvana/Jhoneyrval nessa edição. Fotos dos pôsteres de 2026 não foram transformadas em artigos com PDF inexistente."
+  },
+  "angeloSearch": {
+    "checkedAt": "2026-11-05",
+    "year": 2025,
+    "count": 3,
+    "newUniqueArticles": 3,
+    "previousCatalogCount": 38,
+    "combinedUniqueTotalBefore2024": 41,
+    "maximusCount": 2,
+    "relationshipCounts": {
+      "authorship_or_advising": 3,
+      "acknowledgement_only": 0,
+      "reference_included": 0
+    },
+    "roleCounts": {
+      "author_pdf": 2,
+      "advisor_index": 3,
+      "acknowledgement_pdf": 2
+    },
+    "matchesByPerson": {
+      "Angelo": {
+        "articles": 3,
+        "fullNames": [
+          "Mirthis Czubka de Abreu Ângelo",
+          "Ângelo Ferreira de Castro"
+        ]
+      }
+    },
+    "identifiedPeople": [
+      {
+        "fullName": "Mirthis Czubka de Abreu Ângelo",
+        "institutions": [
+          "Faculdade Anhanguera de Taubaté"
+        ],
+        "articles": 1,
+        "nameMatchPart": "surname",
+        "authorshipPdf": 0,
+        "advisingOfficialIndex": 1,
+        "acknowledgementPdf": 1
+      },
+      {
+        "fullName": "Ângelo Ferreira de Castro",
+        "institutions": [
+          "Escola Máximu’s / Instituto Educacional Ribeiro Goulart"
+        ],
+        "articles": 2,
+        "nameMatchPart": "given_name",
+        "authorshipPdf": 2,
+        "advisingOfficialIndex": 2,
+        "acknowledgementPdf": 1
+      }
+    ],
+    "method": {
+      "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "pdfsExamined": 1092,
+      "indexRowsExamined": 1092,
+      "token": "Angelo/Ângelo",
+      "rawMatchingPdfs": 12,
+      "rawOccurrences": 14,
+      "includedPdfs": 3,
+      "excludedBibliographicPdfs": 9,
+      "institutionRestricted": false,
+      "strategy": "Busca por token completo Angelo após normalização de acentos em todos os 1.092 textos integrais de PDFs oficiais de 2025, além de exame dos campos de autoria/orientação do índice. Não corresponde a substrings como Angelos ou Angeloni. Cabeçalhos, orientação e agradecimentos dos três candidatos foram verificados. Referências bibliográficas de terceiros foram excluídas. Três links de PDF foram reconfirmados HTTP 200.",
+      "identityLimit": "O pedido informa apenas Angelo. Os dois nomes completos identificados são preservados: Ângelo Ferreira de Castro (nome próprio, Maximus) e Mirthis Czubka de Abreu Ângelo (sobrenome, Anhanguera Taubaté). Não são tratados como a mesma pessoa.",
+      "coverageLimit": "Cobertura dos PDFs vinculados ao índice oficial de 2025; arquivos não indexados não estão abrangidos. Não há restrição de instituição nesta busca. Os anais de 2026 permanecem inacessíveis, portanto não existe contagem definitiva para 2026."
+    },
+    "excludedReferences": [
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0406_0323_01.pdf",
+        "title": "CIRURGIA ORTOGNÁTICA: COMPLICAÇÕES TARDIAS E DESAFIOS PÓS-OPERATÓRIO",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "ttps://doi.org/10.1016/j.ortho.2019.08.016. Acesso em 10 set. 2025, 15h:42.  FRISCIA, CAROLINA SBORDONI, MARZIA PETROCELLI, LUIGI ANGELO VAIRA. Neurosensory alterations after orthognathic surgery: a systematic review. International Journal of Oral and Maxillofacial     Surgery,    v.   46,     n.    6,    p.   774–782,   2017.    Disponível   em: https:/"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0186_0135_01.pdf",
+        "title": "MICROBIOTA E OBESIDADE: EXPLORANDO O PAPEL DOS PROBIÓTICOS NA SAÚDE INTESTINAL",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "lica, Carmela; Boccuto, Luigi; Salehi, Bahare; Sharifi-Rad, Javad; Aiello, Vincenzo; Romano, Barbara; De Lorenzo, Antonino; Izzo, Angelo A.; Capasso, Raffaele. Gut Microbiota And Obesity: A Role For Probiotics. Nutrients, [S.L.], V. 11, N. 11, P. 2690, 2019. Doi: 10.3390/Nu11112690. Acesso Em: 04 Nov. 2024.  Cerdó, Tomás; García-Santos, José Antonio; Ber"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1450_1163_04.pdf",
+        "title": "FITOTERÁPICOS COM POTENCIAL ANTITUMORAL NA MEDICINA POPULAR: SABERES E USOS EM UMA COMUNIDADE RURAL DE SÃO JOÃO",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "FKwPTdRZCwjJ/. Acesso em: 8 set. 2025.  ESPÍNDOLA, A. F.; MEDEIROS GOMES, B.; BEZ BATTI TELES, H. L.; DE BRITO BARROSO, J.; SILVA ANGELO, K.; GAHYVA MUNHOZ FIGUEIREDO, M.; et al. Uso de canabinoides nos cuidados paliativos: revisão integrativa e visão bioética. Revista Bioética (Impr.) [Internet], 33, 3 set. 2025 [citado 8 set. 2025]. Disponível em: http"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0070_0379_01.pdf",
+        "title": "VERIFICAR A RELAÇÃO ENTRE A QUALIDADE DE VIDA E A FUNÇÃO SEXUAL DE MULHERES NO PUERPÉRIO: SERIE DE CASOS",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "lização em Sexualidade Humana) – Instituto a Vez do Mestre, Universidade Candido Mendes, Rio de Janeiro, 2013.  DO CARMO MATTHES, Angelo. Abordagem atual da dor na relação sexual (dispareunia). Revista Brasileira de Sexualidade Humana, v. 30, n. 1, 2019.  DOS SANTOS, Danyelle Andrade et al. Fatores associados à disfunção sexual feminina pós- parto. Revis"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0807_0855_01.pdf",
+        "title": "IMPLICAÇÕES NA MUCOSA ORAL CONSEQUENTES À HORMONIZAÇÃO CRUZADA EM MULHERES TRANSEXUAIS",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "                            em          qualidade de    descritivo,        obturações,                     qualidade de vida de   Angelo Gomes                             Odontologia)        vida de    transversal     dentes perdidos,                           indivíduos        de,                                      –            indivíduos       e de  ",
+          "alho de Conclusão de Curso (Graduação em Farmácia) – Universidade Federal de Santa Catarina, Florianópolis, 2021.  OLIVEIRA, Hugo Angelo Gomes de. Condição bucal e qualidade de vida de indivíduos transgêneros: um estudo transversal. 2023. Dissertação (Mestrado em Odontologia) – Universidade Federal de Pernambuco, Recife, 2023.  ROCON, Pablo Cardozo et al"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/1371_0971_01.pdf",
+        "title": "APLICAÇÃO DE MELATONINA EXÓGENA NA PÓS-COLHEITA DE GOIABAS",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "ntribuciones A Las Ciencias Sociales, v. 16. p. 21684-21696, 2023. DOI: 10.55905/revconv.16n.10-178.  AZZOLINI, Marisa; JACOMINO, Angelo Pedro; BRON, Ilana Urbano. Índices para avaliar qualidade pós-colheita de goiabas em diferentes estádios de maturação. Pesquisa agropecuária brasileira, v. 39, p. 139-145, 2004.  BERCI, Gislaine; OLIVEIRA, Sandayara. Pe"
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1074_0594_01.pdf",
+        "title": "OS EFEITOS DO ÁCIDO FÓLICO NA PREVENÇÃO DE DEFEITOS NO TUBO NEURAL",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "nceptional Acesso em: Agosto de 2025  SCANONI MAIA, C., QUEIROZ JÚNIOR, J. R. A. DE, DE MEDEIROS, J. P., MENDES TENÓRI, F. DAS C. ÂNGELO, DE LEMOS, A. J. J. M., SOUZA MACIEL, G. E. DE, PAZ, S. T., & SILVA AMORIM, R. V. DA. (2020). Metabolismo do ácido fólico e suas ações na embriogênese / Folic acid metabolism and its actions in embryogenesis. Brazilian "
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_1309_0792_01.pdf",
+        "title": "EMERGÊNCIA DO IPÊ-AMARELO (TABEBUIA CHRYSOTRICHA) EM DIFERENTES COMPOSIÇÕES DE SUBSTRATO CONTENDO PALHA DE MILHO",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "encial de fibras de resíduo agrícola: Palha de milho (Zea mays L.) para produção de celulose. 2015.   SCHULZ, I. NROMAGNA, S. F.; ÂNGELO, P. T.; DEORCE, G. G de O.; PAIXÃO, M. V. S. Substratos comerciais puro e misturado ao esterco bovino na emergência de plântulas de mamoeiro cv. Calimosa. REVISTA DELOS, v. 18, n. 65, p. e4297-e4297, 2025.  SIMÕES, D.; "
+        ]
+      },
+      {
+        "url": "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0206_0894_01.pdf",
+        "title": "LEVANTAMENTO FOTOGRÁFICO PRELIMINAR DE ARANHAS CONSTRUTORAS DE ESTABILIMENTOS NO PARQUE ROBERTO BURLE MARX",
+        "relationship": "reference",
+        "reason": "O nome ocorre apenas em referência bibliográfica ou discussão de trabalho de terceiros; não identifica autoria, orientação ou agradecimento do artigo do INIC.",
+        "contexts": [
+          "sjc.sp.gov.br/media/oq2eqctf/plano-diretor-do-parque-da-cidade-2016.pdf. Acesso em: 18 ago. 2025.  THOMAZ, Sidinei M.; AGOSTINHO, Angelo A.; GOMES, Luiz Carlos. Conservação da biodiversidade em águas continentais do Brasil. Megadiversidade, v. 1, n. 1, p. 65-75, 2015.  WORLD SPIDER CATALOG. Argiope Audouin, 1826. Natural History Museum Bern. Disponível e"
+        ]
+      }
+    ],
+    "nameSearchStatus": {
+      "Angelo": {
+        "year2025": "three_identified_articles_two_people",
+        "year2026": "anais_not_accessible",
+        "message": "Três artigos identificados em 2025, com nomes completos e instituições indicados. A busca de 2026 depende do acesso aos anais oficiais."
+      }
+    },
+    "year2026": {
+      "status": "anais_not_accessible",
+      "officialPage": "https://www.univap.br/inic/anais_congresso.php",
+      "checksPreviouslyConfirmed": [
+        {
+          "url": "https://www.inicepg.univap.br/cd/INIC_2026/",
+          "status": 404
+        },
+        {
+          "url": "https://www.inicepg.univap.br/cd/INIC_2026/anais/lista_geral_trabalhos.php",
+          "status": 404
+        },
+        {
+          "url": "https://www.univap.br/inic/resumos/anais_qualivitae_2026.pdf",
+          "status": 404
+        }
+      ],
+      "limits": "Não afirmar ausência de artigos de Angelo em 2026: anais oficiais ainda não acessíveis nas rotas verificadas nesta sessão."
+    },
+    "sources": [
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/lista_geral_trabalhos.php",
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0412_0429_01.pdf",
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/0424_0156_01.pdf",
+      "https://www.inicepg.univap.br/cd/INIC_2025/anais/arquivos/RE_0322_0024_01.pdf"
+    ]
+  },
+  "years": [
+    2024,
+    2025
+  ],
+  "countsByYear": {
+    "2025": 41,
+    "2024": 8
+  },
+  "year2024Search": {
+    "year": 2024,
+    "checkedAt": "2026-11-05",
+    "count": 8,
+    "maximusCount": 0,
+    "method": {
+      "sourceIndex": "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "rowsScanned": 1011,
+      "strategy": "Índice geral integral (1.011 artigos únicos) examinado por autoria/orientação; os 1.011 PDFs oficiais vinculados foram obtidos com HTTP 200, convertidos com pdftotext e pesquisados no texto integral, incluindo agradecimentos. Foram encontrados oito artigos, todos também presentes na busca de autoria/orientação do índice. Segunda passagem tolerante a marcadores numéricos de afiliação e quebras de linha confirmou os mesmos oito resultados.",
+      "variants": [
+        "Bruno Michel Pera",
+        "Bruno Michel Pêra",
+        "Bruno Michael Pera"
+      ],
+      "limits": "Cobertura integral dos 1.011 PDFs vinculados ao índice geral oficial de 2024. Não cobre arquivos que não constem desse índice. No artigo de musculação Bruno Michel Pera consta como orientador no índice e nos agradecimentos, mas não na autoria do PDF; essa distinção está registrada em nota.",
+      "fullTextScan": "complete",
+      "pdfsScanned": 1011,
+      "technicalPdfsScanned": 82,
+      "downloadOrConversionFailures": 0,
+      "pdfsWithoutSearchableText": [],
+      "wholeTextHits": 8,
+      "additionalUnindexedNameHits": 0
+    },
+    "sources": [
+      "https://www.inicepg.univap.br/cd/INIC_2024/anais/lista_geral_trabalhos.html",
+      "https://www.inicepg.univap.br/cd/INIC_2024/anais/trabalhos_tecnico.html",
+      "https://www.inicepg.univap.br/cd/INIC_2024/anais/melhores_trabalhos.html"
+    ],
+    "relationshipCounts": {
+      "authorship_or_advising": 8,
+      "acknowledgement_only": 0
+    },
+    "linkVerification": {
+      "checkedAt": "2026-11-05",
+      "allEightPdfLinksHttpStatus": 200,
+      "method": "Download integral do PDF oficial, assinatura %PDF verificada e conversão bem-sucedida com pdftotext."
+    }
   }
 }

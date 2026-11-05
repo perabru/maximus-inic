@@ -1,5 +1,11 @@
 # Máximu’s no INIC
 
+Site público com 49 artigos oficiais (8 de 2024 e 41 de 2025), galeria de 25 fotos e acesso à plataforma de grupos INIC 2027. O catálogo permite filtrar ano, nome e instituição; cards abrem os PDFs da Univap. O carrossel 3D tem pausa, navegação por setas/toque e ampliação. Preferência de movimento reduzido troca a animação por uma faixa de fotos.
+
+Componentes adaptados das referências Uiverse fornecidas pelo usuário: artigos, convites, carregamento, tema, botões e carrossel. Créditos e licença em `THIRD_PARTY_NOTICES.md` e `uiverse-components.css`. A abertura usa a marca do banner enviado.
+
+Pesquisas complementares e limites de cobertura ficam em `research/sources.json`. Pessoas com nomes semelhantes são exibidas com nome completo e instituição. Menções somente em bibliografias não entram no catálogo. Os anais de 2026 ainda não estavam acessíveis na consulta de 05/11/2026; pôsteres nas fotografias não são apresentados como PDFs publicados.
+
 Página de divulgação da iniciação científica estudantil, com fotografias, biblioteca de artigos e acesso aos PDFs oficiais da Univap.
 
 **Site:** https://perabru.github.io/maximus-inic/
@@ -7,7 +13,7 @@ Página de divulgação da iniciação científica estudantil, com fotografias, 
 ## Conteúdo
 
 - Identidade visual da Escola Máximu’s: índigo `#3d4094` e laranja `#f38635`.
-- 12 fotografias fornecidas para esta publicação, otimizadas em WebP, com miniaturas e textos alternativos.
+- 25 fotografias fornecidas para esta publicação, otimizadas em WebP, com miniaturas e textos alternativos.
 - Carrossel com teclado, gestos, pausa e ampliação; respeito à preferência de movimento reduzido.
 - Biblioteca com pesquisa por tema, título, estudante, professor, instituição e ano.
 - Instituição e relação com os professores identificadas em cada registro, incluindo eventuais divergências de cadastro.
