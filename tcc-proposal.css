@@ -1,0 +1,29 @@
+.tcc-proposal-editor{border:1px solid var(--border,#393c59);border-radius:16px;padding:20px;margin:4px 0;min-width:0;background:var(--surface,#202234)}
+.tcc-proposal-editor>legend{padding:0 8px;font-size:1rem;font-weight:800;color:var(--text,#f4f3ff)}
+.tcc-proposal-intro,.tcc-proposal-help{font-size:.82rem;line-height:1.65;color:var(--muted,#b7b9d0);margin:0 0 14px}
+.tcc-proposal-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 18px}
+.tcc-proposal-option{display:flex;gap:10px;align-items:center;border:1px solid var(--border,#393c59);border-radius:10px;padding:12px;cursor:pointer;font-size:.85rem;font-weight:700;line-height:1.45}
+.tcc-proposal-option:has(input:checked){border-color:#f38635;box-shadow:inset 0 0 0 1px #f38635}
+.tcc-proposal-option input{width:17px;height:17px;flex:none;accent-color:#f38635;margin:0}
+.tcc-proposal-topics{display:grid;gap:14px;min-width:0}
+.tcc-proposal-field{display:grid;gap:6px;font-size:.85rem;font-weight:700}
+.tcc-proposal-field small{font-size:.76rem;font-weight:400;line-height:1.6;color:var(--muted,#b7b9d0)}
+.tcc-proposal-field textarea{min-height:90px;resize:vertical;width:100%;box-sizing:border-box;font:inherit;font-weight:400;line-height:1.6;padding:12px;border:1px solid var(--border,#393c59);border-radius:10px;color:var(--text,#f4f3ff);background:var(--input-bg,var(--surface-2,#181a2b))}
+.tcc-proposal-field textarea:focus,.tcc-proposal-file:focus-within{outline:2px solid #f38635;outline-offset:2px}
+.tcc-proposal-file{padding:16px;border:1px dashed var(--border,#555975);border-radius:12px;overflow-wrap:anywhere}
+.tcc-proposal-file input{display:block;width:100%;max-width:100%;font-size:.8rem;margin-top:12px;color:var(--text,#f4f3ff)}
+.tcc-proposal-file input::file-selector-button{border:1px solid var(--border,#555975);border-radius:7px;padding:9px 12px;margin-right:8px;cursor:pointer;color:var(--text,#f4f3ff);background:var(--surface-2,#292c46);font-family:inherit;font-weight:700}
+.tcc-proposal-file-status{font-size:.78rem;line-height:1.6;color:var(--muted,#b7b9d0);margin:10px 0 0}
+.tcc-proposal-view{border:1px solid var(--border,#393c59);border-left:3px solid #f38635;border-radius:12px;padding:18px;margin:14px 0;min-width:0;overflow-wrap:anywhere}
+.tcc-proposal-view>h4{margin:0 0 12px;font-size:1rem}
+.tcc-proposal-topic{padding:10px 0;border-top:1px solid var(--border,#393c59)}
+.tcc-proposal-topic h5{font-size:.82rem;margin:0 0 6px}
+.tcc-proposal-topic p{font-size:.84rem;line-height:1.7;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.tcc-proposal-view .tcc-proposal-help{margin-bottom:0}
+.tcc-proposal-download{margin-top:12px}
+.tcc-proposal-editor [hidden],.tcc-proposal-view [hidden]{display:none!important}
+:root[data-theme=light] .tcc-proposal-editor,:root[data-theme=light] .tcc-proposal-view{background:#fff;color:#222441;border-color:#d9daeb}
+:root[data-theme=light] .tcc-proposal-editor>legend{color:#292b54}
+:root[data-theme=light] .tcc-proposal-field textarea{background:#f7f7fc;color:#222441;border-color:#d9daeb}
+:root[data-theme=light] .tcc-proposal-intro,:root[data-theme=light] .tcc-proposal-help,:root[data-theme=light] .tcc-proposal-field small,:root[data-theme=light] .tcc-proposal-file-status{color:#62657e}
+@media(max-width:520px){.tcc-proposal-editor{padding:14px}.tcc-proposal-options{grid-template-columns:1fr}.tcc-proposal-view{padding:14px}}

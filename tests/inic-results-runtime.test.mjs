@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict';
+import {ref,get,set,update} from 'firebase/database';
+import {loadService} from './service-runtime.mjs';
+
+export async function runInicResultsRuntimeTests({env,db,ok,no,count}) {
+ const root='maximusInic',stamp=Date.now(),ids={coord:'irxcoord',teacher:'irxteacher',other:'irxother',student:'irxstudent',peer:'irxpeer',inactive:'irxinactive'};
+ const changes={},pdf=Buffer.from('%PDF-1.7\nResults runtime fixture\n%%EOF');
+ for(const uid of Object.values(ids))changes[`users/${uid}`]={name:uid,email:`${uid}@example.com`,requestedRole:[ids.coord,ids.teacher,ids.other].includes(uid)?'advisor':'student',year:'3º ano',createdAt:stamp};
+ changes[`roles/${ids.coord}`]='coordinator';for(const uid of [ids.teacher,ids.other])changes[`roles/${uid}`]='advisor';
+ for(const uid of [ids.coord,ids.teacher,ids.other])changes[`advisorDirectory/${uid}`]={uid,name:uid};
+ for(const uid of [ids.student,ids.peer,ids.inactive]){
+  changes[`agreements/2027/${uid}`]={uid,year:2027,filename:'termo.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
+  changes[`agreementFiles/2027/${uid}`]={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
+ }
+ const base={name:'Resultados do grupo',topic:'Pesquisa',description:'',year:2027,advisorId:ids.teacher,members:{[ids.student]:true,[ids.peer]:true,[ids.inactive]:true},memberNames:{[ids.student]:ids.student,[ids.peer]:ids.peer,[ids.inactive]:ids.inactive},createdBy:ids.student,createdAt:stamp,status:'active'};
+ changes['groups/irx-group']=base;
+ changes['groups/irx-history']={...base,year:2026};changes['groups/irx-deleting']={...base,status:'deleting'};
+ changes[`userGroups/${ids.student}/irx-group`]=true;changes[`userGroups/${ids.peer}/irx-group`]=true;
+ await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),changes));
+ const admin=operation=>env.withSecurityRulesDisabled(context=>operation(context.database()));
+ const value=async path=>{let result;await admin(async database=>{result=(await get(ref(database,`${root}/${path}`))).val();});return result;};
+ const check=(name,condition)=>{assert.ok(condition,name);count(`INIC runtime: ${name}`);};
+ const rejects=async(name,operation)=>{let rejected=false;try{await operation();}catch{rejected=true;}check(name,rejected);};
+ const observe=(service,method,args=[])=>{
+  let last;const pending=new Set();
+  const stop=service(method,...args,state=>{last=state;for(const waiter of pending){if(waiter.predicate(state)){pending.delete(waiter);clearTimeout(waiter.timer);waiter.resolve(state);}else if(state.error){pending.delete(waiter);clearTimeout(waiter.timer);waiter.reject(new Error(`${method}: ${state.error.message}`));}}});
+  return {stop,last:()=>last,wait:predicate=>last&&predicate(last)?Promise.resolve(last):last?.error?Promise.reject(new Error(`${method}: ${last.error.message}`)):new Promise((resolve,reject)=>{const waiter={predicate,resolve,reject,timer:setTimeout(()=>{pending.delete(waiter);reject(new Error(`${method} state did not arrive`));},6000)};pending.add(waiter);})};
+ };
+ const student=loadService(db(ids.student),ids.student),teacher=loadService(db(ids.teacher),ids.teacher),coord=loadService(db(ids.coord),ids.coord),other=loadService(db(ids.other),ids.other);
+ await ok('INIC runtime: student declares its own article result',student('saveInicResult','irx-group',ids.student,{status:'approved',expectedUpdatedAt:0}));
+ let result=await value(`inicResults/2027/irx-group/${ids.student}`);
+ check('student result has actual actor role and resolved server audit',result.status==='approved'&&result.updatedByUid===ids.student&&result.updatedByName===ids.student&&result.updatedByRole==='student'&&Number.isInteger(result.updatedAt)&&result.updatedAt>=stamp&&result.previousUpdatedAt===0);
+ await rejects('student service cannot declare a peer result',()=>student('saveInicResult','irx-group',ids.peer,{status:'approved',expectedUpdatedAt:0}));
+ await rejects('foreign professor service cannot declare a result',()=>other('saveInicResult','irx-group',ids.student,{status:'approved',expectedUpdatedAt:result.updatedAt}));
+ await ok('INIC runtime: assigned professor records requested correction',teacher('saveInicResult','irx-group',ids.student,{status:'correction',correction:'Ajustar referências',expectedUpdatedAt:result.updatedAt}));
+ result=await value(`inicResults/2027/irx-group/${ids.student}`);
+ check('professor result replaces current state with its audit identity',result.status==='correction'&&result.correction==='Ajustar referências'&&result.updatedByUid===ids.teacher&&result.updatedByRole==='advisor');
+ await rejects('stale service edit cannot overwrite a newer result',()=>student('saveInicResult','irx-group',ids.student,{status:'approved',expectedUpdatedAt:0}));
+ await ok('INIC runtime: coordinator records a separate peer result',coord('saveInicResult','irx-group',ids.peer,{status:'rejected',expectedUpdatedAt:0}));
+ await rejects('professor service cannot create a board',()=>teacher('saveInicBoard','irx-group',{title:'Banca',date:'2027-10-20'}));
+ const boardId=await coord('saveInicBoard','irx-group',{title:'Banca do artigo',date:'2027-10-20',time:'14:30',evaluatorsText:'Docentes convidados',status:'pending',expectedUpdatedAt:0});
+ let board=await value(`inicBoards/2027/irx-group/${boardId}`);
+ check('coordinator board has stable creator and server audit',board.title==='Banca do artigo'&&board.createdByUid===ids.coord&&board.updatedByRole==='coordinator'&&Number.isInteger(board.createdAt)&&board.createdAt===board.updatedAt);
+ await ok('INIC runtime: coordinator updates board with current revision',coord('saveInicBoard','irx-group',{id:boardId,title:'Banca confirmada',date:'2027-10-21',time:'15:00',status:'approved',expectedUpdatedAt:board.updatedAt}));
+ const updatedBoard=await value(`inicBoards/2027/irx-group/${boardId}`);
+ check('board editing preserves original creation audit',updatedBoard.title==='Banca confirmada'&&updatedBoard.createdAt===board.createdAt&&updatedBoard.createdByUid===board.createdByUid&&updatedBoard.previousUpdatedAt===board.updatedAt);
+ await rejects('stale board deletion cannot remove a newer revision',()=>coord('deleteInicBoard','irx-group',boardId,{expectedUpdatedAt:board.updatedAt}));
+ await ok('INIC runtime: coordinator soft deletes a board with current revision',coord('deleteInicBoard','irx-group',boardId,{expectedUpdatedAt:updatedBoard.updatedAt}));
+ board=await value(`inicBoards/2027/irx-group/${boardId}`);
+ check('board deletion retains audit and records deletion actor',board.deleted===true&&board.deletedByUid===ids.coord&&Number.isInteger(board.deletedAt)&&board.createdAt===updatedBoard.createdAt);
+ await rejects('deleted board cannot be reopened through save service',()=>coord('saveInicBoard','irx-group',{id:boardId,title:'Não reabrir',date:'2027-10-21',expectedUpdatedAt:board.updatedAt}));
+ const studentWatches=[],studentWatch=observe(loadService(db(ids.student),ids.student,{onWatch:path=>studentWatches.push(path)}),'subscribeInicResults',['irx-group',2027]);
+ const ownState=await studentWatch.wait(state=>state.ready&&state.results.length===1);
+ check('student result subscription exposes only its own declaration',ownState.results[0].studentUid===ids.student&&studentWatches.some(path=>path.includes(`/inicResults/2027/irx-group/${ids.student}`))&&!studentWatches.some(path=>/\/inicResults\/2027\/irx-group(?:\?|$)/.test(path)||path.includes(`/inicResults/2027/irx-group/${ids.peer}`)));
+ const teacherWatches=[],teacherWatch=observe(loadService(db(ids.teacher),ids.teacher,{onWatch:path=>teacherWatches.push(path)}),'subscribeInicResults',['irx-group',2027]);
+ await teacherWatch.wait(state=>state.ready&&state.results.length===2);
+ check('professor subscribes to member rows rather than global private results',!teacherWatches.some(path=>/\/inicResults\/2027(?:\/irx-group)?(?:\?|$)/.test(path)));
+ await admin(database=>update(ref(database,root),{[`inactiveUsers/${ids.inactive}`]:true,[`inicResults/2027/irx-group/${ids.inactive}`]:{...result,studentUid:ids.inactive},'tasks/irx-group/active':{title:'Ativa',dueDate:'2027-07-01',completed:false,weight:1,createdBy:ids.teacher,createdAt:stamp,completedBy:''},'tasks/irx-history/past':{title:'Passada',dueDate:'2026-07-01',completed:false,weight:1,createdBy:ids.teacher,createdAt:stamp,completedBy:''},'tasks/irx-deleting/deleted':{title:'Em exclusão',dueDate:'2027-07-01',completed:false,weight:1,createdBy:ids.teacher,createdAt:stamp,completedBy:''}}));
+ const activeBoardId=await coord('saveInicBoard','irx-group',{title:'Banca ativa',date:'2027-10-25',status:'pending',expectedUpdatedAt:0});
+ const metrics=observe(coord,'subscribeCoordinationMetrics',[2027]),metricState=await metrics.wait(state=>state.ready&&state.boards.some(item=>item.id===activeBoardId));
+ check('coordination metrics exclude deleted boards inactive students and other years',metricState.boards.filter(item=>item.groupId==='irx-group').length===1&&!metricState.results.some(item=>item.studentUid===ids.inactive)&&metricState.results.some(item=>item.studentUid===ids.student)&&!metricState.tasks.some(item=>item.groupId==='irx-history'||item.groupId==='irx-deleting'));
+ await no('INIC runtime: professor cannot read global coordination board source',get(ref(db(ids.teacher),`${root}/inicBoards/2027`)));
+ await admin(database=>set(ref(database,`${root}/groups/irx-group/advisorId`),ids.other));
+ const revokedTeacher=await teacherWatch.wait(state=>state.results.length===0&&!state.ready);teacherWatch.stop();
+ check('orientation change clears former teacher results immediately',revokedTeacher.results.length===0);
+ await admin(database=>update(ref(database,root),{[`groups/irx-group/members/${ids.student}`]:null,[`groups/irx-group/memberNames/${ids.student}`]:null}));
+ await studentWatch.wait(state=>state.results.length===0&&!state.ready);studentWatch.stop();
+ check('membership removal clears student result stream',studentWatch.last().results.length===0);
+ await admin(database=>set(ref(database,`${root}/roles/${ids.coord}`),'advisor'));
+ await metrics.wait(state=>state.error&&state.boards.length===0&&state.results.length===0&&state.tasks.length===0&&!state.ready);metrics.stop();
+ check('lost coordination role detaches private metrics and clears cached data',metrics.last().boards.length===0&&metrics.last().results.length===0&&metrics.last().tasks.length===0);
+}

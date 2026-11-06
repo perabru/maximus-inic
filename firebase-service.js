@@ -31,6 +31,15 @@ const needUser = () => {
   if (!auth.currentUser) throw Object.assign(new Error('Entre na sua conta para continuar.'), {code:'auth/requires-login'});
   return auth.currentUser;
 };
+async function requireActiveUser(user=needUser()) {
+  if((await get(path(`inactiveUsers/${user.uid}`))).val()===true)throw Object.assign(new Error('Este cadastro foi excluído da plataforma. Procure a coordenação para restaurar o acesso.'),{code:'account/archived'});
+  return user;
+}
+async function coordinatorUser() {
+  const user=await requireActiveUser();
+  if((await get(path(`roles/${user.uid}`))).val()!=='coordinator')throw new Error('Somente a coordenação pode gerenciar os cadastros.');
+  return user;
+}
 export const mandatoryAgreementYear = 2027;
 const agreementUploads = new Map();
 const agreementObservers = new Set();
@@ -44,7 +53,7 @@ function completeAgreement(metadata,file,uid,year=mandatoryAgreementYear) {
     file.size===metadata.size&&file.contentType===metadata.contentType&&file.uploadedAt===metadata.uploadedAt);
 }
 async function requireAcademicAccess() {
-  const user=needUser();
+  const user=await requireActiveUser();
   const role=(await get(path(`roles/${user.uid}`))).val();
   if(role==='advisor'||role==='coordinator')return role;
   if(agreementUploads.has(user.uid))throw Object.assign(new Error('Aguarde a confirmação do envio do termo.'),{code:'agreement/pending'});
@@ -69,6 +78,7 @@ async function ensureProfile(user, supplied = {}) {
   try {await operation;} finally {if(profileInitializations.get(user.uid) === operation)profileInitializations.delete(user.uid);}
 }
 async function writeProfile(user, supplied = {}) {
+  await requireActiveUser(user);
   const record = await get(path(`users/${user.uid}`));
   if (!record.exists()) {
     const name = clean(supplied.name || user.displayName || user.email?.split('@')[0] || 'Participante', 100);
@@ -129,6 +139,7 @@ getRedirectResult(auth).then(result => result?.user && ensureProfile(result.user
 // the application, so popup, redirect and auth observer ordering cannot silently
 // assign a new teacher the student profile. Requested roles never grant access.
 export async function completeGoogleProfile({requestedRole,year='',name=''}={}) {
+  await requireActiveUser();
   const user=needUser();
   if(!['student','advisor'].includes(requestedRole))throw new Error('Escolha se você é estudante ou professor(a).');
   const snapshot=await get(path(`users/${user.uid}`));
@@ -158,83 +169,70 @@ export async function refreshSession() {
 }
 
 export function subscribeApp(user, callback) {
-  let stopped = false;
-  let scopeStops = [];
-  const state = {profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[]};
-  const emit = () => {if (!stopped) callback({...state});};
-  const report = error => {if (!stopped) callback({...state,error});};
-  const watch = (target, fn, into = scopeStops) => {
-    const stop = onValue(target, snapshot => {if(!stopped)fn(snapshot);}, report);
-    into.push(stop);
-    return stop;
+  let stopped=false,activeStops=[],scopeStops=[],archiveStop=()=>{},activationVersion=0;
+  let archives={},inactive={},archived=false;
+  const state={profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null,archived:false,archive:null};
+  const decorateUsers=()=>{state.users=(state.rawUsers||[]).map(person=>({...person,role:state.userRoles?.[person.id]||archives[person.id]?.role||'student',archived:inactive[person.id]===true,archive:archives[person.id]||null,archivedAt:archives[person.id]?.archivedAt||null}));};
+  const emit=()=>{if(!stopped){const {rawUsers,userRoles,...publicState}=state;callback({...publicState});}};
+  const report=error=>{if(!stopped){const {rawUsers,userRoles,...publicState}=state;callback({...publicState,error});}};
+  const clear=()=>{activeStops.forEach(stop=>stop());scopeStops.forEach(stop=>stop());activeStops=[];scopeStops=[];Object.assign(state,{profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null,rawUsers:[],userRoles:{}});};
+  const watch=(target,fn,into=scopeStops,onError=null)=>{
+    let live=true;const raw=onValue(target,snapshot=>{if(!stopped&&live&&!archived)fn(snapshot);},error=>{if(!stopped&&live&&!archived){if(onError)onError(error);else report(error);}});
+    const stop=()=>{live=false;raw();};into.push(stop);return stop;
   };
-  const lifecycleStops = [];
-  watch(path(`users/${user.uid}`), snapshot => {state.profile = snapshot.val(); profileCache = state.profile; emit();}, lifecycleStops);
-  watch(path('advisorDirectory'), snapshot => {state.advisors = collection(snapshot).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')); emit();}, lifecycleStops);
-  watch(path(`roles/${user.uid}`), snapshot => {
-    const role = ['coordinator','advisor'].includes(snapshot.val()) ? snapshot.val() : 'student';
-    state.role = role;
-    roleCache = role;
-    scopeStops.forEach(stop => stop());
-    scopeStops = [];
-    state.groups = [];
-    state.users = [];
-    state.invitations = [];
-    if (role === 'coordinator') {
-      watch(path('groups'), snapshot => {state.groups = collection(snapshot).sort((a,b)=>(b.createdAt || 0)-(a.createdAt || 0)); emit();});
-      watch(path('users'), snapshot => {state.users = collection(snapshot).map(person => ({...person,role:state.userRoles?.[person.id] || 'student'})); emit();});
-      watch(path('invitations'), snapshot => {state.invitations = collection(snapshot).sort((a,b)=>(b.createdAt || 0)-(a.createdAt || 0)); emit();});
-      watch(path('roles'), snapshot => {
-        const roles = snapshot.val() || {};
-        state.users = state.users.map(person => ({...person,role:roles[person.id] || 'student'}));
-        state.userRoles = roles;
-        emit();
-      });
-    } else {
-      const ownGroups = new Map();
-      let advisorGroups = [];
-      let groupListeners = new Map();
-      const combineGroups = () => {state.groups = [...new Map([...ownGroups.values(),...advisorGroups].map(group=>[group.id,group])).values()].sort((a,b)=>(b.createdAt || 0)-(a.createdAt || 0)); emit();};
-      watch(path(`userGroups/${user.uid}`), snapshot => {
-        const ids = Object.keys(snapshot.val() || {});
-        for(const [id, stop] of groupListeners) if(!ids.includes(id)) {stop(); groupListeners.delete(id); ownGroups.delete(id);}
-        for(const id of ids) if(!groupListeners.has(id)) {
-          const stop = onValue(path(`groups/${id}`), snap => {
-            if(stopped) return;
-            if(snap.exists()) ownGroups.set(id,{...snap.val(),id}); else ownGroups.delete(id);
-            combineGroups();
-          }, error => {ownGroups.delete(id); combineGroups(); if(error.code !== 'PERMISSION_DENIED') report(error);});
-          groupListeners.set(id,stop);
-        }
-        combineGroups();
-      });
-      scopeStops.push(() => {groupListeners.forEach(stop => stop()); groupListeners.clear();});
-      if(role === 'advisor') watch(query(path('groups'),orderByChild('advisorId'),equalTo(user.uid)), snapshot => {advisorGroups=collection(snapshot);combineGroups();});
-      const inviteBuckets = new Map();
-      const watchInvites = (key,value) => watch(query(path('invitations'),orderByChild(key),equalTo(value)), snapshot => {
-        inviteBuckets.set(key,collection(snapshot));
-        state.invitations = [...new Map([...inviteBuckets.values()].flat().map(invitation=>[invitation.id,invitation])).values()].sort((a,b)=>(b.createdAt || 0)-(a.createdAt || 0));
-        emit();
-      });
-      watchInvites('senderId',user.uid);
-      watchInvites('toUid',user.uid);
-      if(user.email && user.emailVerified) watchInvites('toEmail',user.email.toLowerCase());
-    }
-    emit();
-  }, lifecycleStops);
-  return () => {stopped=true; lifecycleStops.forEach(stop=>stop()); scopeStops.forEach(stop=>stop());};
+  function attach(){
+    watch(query(path(`orientationNotices/${user.uid}`),orderByChild('createdAt'),limitToLast(100)),snapshot=>{state.orientationNotices=collection(snapshot).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));state.orientationNoticesReady=true;state.orientationNoticesError=null;emit();},activeStops,error=>{state.orientationNotices=[];state.orientationNoticesReady=false;state.orientationNoticesError=error;emit();});
+    watch(path(`users/${user.uid}`),snapshot=>{state.profile=snapshot.val();profileCache=state.profile;emit();},activeStops);
+    watch(path('advisorDirectory'),snapshot=>{state.advisors=collection(snapshot).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));emit();},activeStops);
+    watch(path(`userArchives/${user.uid}`),snapshot=>{state.archive=snapshot.val();state.invitations=state.invitations.filter(item=>item.senderId===user.uid||item.createdAt>(state.archive?.inviteCutoff||0));emit();},activeStops);
+    watch(path(`roles/${user.uid}`),snapshot=>{
+      const role=['coordinator','advisor'].includes(snapshot.val())?snapshot.val():'student';state.role=role;roleCache=role;
+      scopeStops.forEach(stop=>stop());scopeStops=[];state.groups=[];state.users=[];state.invitations=[];state.rawUsers=[];state.userRoles={};archives={};inactive={};
+      if(role==='coordinator'){
+        watch(path('groups'),snap=>{state.groups=collection(snap).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
+        watch(path('users'),snap=>{state.rawUsers=collection(snap);decorateUsers();emit();});
+        watch(path('invitations'),snap=>{state.invitations=collection(snap).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
+        watch(path('roles'),snap=>{state.userRoles=snap.val()||{};decorateUsers();emit();});
+        watch(path('inactiveUsers'),snap=>{inactive=snap.val()||{};decorateUsers();emit();});
+        watch(path('userArchives'),snap=>{archives=snap.val()||{};decorateUsers();emit();});
+      }else{
+        const ownGroups=new Map();let advisorGroups=[],groupListeners=new Map();
+        const combine=()=>{state.groups=[...new Map([...ownGroups.values(),...advisorGroups].map(group=>[group.id,group])).values()].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();};
+        watch(path(`userGroups/${user.uid}`),snap=>{
+          const ids=Object.keys(snap.val()||{});
+          for(const [id,stop]of groupListeners)if(!ids.includes(id)){stop();groupListeners.delete(id);ownGroups.delete(id);}
+          for(const id of ids)if(!groupListeners.has(id)){
+            let live=true;const raw=onValue(path(`groups/${id}`),value=>{if(stopped||archived||!live)return;if(value.exists())ownGroups.set(id,{...value.val(),id});else ownGroups.delete(id);combine();},error=>{if(stopped||archived||!live)return;ownGroups.delete(id);combine();if(error.code!=='PERMISSION_DENIED')report(error);});
+            groupListeners.set(id,()=>{live=false;raw();});
+          }combine();
+        });scopeStops.push(()=>{groupListeners.forEach(stop=>stop());groupListeners.clear();});
+        if(role==='advisor')watch(query(path('groups'),orderByChild('advisorId'),equalTo(user.uid)),snap=>{advisorGroups=collection(snap);combine();});
+        const buckets=new Map();const watchInvites=(key,value)=>watch(query(path('invitations'),orderByChild(key),equalTo(value)),snap=>{buckets.set(key,collection(snap));state.invitations=[...new Map([...buckets.values()].flat().map(item=>[item.id,item])).values()].filter(item=>item.senderId===user.uid||item.createdAt>(state.archive?.inviteCutoff||0)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
+        watchInvites('senderId',user.uid);watchInvites('toUid',user.uid);if(user.email&&user.emailVerified)watchInvites('toEmail',user.email.toLowerCase());
+      }emit();
+    },activeStops);
+  }
+  let initialized=false;
+  archiveStop=onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{
+    if(stopped)return;const next=snapshot.val()===true;
+    if(initialized&&next===archived)return;const current=++activationVersion;initialized=true;clear();archived=next;state.archived=next;state.archive=null;
+    if(next){profileCache=null;roleCache='student';emit();get(path(`userArchives/${user.uid}`)).then(value=>{if(!stopped&&current===activationVersion&&archived){state.archive=value.val();emit();}}).catch(()=>{});}else attach();
+  },report);
+  return()=>{stopped=true;archiveStop();clear();};
 }
 export function subscribeGroup(groupId, callback) {
   const user=needUser();
-  const state = {tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[],advisorConfirmation:null,advisorConfirmationReady:false};
-  let stopped=false;
+  const state = {tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[],advisorConfirmation:null,advisorConfirmationReady:false,inicResults:[],inicResultsReady:false,inicResultsError:null};
+  let stopped=false,denied=false;
   let group=null;
-  let role='student';
+  let role=null;
   let evaluationMode='';
   let evaluationVersion=0;
   let evaluationStops=[];
+  let resultStop=()=>{},resultYear=null,resultVersion=0;
+  const attachResults=()=>{const edition=Number(group?.year);const year=group&&!['deleting','archived'].includes(group.status)&&group.archived!==true&&Number.isInteger(edition)&&edition>=2027&&edition<=2100?edition:null;if(year===resultYear)return;resultStop();resultYear=year;const version=++resultVersion;state.inicResults=[];state.inicResultsReady=false;state.inicResultsError=null;if(year)resultStop=subscribeInicResults(groupId,year,result=>{if(stopped||denied||version!==resultVersion)return;state.inicResults=result.results;state.inicResultsReady=result.ready;state.inicResultsError=result.error||null;emit();});};
   const emit=()=>{if(!stopped)callback({...state});};
-  const report = error => !stopped && callback({...state,error});
+  const report=error=>{if(stopped||denied)return;if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED')){denied=true;resultVersion++;resultStop();evaluationVersion++;evaluationStops.forEach(stop=>stop());evaluationStops=[];Object.assign(state,{tasks:[],messages:[],events:[],groupEvaluation:null,memberEvaluations:[],advisorConfirmation:null,advisorConfirmationReady:false,inicResults:[],inicResultsReady:false});}callback({...state,error});};
   const attachEvaluations=()=>{
     const manager=role==='coordinator'||(role==='advisor'&&group?.advisorId===user.uid);
     const mode=!group||group.status==='deleting'?'none':manager?'manager':group.members?.[user.uid]?'member':'none';
@@ -246,7 +244,7 @@ export function subscribeGroup(groupId, callback) {
     state.groupEvaluation=null;state.memberEvaluations=[];
     if(mode!=='none') {
       const watchEvaluation=(target,apply)=>evaluationStops.push(onValue(target,snapshot=>{
-        if(stopped||version!==evaluationVersion)return;
+        if(stopped||denied||version!==evaluationVersion)return;
         apply(snapshot);emit();
       },error=>{if(version===evaluationVersion){state.groupEvaluation=null;state.memberEvaluations=[];report(error);}}));
       watchEvaluation(path(`evaluations/${groupId}/group`),snapshot=>{state.groupEvaluation=snapshot.val();});
@@ -256,16 +254,17 @@ export function subscribeGroup(groupId, callback) {
     emit();
   };
   const stops = [
-    onValue(path(`advisorConfirmations/${groupId}`),snap=>{state.advisorConfirmation=snap.val();state.advisorConfirmationReady=true;emit();},report),
-    onValue(path(`events/${groupId}`),snap=>{state.events=collection(snap).sort((a,b)=>a.date.localeCompare(b.date));if(!stopped)callback({...state});},report),
-    onValue(path(`tasks/${groupId}`), snap => {state.tasks=collection(snap).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));if(!stopped)callback({...state});}, report),
-    onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report),
-    onValue(path(`groups/${groupId}`),snapshot=>{group=snapshot.val();attachEvaluations();},error=>{group=null;attachEvaluations();report(error);}),
-    onValue(path(`roles/${user.uid}`),snapshot=>{role=snapshot.val()||'student';attachEvaluations();},report)
+    onValue(path(`advisorConfirmations/${groupId}`),snap=>{if(stopped||denied)return;state.advisorConfirmation=snap.val();state.advisorConfirmationReady=true;emit();},report),
+    onValue(path(`events/${groupId}`),snap=>{if(stopped||denied)return;state.events=collection(snap).sort((a,b)=>a.date.localeCompare(b.date));if(!stopped)callback({...state});},report),
+    onValue(path(`tasks/${groupId}`), snap => {if(stopped||denied)return;state.tasks=collection(snap).sort((a,b)=>a.dueDate.localeCompare(b.dueDate));if(!stopped)callback({...state});}, report),
+    onValue(query(path(`messages/${groupId}`),orderByChild('createdAt'),limitToLast(150)), snap => {if(stopped||denied)return;state.messages=collection(snap).sort((a,b)=>a.createdAt-b.createdAt);if(!stopped)callback({...state});}, report),
+    onValue(path(`groups/${groupId}`),snapshot=>{if(stopped||denied)return;group=snapshot.val();if(!group||(role&&role!=='coordinator'&&!(role==='advisor'&&group.advisorId===user.uid)&&group.members?.[user.uid]!==true)){report({code:'PERMISSION_DENIED',message:'O acesso a este grupo foi encerrado.'});return;}attachResults();attachEvaluations();},error=>{group=null;report(error);}),
+    onValue(path(`roles/${user.uid}`),snapshot=>{if(stopped||denied)return;role=snapshot.val()||'student';if(group&&role!=='coordinator'&&!(role==='advisor'&&group.advisorId===user.uid)&&group.members?.[user.uid]!==true){report({code:'PERMISSION_DENIED',message:'O acesso a este grupo foi encerrado.'});return;}attachEvaluations();},report)
   ];
-  return () => {stopped=true;evaluationVersion++;stops.forEach(stop=>stop());evaluationStops.forEach(stop=>stop());};
+  return () => {stopped=true;resultVersion++;resultStop();evaluationVersion++;stops.forEach(stop=>stop());evaluationStops.forEach(stop=>stop());};
 }
 export async function saveProfile(patch) {
+  await requireActiveUser();
   const user=needUser();
   const changes={};
   if(patch.name !== undefined) changes.name=clean(patch.name,100);
@@ -277,12 +276,118 @@ export async function saveProfile(patch) {
     if(roleCache==='advisor'||roleCache==='coordinator') await set(path(`advisorDirectory/${user.uid}`),{uid:user.uid,name:changes.name});
   }
 }
-export async function setUserRole(uid,role) {
-  needUser();
-  if(!['coordinator','advisor','student'].includes(role)) throw new Error('Perfil de acesso inválido.');
-  const person=(await get(path(`users/${uid}`))).val();
-  if(!person) throw new Error('Usuário não encontrado.');
-  const changes = {[`roles/${uid}`]:role,[`advisorDirectory/${uid}`]:role==='advisor'||role==='coordinator'?{uid,name:person.name}:null};
+function pendingForUser(invitation,uid,email){return invitation.status==='pending'&&(invitation.senderId===uid||invitation.toUid===uid);}
+function releaseAdvisorChanges(group,uid,changes){
+  changes[`groups/${group.id}/advisorId`]='';changes[`groups/${group.id}/advisorAssignment`]=null;changes[`groups/${group.id}/orientationRevision`]=(group.orientationRevision||0)+1;
+  changes[`groups/${group.id}/advisorRequestVersion`]=(group.advisorRequestVersion||0)+1;
+  for(const resource of ['advisorConfirmations','advisorRequests','advisorRequestSlots'])changes[`${resource}/${group.id}`]=null;
+  changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;if(!Object.prototype.hasOwnProperty.call(changes,`userGroups/${uid}`))changes[`userGroups/${uid}/${group.id}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;
+  changes[`admissions/${group.id}/${uid}`]=null;
+  changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
+}
+export async function updateUser(uid,{name,year,role}={}) {
+  const actor=await coordinatorUser();checkIdentifier(uid);
+  const [personSnapshot,roleSnapshot,inactiveSnapshot,groupsSnapshot,invitationsSnapshot]=await Promise.all([get(path(`users/${uid}`)),get(path(`roles/${uid}`)),get(path(`inactiveUsers/${uid}`)),get(path('groups')),get(path('invitations'))]);
+  const person=personSnapshot.val(),previousRole=roleSnapshot.val()||'student';
+  if(!person)throw new Error('Cadastro não encontrado.');
+  if(inactiveSnapshot.val()===true)throw new Error('Restaure este cadastro antes de editar.');
+  const nextRole=role===undefined?previousRole:role;
+  if(!['student','advisor','coordinator'].includes(nextRole)||nextRole==='coordinator'&&previousRole!=='coordinator')throw new Error('Escolha estudante ou professor para este cadastro.');
+  if((uid===actor.uid||previousRole==='coordinator')&&nextRole!==previousRole)throw new Error('O acesso da coordenação está protegido.');
+  const nextName=name===undefined?person.name:clean(name,100),nextYear=year===undefined?person.year:clean(year,30);
+  if(!nextName)throw new Error('Informe o nome do cadastro.');
+  const changes={[`users/${uid}/name`]:nextName,[`users/${uid}/year`]:nextYear,[`roles/${uid}`]:nextRole,[`advisorDirectory/${uid}`]:['advisor','coordinator'].includes(nextRole)?{uid,name:nextName}:null};
+  if(nextRole!==previousRole){changes[`users/${uid}/requestedRole`]=nextRole==='student'?'student':'advisor';changes[`users/${uid}/onboardingRequired`]=false;}
+  for(const group of collection(groupsSnapshot)){
+    if(group.status==='deleting'){if(previousRole==='advisor'&&nextRole==='student'&&group.advisorId===uid)throw new Error('Conclua a exclusão do grupo '+group.name+' antes de alterar este acesso.');continue;}
+    if(nextName!==person.name&&group.members?.[uid]&&group.memberNames?.[uid]===person.name)changes[`groups/${group.id}/memberNames/${uid}`]=nextName;
+    if(previousRole==='advisor'&&nextRole==='student'&&group.advisorId===uid){releaseAdvisorChanges(group,uid,changes);for(const invitation of collection(invitationsSnapshot))if(invitation.groupId===group.id&&invitation.type==='advisor'&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';}
+  }
+  if(previousRole==='advisor'&&nextRole==='student')for(const invitation of collection(invitationsSnapshot))if(invitation.type==='advisor'&&invitation.toUid===uid&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  await update(path(),changes);
+}
+export async function setUserRole(uid,role) {return updateUser(uid,{role});}
+async function changeOrientation(groupId,newAdvisorUid,{action,reason='',expectedAdvisorUid,expectedRevision,invitationId=''}={}) {
+  const actor=await requireActiveUser();checkIdentifier(groupId);if(newAdvisorUid)checkIdentifier(newAdvisorUid);
+  const [groupSnapshot,roleSnapshot,profileSnapshot,requestsSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${actor.uid}`)),get(path(`users/${actor.uid}`)),get(path(`advisorRequests/${groupId}`))]);
+  const group=groupSnapshot.val(),role=roleSnapshot.val(),profile=profileSnapshot.val();
+  if(!group||group.status==='deleting'||group.status==='archived'||group.archived===true)throw new Error('Este grupo não está disponível para alterar a orientação.');
+  const oldUid=group.advisorId||'',revision=group.orientationRevision||0;
+  if(action==='assign'&&(role!=='coordinator'||oldUid))throw new Error(oldUid?'Este grupo já tem um orientador.':'Somente a coordenação pode atribuir orientadores.');
+  if(action==='replace'&&role!=='coordinator')throw new Error('Somente a coordenação pode substituir o orientador.');
+  if(action==='withdraw'&&(!oldUid||oldUid!==actor.uid||!['advisor','coordinator'].includes(role)))throw new Error('Somente o orientador atual pode sair desta orientação.');
+  if(action==='accept'&&(oldUid||newAdvisorUid!==actor.uid||!['advisor','coordinator'].includes(role)||!invitationId))throw new Error('Outro orientador já confirmou este grupo.');
+  if(['replace','withdraw'].includes(action)&&(!Number.isInteger(expectedRevision)||expectedRevision!==revision||expectedAdvisorUid!==oldUid||!oldUid))throw new Error('A orientação mudou. Atualize o grupo antes de continuar.');
+  const note=clean(reason,2000);
+  if(action==='replace'&&(note.length<3||note.length>2000))throw new Error('Informe o motivo da substituição, com 3 a 2000 caracteres.');
+  if(action==='replace'&&newAdvisorUid===oldUid)throw new Error('Escolha outro orientador.');
+  if(!profile?.name)throw new Error('Conclua seu perfil antes de alterar a orientação.');
+  let newName='';
+  if(newAdvisorUid){const [directory,targetRole,inactive]=await Promise.all([get(path(`advisorDirectory/${newAdvisorUid}`)),get(path(`roles/${newAdvisorUid}`)),get(path(`inactiveUsers/${newAdvisorUid}`))]);if(!directory.exists()||!['advisor','coordinator'].includes(targetRole.val())||inactive.val()===true)throw new Error('Escolha um orientador aprovado e ativo.');newName=directory.val().name;}
+  const previousName=oldUid?(await get(path(`users/${oldUid}`))).val()?.name||group.advisorAssignment?.advisorName||'Orientador anterior':'';
+  const transitionId=push(path(`orientationTransitions/${groupId}`)).key;
+  const nextRevision=revision+1,requestVersion=group.advisorRequestVersion||0,stamp=serverTimestamp();
+  const transition={action,groupName:group.name,oldAdvisorUid:oldUid,oldAdvisorName:clean(previousName,100),newAdvisorUid:newAdvisorUid||'',newAdvisorName:clean(newName,100),actorUid:actor.uid,actorName:clean(profile.name,100),reason:note,createdAt:stamp,revision:nextRevision,requestVersion,invitationId:action==='accept'?invitationId:''};
+  const assignment={advisorUid:newAdvisorUid||'',advisorName:transition.newAdvisorName,assignedBy:actor.uid,assignedByName:transition.actorName,assignedAt:stamp,requestVersion,revision:nextRevision,transitionId,action,reason:note,previousAdvisorUid:oldUid,previousAdvisorName:transition.oldAdvisorName};
+  const changes={[`groups/${groupId}/advisorId`]:newAdvisorUid||'',[`groups/${groupId}/advisorAssignment`]:assignment,[`groups/${groupId}/orientationRevision`]:nextRevision,[`groups/${groupId}/advisorRequestVersion`]:requestVersion+1,[`orientationTransitions/${groupId}/${transitionId}`]:transition,[`advisorRequests/${groupId}`]:null,[`advisorRequestSlots/${groupId}`]:null,[`advisorConfirmations/${groupId}`]:null};
+  if(action==='accept')changes[`advisorConfirmations/${groupId}`]={studentUid:group.createdBy,advisorUid:actor.uid,advisorName:transition.newAdvisorName,invitationId,createdAt:stamp,requestVersion};
+  const recipients=new Map();
+  if(newAdvisorUid&&newAdvisorUid!==actor.uid)recipients.set(newAdvisorUid,'assigned');
+  if(oldUid)recipients.set(oldUid,action==='withdraw'?'withdrawn':'replaced');
+  for(const [candidate,id] of Object.entries(requestsSnapshot.val()||{})){
+    const status=(await get(path(`invitations/${id}/status`))).val();
+    if(status==='pending'){changes[`invitations/${id}/status`]=action==='accept'&&id===invitationId?'accepted':'cancelled';if(candidate!==newAdvisorUid&&!recipients.has(candidate))recipients.set(candidate,'unavailable');}
+  }
+  if(action==='accept')changes[`invitations/${invitationId}/status`]='accepted';
+  if(oldUid&&oldUid!==newAdvisorUid){
+    changes[`groups/${groupId}/members/${oldUid}`]=null;changes[`groups/${groupId}/memberNames/${oldUid}`]=null;changes[`userGroups/${oldUid}/${groupId}`]=null;changes[`admissions/${groupId}/${oldUid}`]=null;changes[`evaluations/${groupId}/members/${oldUid}`]=null;changes[`inicResults/${group.year}/${groupId}/${oldUid}`]=null;changes[`memberRevocations/${groupId}/${oldUid}`]=stamp;
+  }
+  for(const [recipient,type] of recipients){
+    if(!(await get(path(`advisorDirectory/${recipient}`))).exists())continue;
+    changes[`orientationNotices/${recipient}/${transitionId}`]={type,groupId,groupName:group.name,oldAdvisorName:transition.oldAdvisorName,newAdvisorName:transition.newAdvisorName,reason:note,createdAt:stamp,transitionId,read:false};
+  }
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  try{await update(path(),changes);}catch(error){if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED'))throw new Error('A orientação ou os convites mudaram. Atualize o grupo antes de continuar.');throw error;}
+}
+export async function assignAdvisor(groupId,advisorUid){return changeOrientation(groupId,advisorUid,{action:'assign'});}
+export async function replaceAdvisor(groupId,advisorUid,options={}){return changeOrientation(groupId,advisorUid,{...options,action:'replace'});}
+export async function withdrawAdvisor(groupId,options={}){return changeOrientation(groupId,'',{...options,action:'withdraw'});}
+export async function markOrientationNoticeRead(id){const user=await requireActiveUser();checkIdentifier(id);await update(path(`orientationNotices/${user.uid}/${id}`),{read:true});}
+export async function archiveUser(uid) {
+  const actor=await coordinatorUser();checkIdentifier(uid);
+  const [personSnapshot,roleSnapshot,archiveSnapshot,actorSnapshot]=await Promise.all([get(path(`users/${uid}`)),get(path(`roles/${uid}`)),get(path(`userArchives/${uid}`)),get(path(`users/${actor.uid}`))]);
+  const person=personSnapshot.val(),role=roleSnapshot.val()||archiveSnapshot.val()?.role||'student',previous=archiveSnapshot.val();
+  if(!person)throw new Error('Cadastro não encontrado.');
+  if(uid===actor.uid||role==='coordinator')throw new Error('O cadastro da coordenação está protegido.');
+  if(previous?.status==='archived')return;
+  if(previous?.status!=='archiving'){
+    const audit={uid,role,status:'archiving',archivedAt:serverTimestamp(),archivedBy:actor.uid,archivedByName:clean(actorSnapshot.val()?.name||'Coordenação',100),inviteCutoff:serverTimestamp()};
+    await update(path(),{[`inactiveUsers/${uid}`]:true,[`userArchives/${uid}`]:audit,[`pushSubscriptions/${uid}`]:null,[`advisorDirectory/${uid}`]:null});
+  }
+  const [groupsSnapshot,invitationsSnapshot]=await Promise.all([get(path('groups')),get(path('invitations'))]);
+  const changes={[`roles/${uid}`]:null,[`advisorDirectory/${uid}`]:null,[`userGroups/${uid}`]:null,[`userArchives/${uid}/status`]:'archived'};
+  for(const group of collection(groupsSnapshot)){
+    if(group.status==='deleting'){if(group.members?.[uid]||group.advisorId===uid)throw new Error('Conclua a exclusão do grupo '+group.name+' e depois conclua a exclusão deste cadastro.');continue;}
+    if(group.members?.[uid]){
+      changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;changes[`admissions/${group.id}/${uid}`]=null;changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
+    }
+    if(group.advisorId===uid)releaseAdvisorChanges(group,uid,changes);
+  }
+  for(const invitation of collection(invitationsSnapshot))if(pendingForUser(invitation,uid,person.email)||Object.keys(changes).includes(`advisorRequests/${invitation.groupId}`)&&invitation.type==='advisor'&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  await update(path(),changes);
+}
+export async function restoreUser(uid) {
+  const actor=await coordinatorUser();checkIdentifier(uid);
+  const [personSnapshot,archiveSnapshot,inactiveSnapshot,invitationsSnapshot]=await Promise.all([get(path(`users/${uid}`)),get(path(`userArchives/${uid}`)),get(path(`inactiveUsers/${uid}`)),get(path('invitations'))]);
+  const person=personSnapshot.val(),archive=archiveSnapshot.val();
+  if(!person||!archive||inactiveSnapshot.val()!==true)throw new Error('Este cadastro não está excluído.');
+  if(archive.status!=='archived')throw new Error('Conclua a exclusão antes de restaurar o cadastro.');
+  if(uid===actor.uid||!['student','advisor'].includes(archive.role))throw new Error('O cadastro da coordenação está protegido.');
+  const changes={[`inactiveUsers/${uid}`]:null,[`roles/${uid}`]:archive.role,[`advisorDirectory/${uid}`]:archive.role==='advisor'?{uid,name:person.name}:null,[`userArchives/${uid}/status`]:'restored',[`userArchives/${uid}/restoredAt`]:serverTimestamp(),[`userArchives/${uid}/restoredBy`]:actor.uid,[`userArchives/${uid}/inviteCutoff`]:serverTimestamp()};
+  for(const invitation of collection(invitationsSnapshot))if(pendingForUser(invitation,uid,person.email))changes[`invitations/${invitation.id}/status`]='cancelled';
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
   await update(path(),changes);
 }
 export async function approveAdvisor(uid) {
@@ -313,24 +418,33 @@ function proposalMemberEmails(emails,selfEmail) {
   }
   return [...unique];
 }
-export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[]}) {
+export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[],proposal=null,proposalFile=null}) {
   const user=needUser(),role=await requireAcademicAccess();
   const edition=Number(year);
   if(!Number.isInteger(edition)||edition<2025||edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
   const groupName=clean(name,100),groupTopic=clean(topic,240);
   if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
   const colleagues=proposalMemberEmails(memberEmails,user.email);
-  const candidates=await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
-  const directAdvisor=(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
+  const schoolYear=role==='student'?String((await get(path(`users/${user.uid}/year`))).val()||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim():'';
+  const automaticBruno=role==='student'&&/^[12](?:[º°oaª])?\s*(?:ano|serie|em|ensino medio)\b/.test(schoolYear);
+  const brunoUid='GZv2JuQ7JJg2G4ErhdOEKQOzM3z2';
+  if(automaticBruno){const directory=await get(path(`advisorDirectory/${brunoUid}`));if(!directory.exists())throw new Error('O cadastro do professor Bruno Michel Pera precisa estar ativo e aprovado. Avise a coordenação para liberar a criação do grupo.');}
+  const candidates=automaticBruno?[]:await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
+  const directAdvisor=automaticBruno?brunoUid:(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
   const groupId=push(path('groups')).key;
+  const preparedProposal=proposal?await prepareProposal(groupId,{proposal,proposalFile,user}):null;
+  if(role==='student'&&candidates.length&&!preparedProposal)throw new Error('Preencha ou envie a proposta antes de convidar os orientadores.');
   const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
-  if(role==='student')group.advisorRequestPolicy='first-accept-v1';
+  if(role==='student'){group.advisorRequestPolicy='first-accept-v1';group.proposalRequired=true;}
+  if(preparedProposal)group.proposal=preparedProposal.metadata;
   const changes={[`groups/${groupId}`]:group,[`userGroups/${user.uid}/${groupId}`]:true};
+  if(preparedProposal?.payload)changes[`proposalFiles/${groupId}`]=preparedProposal.payload;
   for(const task of defaultSchedule(edition))changes[`tasks/${groupId}/${task.id}`]={title:task.title,dueDate:task.dueDate,completed:false,weight:1,createdBy:user.uid,createdAt:Date.now(),completedBy:''};
-  for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid);changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
-  for(const email of colleagues){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,'',email,'member');}
+  for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid);changes[`invitationIssuedAt/${id}`]=serverTimestamp();changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
+  for(const email of colleagues){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,'',email,'member');changes[`invitationIssuedAt/${id}`]=serverTimestamp();}
   // Proposal, first schedule and all selected invitations either all commit or
   // all fail. Retrying a failed form cannot leave a second partial proposal.
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
   await update(path(),changes);
   return groupId;
 }
@@ -370,7 +484,7 @@ export async function removeMember(groupId,uid) {
   checkIdentifier(uid);
   const group=await managedGroup(groupId);
   if(!group.members?.[uid])throw new Error('Este integrante não pertence ao grupo.');
-  await update(path(),{[`groups/${groupId}/members/${uid}`]:null,[`groups/${groupId}/memberNames/${uid}`]:null,[`userGroups/${uid}/${groupId}`]:null,[`evaluations/${groupId}/members/${uid}`]:null,[`admissions/${groupId}/${uid}`]:null,[`memberRevocations/${groupId}/${uid}`]:serverTimestamp()});
+  await update(path(),{[`groups/${groupId}/members/${uid}`]:null,[`groups/${groupId}/memberNames/${uid}`]:null,[`userGroups/${uid}/${groupId}`]:null,[`evaluations/${groupId}/members/${uid}`]:null,[`inicResults/${group.year}/${groupId}/${uid}`]:null,[`admissions/${groupId}/${uid}`]:null,[`memberRevocations/${groupId}/${uid}`]:serverTimestamp()});
 }
 export async function deleteGroup(groupId) {
   const group=await managedGroup(groupId,{allowDeleting:true});
@@ -384,10 +498,12 @@ export async function deleteGroup(groupId) {
   const frozen=lockedGroup.val();
   if(!frozen)return;
   const changes={};
-  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations'])changes[`${resource}/${groupId}`]=null;
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations','orientationTransitions'])changes[`${resource}/${groupId}`]=null;
+  changes[`proposalFiles/${groupId}`]=null;
+  changes[`inicResults/${frozen.year}/${groupId}`]=null;changes[`inicBoards/${frozen.year}/${groupId}`]=null;
   const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));
   for(const uid of relatedUsers)changes[`userGroups/${uid}/${groupId}`]=null;
-  for(const invitation of collection(invitationSnapshot))changes[`invitations/${invitation.id}`]=null;
+  for(const invitation of collection(invitationSnapshot)){changes[`invitations/${invitation.id}`]=null;changes[`invitationIssuedAt/${invitation.id}`]=null;}
   await update(path(),changes);
 }
 async function evaluationRecord({score,feedback=''}) {
@@ -419,6 +535,10 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   if(!(role==='coordinator'||(role==='advisor'&&group.advisorId===user.uid)||(role!=='advisor'&&group.members?.[user.uid])))throw new Error('Você não pode enviar convites para este grupo.');
   if(!['member','advisor'].includes(type))throw new Error('Tipo de convite inválido.');
   if(type==='member'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
+  if(type==='advisor'&&role==='student'){
+    const payload=group.proposal?.mode==='file'?(await get(path(`proposalFiles/${groupId}`))).val():null;
+    if(!proposalMetadataValid(group.proposal,payload))throw new Error('Preencha ou envie a proposta antes de convidar os orientadores.');
+  }
   const id=push(path('invitations')).key,changes={};
   if(type==='advisor') {
     await approvedAdvisorIds([toUid]);
@@ -438,27 +558,24 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
     changes[`advisorRequestSlots/${groupId}/${position}`]=toUid;
     changes[`groups/${groupId}/advisorRequestVersion`]=(group.advisorRequestVersion||0)+1;
   }
-  changes[`invitations/${id}`]=invitationRecord(user,groupId,group.name,toUid,toEmail,type);
+  changes[`invitations/${id}`]=invitationRecord(user,groupId,group.name,toUid,toEmail,type);changes[`invitationIssuedAt/${id}`]=serverTimestamp();
   await update(path(),changes);return id;
 }
 export async function respondInvitation(invitationId,accept) {
+  await requireActiveUser();
   const user=needUser();checkIdentifier(invitationId);
   const invitation=(await get(path(`invitations/${invitationId}`))).val();
   if(!invitation||invitation.status!=='pending')throw new Error('Este convite já foi respondido ou cancelado.');
+  const archiveState=await get(path(`userArchives/${user.uid}`));
+  const cutoff=archiveState.val()?.inviteCutoff||0,issuedAt=cutoff?(await get(path(`invitationIssuedAt/${invitationId}`))).val():invitation.createdAt;
+  if(cutoff&&(!Number.isInteger(issuedAt)||issuedAt<=cutoff))throw new Error('Este convite não está mais disponível. Solicite um novo convite.');
   if(invitation.toUid!==user.uid&&invitation.toEmail!==user.email?.toLowerCase())throw new Error('Este convite pertence a outra conta.');
   if(!accept){await update(path(`invitations/${invitationId}`),{status:'declined'});return;}
   await requireAcademicAccess();
   await set(path(`admissions/${invitation.groupId}/${user.uid}`),invitationId);
   const changes={[`invitations/${invitationId}/status`]:'accepted'};
   if(invitation.type==='advisor') {
-    const group=(await get(path(`groups/${invitation.groupId}`))).val();
-    if(!group||group.status==='deleting')throw new Error('Este grupo não está disponível.');
-    const slots=(await get(path(`advisorRequests/${invitation.groupId}`))).val()||{};
-    if(group.advisorId)throw new Error('Outro orientador já confirmou este grupo.');
-    const profile=(await get(path(`users/${user.uid}`))).val();
-    changes[`groups/${invitation.groupId}/advisorId`]=user.uid;
-    changes[`advisorConfirmations/${invitation.groupId}`]={studentUid:group.createdBy,advisorUid:user.uid,advisorName:clean(profile?.name||user.displayName||'Orientador',100),invitationId,createdAt:serverTimestamp(),requestVersion:group.advisorRequestVersion||0};
-    for(const previous of Object.values(slots))if(previous!==invitationId&&(await get(path(`invitations/${previous}/status`))).val()==='pending')changes[`invitations/${previous}/status`]='cancelled';
+    await changeOrientation(invitation.groupId,user.uid,{action:'accept',invitationId});return;
   } else {
     changes[`groups/${invitation.groupId}/members/${user.uid}`]=true;
     changes[`groups/${invitation.groupId}/memberNames/${user.uid}`]=profileCache?.name||user.displayName||'Participante';
@@ -537,6 +654,7 @@ export function subscribeAgreements(year=2027,callback) {
   return()=>{stopped=true;generation++;agreementObservers.delete(pendingEmit);roleStop();dataStops.forEach(stop=>stop());};
 }
 export async function reviewAgreement(uid,{year=2027,status,reason='',expectedUploadVersion='',expectedUploadedAt,expectedReviewedAt=0}={}) {
+  await requireActiveUser();
   const user=needUser(),edition=agreementYear(year);checkIdentifier(uid);
   if(!['approved','returned'].includes(status))throw new Error('Escolha confirmar o recebimento ou devolver com uma pendência.');
   const note=status==='returned'?String(reason||'').trim():'';
@@ -593,6 +711,7 @@ export async function downloadSigningAgreement(uid,{year=2027,role,groupId=''}={
   return {...original,metadata:currentMetadata,review:currentReview,signatures:effectiveAgreementSignatures(currentMetadata,currentReview,currentSignatureSnapshot.val()).filter(item=>item.documentSha256===documentSha256),documentSha256};
 }
 export async function signAgreement(uid,{year=2027,role,groupId='',consent=false,signatureImage='',signaturePng=signatureImage,expectedUploadVersion='',expectedUploadedAt,expectedReviewedAt}={}) {
+  await requireActiveUser();
   const user=needUser(),edition=agreementYear(year);checkIdentifier(uid);
   if(!signatureRoles.includes(role)||consent!==true)throw new Error('Leia o documento e confirme expressamente a assinatura com sua conta.');
   if(typeof signaturePng!=='string'||signaturePng.length>180000||signaturePng!==''&&!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(signaturePng))throw new Error('A imagem da assinatura deve ser PNG e ter até130KB.');
@@ -661,6 +780,7 @@ function agreementFilename(name,contentType,year) {
   return `${safe.slice(0,170)||`termo-${year}`}.${extension}`;
 }
 export async function uploadAgreement(file,{year=2027}={}) {
+  await requireActiveUser();
   const user=needUser(),edition=agreementYear(year);
   if(!file||typeof file.arrayBuffer!=='function'||!Number.isInteger(file.size)||file.size<=0||file.size>agreementLimits.maxBytes)throw new Error('Escolha um PDF ou uma imagem JPG/PNG de até 3 MB.');
   const [profileSnapshot,roleSnapshot]=await Promise.all([get(path(`users/${user.uid}`)),get(path(`roles/${user.uid}`))]);
@@ -688,6 +808,7 @@ export async function uploadAgreement(file,{year=2027}={}) {
   return metadata;
 }
 export async function downloadAgreement(uid,year=2027) {
+  await requireActiveUser();
   needUser();checkIdentifier(uid);const edition=agreementYear(year);
   const [metadataSnapshot,fileSnapshot]=await Promise.all([get(path(`agreements/${edition}/${uid}`)),get(path(`agreementFiles/${edition}/${uid}`))]);
   const metadata=metadataSnapshot.val(),file=fileSnapshot.val();
@@ -702,6 +823,7 @@ function pushDevice(value) {
   if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw new Error('Identificação do dispositivo inválida.');return value;
 }
 export async function savePushSubscription(subscriptionJSON,deviceId) {
+  await requireActiveUser();
   const user=needUser();pushDevice(deviceId);
   const endpoint=subscriptionJSON?.endpoint,keys=subscriptionJSON?.keys;
   if(typeof endpoint!=='string'||endpoint.length>2048||!/^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com)\/[^\s]+$/.test(endpoint))throw new Error('Serviço de notificações não reconhecido.');
@@ -788,4 +910,212 @@ export function friendlyError(error) {
     'permission_denied':'Seu perfil ainda não tem permissão para esta ação. Verifique a liberação com a coordenação.'
   };
   return messages[error?.code] || error?.message || 'Não foi possível concluir. Tente novamente.';
+}
+
+// INIC declarations and coordination-entered boards are separate from grades.
+const inicResultStatuses=Object.freeze(['pending','approved','rejected','correction']);
+function inicEdition(year=2027){return agreementYear(year);}
+function inicStatus(value,correction=''){
+  if(!inicResultStatuses.includes(value))throw new Error('Escolha a situação do INIC.');
+  const note=clean(correction,2000);
+  if(value==='correction'&&note.replace(/\s/g,'').length<3)throw new Error('Descreva a correção pendente em pelo menos 3 caracteres.');
+  return {status:value,correction:note};
+}
+function inicExpectedStamp(value,current){
+  const stamp=current?.updatedAt||0;
+  if(value!==undefined&&(!Number.isInteger(value)||value<0||value!==stamp))throw new Error('O registro foi atualizado. Confira a situação atual antes de salvar.');
+  return stamp;
+}
+async function inicActor(user){
+  const [profileSnapshot,roleSnapshot]=await Promise.all([get(path(`users/${user.uid}`)),get(path(`roles/${user.uid}`))]);
+  const profile=profileSnapshot.val(),storedRole=roleSnapshot.val();
+  if(!profile?.name)throw new Error('Conclua seu perfil antes de registrar esta informação.');
+  return {updatedByUid:user.uid,updatedByName:clean(profile.name,100),updatedByRole:['advisor','coordinator'].includes(storedRole)?storedRole:'student'};
+}
+export async function saveInicResult(groupId,studentUid,{year=2027,status,correction='',expectedUpdatedAt}={}){
+  const user=await requireActiveUser(),role=await requireAcademicAccess(),edition=inicEdition(year);checkIdentifier(groupId);checkIdentifier(studentUid);
+  const [groupSnapshot,resultSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`inicResults/${edition}/${groupId}/${studentUid}`))]);
+  const group=groupSnapshot.val();
+  if(!group||group.status==='deleting'||group.status==='archived'||group.archived===true||Number(group.year)!==edition)throw new Error('O grupo não está disponível nesta edição do INIC.');
+  const manager=role==='coordinator'||role==='advisor'&&group.advisorId===user.uid;
+  if(!group.members?.[studentUid]||!manager&&(studentUid!==user.uid||!group.members?.[user.uid]))throw new Error('Você só pode registrar a situação dos estudantes vinculados ao seu grupo.');
+  const previousUpdatedAt=inicExpectedStamp(expectedUpdatedAt,resultSnapshot.val()),actor=await inicActor(user);
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  const record={year:edition,groupId,studentUid,...inicStatus(status,correction),...actor,updatedAt:serverTimestamp(),previousUpdatedAt};
+  await set(path(`inicResults/${edition}/${groupId}/${studentUid}`),record);
+  return record;
+}
+export async function saveInicBoard(groupId,{year=2027,id,title,date,time='',evaluatorsText='',status='pending',correction='',expectedUpdatedAt}={}){
+  const user=await coordinatorUser(),edition=inicEdition(year);checkIdentifier(groupId);if(id!==undefined)checkIdentifier(id);
+  const boardId=id||push(path(`inicBoards/${edition}/${groupId}`)).key;
+  const [groupSnapshot,boardSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`inicBoards/${edition}/${groupId}/${boardId}`))]);
+  const group=groupSnapshot.val(),current=boardSnapshot.val();
+  if(!group||group.status==='deleting'||group.status==='archived'||group.archived===true||Number(group.year)!==edition)throw new Error('Escolha um grupo ativo desta edição.');
+  if(id&&!current)throw new Error('Esta banca não está mais disponível.');
+  if(current?.deleted===true)throw new Error('Esta banca foi excluída. Crie um novo registro se necessário.');
+  const name=clean(title,160),civil=String(date||''),clock=String(time||'');
+  if(name.length<2)throw new Error('Informe o título da banca.');
+  checkDate(civil);if(!civil.startsWith(`${edition}-`))throw new Error('A data da banca deve pertencer à edição escolhida.');
+  if(clock!==''&&!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(clock))throw new Error('Escolha um horário válido.');
+  const previousUpdatedAt=inicExpectedStamp(expectedUpdatedAt,current),actor=await inicActor(user);
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  const record={year:edition,groupId,title:name,date:civil,time:clock,evaluatorsText:clean(evaluatorsText,2000),...inicStatus(status,correction),...actor,updatedAt:serverTimestamp(),previousUpdatedAt,createdAt:current?.createdAt||serverTimestamp(),createdByUid:current?.createdByUid||user.uid};
+  await set(path(`inicBoards/${edition}/${groupId}/${boardId}`),record);
+  return boardId;
+}
+export async function deleteInicBoard(groupId,id,{year=2027,expectedUpdatedAt}={}){
+  const user=await coordinatorUser(),edition=inicEdition(year);checkIdentifier(groupId);checkIdentifier(id);
+  const [groupSnapshot,boardSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`inicBoards/${edition}/${groupId}/${id}`))]);
+  const group=groupSnapshot.val(),current=boardSnapshot.val();
+  if(!group||group.status==='deleting'||group.status==='archived'||group.archived===true||Number(group.year)!==edition)throw new Error('Escolha um grupo ativo desta edição.');
+  if(!current||current.deleted===true)throw new Error('Esta banca já foi excluída.');
+  const previousUpdatedAt=inicExpectedStamp(expectedUpdatedAt,current),actor=await inicActor(user);
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  await set(path(`inicBoards/${edition}/${groupId}/${id}`),{...current,...actor,previousUpdatedAt,updatedAt:serverTimestamp(),deleted:true,deletedAt:serverTimestamp(),deletedByUid:user.uid});
+}
+export function subscribeCoordinationMetrics(year=2027,callback){
+  const user=needUser(),edition=inicEdition(year);let stopped=false,activeVersion=0,roleStop=()=>{},privateStops=[];
+  const state={ready:false,boards:[],results:[],tasks:[]};
+  function detach(){activeVersion++;privateStops.forEach(stop=>stop());privateStops=[];state.ready=false;state.boards=[];state.results=[];state.tasks=[];}
+  const emit=error=>{if(!stopped)callback({...state,...(error?{error}:{} )});};
+  const inactiveStop=onValue(path(`inactiveUsers/${user.uid}`),flag=>{
+    if(stopped)return;roleStop();roleStop=()=>{};detach();
+    if(flag.val()===true){emit(new Error('Este cadastro está excluído da plataforma.'));return;}
+    let roleLive=true;const rawRoleStop=onValue(path(`roles/${user.uid}`),roleSnapshot=>{
+      if(stopped||!roleLive)return;detach();
+      if(roleSnapshot.val()!=='coordinator'){emit(new Error('Os indicadores são exclusivos da coordenação.'));return;}
+      const version=activeVersion,loaded=new Set(),raw={groups:{},boards:{},results:{},tasks:{},inactive:{}};
+      const paint=()=>{
+        if(stopped||version!==activeVersion)return;
+        const groups=Object.fromEntries(Object.entries(raw.groups||{}).filter(([,group])=>group&&group.status!=='deleting'&&Number(group.year)===edition));
+        state.boards=Object.entries(raw.boards||{}).flatMap(([groupId,records])=>groups[groupId]?Object.entries(records||{}).filter(([,item])=>item&&item.deleted!==true).map(([id,item])=>({...item,id,groupId})):[]);
+        state.results=Object.entries(raw.results||{}).flatMap(([groupId,records])=>groups[groupId]?Object.entries(records||{}).filter(([studentUid,item])=>item&&groups[groupId].members?.[studentUid]===true&&raw.inactive?.[studentUid]!==true).map(([studentUid,item])=>({...item,groupId,studentUid})):[]);
+        state.tasks=Object.entries(raw.tasks||{}).flatMap(([groupId,records])=>groups[groupId]?Object.entries(records||{}).map(([id,item])=>({...item,id,groupId})):[]);
+        state.ready=loaded.size===5;emit();
+      };
+      for(const [key,target]of Object.entries({groups:path('groups'),boards:path(`inicBoards/${edition}`),results:path(`inicResults/${edition}`),tasks:path('tasks'),inactive:path('inactiveUsers')})){
+        let live=true;const rawStop=onValue(target,snapshot=>{if(stopped||!live||version!==activeVersion)return;raw[key]=snapshot.val()||{};loaded.add(key);paint();},error=>{if(stopped||!live||version!==activeVersion)return;roleStop();roleStop=()=>{};detach();emit(error);});
+        privateStops.push(()=>{live=false;rawStop();});
+      }
+      emit();
+    },error=>{if(!stopped&&roleLive){roleLive=false;rawRoleStop();detach();emit(error);}});
+    roleStop=()=>{roleLive=false;rawRoleStop();};
+  },error=>{if(!stopped){roleStop();roleStop=()=>{};detach();emit(error);}});
+  return()=>{stopped=true;inactiveStop();roleStop();detach();};
+}
+// Optional adapter used by subscribeGroup. A professor reads participant rows
+// individually, so an archived student is excluded by the row's server rule.
+export function subscribeInicResults(groupId,year=2027,callback){
+  const user=needUser(),edition=inicEdition(year);checkIdentifier(groupId);
+  let stopped=false,version=0,scopeVersion=0,scopeStops=[],dataStops=[],group=null,role=null;
+  const state={results:[],ready:false};
+  const emit=error=>{if(!stopped)callback({...state,...(error?{error}:{})});};
+  const clearData=()=>{version++;dataStops.forEach(stop=>stop());dataStops=[];state.results=[];state.ready=false;};
+  const clearScope=()=>{scopeVersion++;scopeStops.forEach(stop=>stop());scopeStops=[];clearData();group=null;role=null;};
+  const attach=()=>{
+    if(stopped)return;clearData();const current=version;
+    const manager=role==='coordinator'||role==='advisor'&&group?.advisorId===user.uid;
+    if(!group||!role||group.status==='deleting'||Number(group.year)!==edition||!manager&&!group.members?.[user.uid]){emit();return;}
+    if(role==='coordinator'){
+      let live=true;const rawStop=onValue(path(`inicResults/${edition}/${groupId}`),snapshot=>{if(stopped||!live||current!==version)return;state.results=collection(snapshot).filter(item=>group.members?.[item.studentUid||item.id]===true).map(item=>({...item,studentUid:item.studentUid||item.id,groupId}));state.ready=true;emit();},error=>{if(stopped||!live||current!==version)return;state.results=[];state.ready=false;emit(error);});
+      dataStops.push(()=>{live=false;rawStop();});emit();return;
+    }
+    const ids=manager?Object.keys(group.members||{}).filter(uid=>group.members[uid]===true):[user.uid];
+    const rows=new Map(),loaded=new Set();
+    const paint=()=>{if(stopped||current!==version)return;state.results=[...rows.values()];state.ready=loaded.size===ids.length;emit();};
+    for(const studentUid of ids){
+      let live=true;const rawStop=onValue(path(`inicResults/${edition}/${groupId}/${studentUid}`),snapshot=>{if(stopped||!live||current!==version)return;loaded.add(studentUid);if(snapshot.exists())rows.set(studentUid,{...snapshot.val(),id:studentUid,studentUid,groupId});else rows.delete(studentUid);paint();},error=>{if(stopped||!live||current!==version)return;live=false;rawStop();loaded.add(studentUid);rows.delete(studentUid);paint();if(!String(error?.code||'').toLowerCase().includes('permission'))emit(error);});
+      dataStops.push(()=>{live=false;rawStop();});
+    }
+    paint();
+  };
+  const inactiveStop=onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{
+    if(stopped)return;clearScope();const scope=scopeVersion;
+    if(snapshot.val()===true){emit(new Error('Este cadastro está excluído da plataforma.'));return;}
+    let groupLive=true;const rawGroupStop=onValue(path(`groups/${groupId}`),snap=>{if(stopped||!groupLive||scope!==scopeVersion)return;group=snap.val();attach();},error=>{if(stopped||!groupLive||scope!==scopeVersion)return;clearScope();emit(error);});
+    scopeStops.push(()=>{groupLive=false;rawGroupStop();});
+    let roleLive=true;const rawRoleStop=onValue(path(`roles/${user.uid}`),snap=>{if(stopped||!roleLive||scope!==scopeVersion)return;role=snap.val()||'student';attach();},error=>{if(stopped||!roleLive||scope!==scopeVersion)return;clearScope();emit(error);});
+    scopeStops.push(()=>{roleLive=false;rawRoleStop();});emit();
+  },error=>{if(stopped)return;clearScope();emit(error);});
+  return()=>{stopped=true;inactiveStop();clearScope();};
+}
+
+// A proposal is text in up to four named fields, or one private source file.
+const proposalTopicKeys=Object.freeze(['problem','objective','method','expectedResult']);
+function proposalMetadataValid(proposal,payload){
+  if(!proposal||typeof proposal.version!=='string'||!proposal.version)return false;
+  if(proposal.mode==='text')return proposalTopicKeys.every(key=>typeof proposal.topics?.[key]==='string'&&proposal.topics[key].length<=2000)&&proposalTopicKeys.some(key=>proposal.topics[key].trim());
+  return Boolean(proposal.mode==='file'&&payload&&proposal.filename&&Number.isInteger(proposal.size)&&proposal.size>0&&proposal.size<=agreementLimits.maxBytes&&agreementLimits.contentTypes.includes(proposal.contentType)&&payload.size===proposal.size&&payload.contentType===proposal.contentType&&payload.version===proposal.version&&payload.uploadedAt===proposal.updatedAt&&typeof payload.base64==='string'&&payload.base64.length>0);
+}
+async function prepareProposal(groupId,{proposal,proposalFile=null,current=null,currentFile=null,user=needUser()}={}){
+  if(!proposal||!['text','file'].includes(proposal.mode))throw new Error('Preencha a proposta por tópicos ou envie o arquivo da proposta.');
+  const profile=(await get(path(`users/${user.uid}`))).val();
+  if(!profile?.name)throw new Error('Conclua seu perfil antes de enviar a proposta.');
+  const version=push(path('proposalFiles')).key,updatedAt=serverTimestamp();
+  const metadata={mode:proposal.mode,version,previousVersion:current?.version||'',updatedAt,updatedByUid:user.uid,updatedByName:clean(profile.name,100)};
+  if(proposal.mode==='text'){
+    const topics={};
+    for(const key of proposalTopicKeys){const value=proposal.topics?.[key]??'';if(typeof value!=='string'||value.trim().length>2000)throw new Error('Cada tópico da proposta deve ter até 2.000 caracteres.');topics[key]=value.trim();}
+    if(!Object.values(topics).some(value=>value.length))throw new Error('Preencha pelo menos um tópico da proposta.');
+    return {metadata:{...metadata,topics},payload:null};
+  }
+  let payload;
+  if(proposalFile){
+    if(typeof proposalFile.arrayBuffer!=='function'||!Number.isInteger(proposalFile.size)||proposalFile.size<=0||proposalFile.size>agreementLimits.maxBytes)throw new Error('Envie a proposta em PDF, JPG ou PNG de até 3 MB.');
+    const bytes=new Uint8Array(await proposalFile.arrayBuffer());
+    if(bytes.length!==proposalFile.size)throw new Error('Não foi possível ler o arquivo completo da proposta.');
+    const contentType=detectAgreementType(bytes);
+    if(!contentType||proposalFile.type&&proposalFile.type!==contentType)throw new Error('Formato inválido. Envie a proposta em PDF, JPG ou PNG.');
+    Object.assign(metadata,{filename:agreementFilename(proposalFile.name||'proposta',contentType,2027),size:bytes.length,contentType});
+    payload={base64:bytesToBase64(bytes),size:bytes.length,contentType,version,uploadedAt:updatedAt};
+  }else{
+    if(!proposalMetadataValid(current,currentFile)||current.mode!=='file')throw new Error('Selecione o arquivo da proposta.');
+    Object.assign(metadata,{filename:current.filename,size:current.size,contentType:current.contentType});
+    payload={...currentFile,version,uploadedAt:updatedAt};
+  }
+  return {metadata,payload};
+}
+export async function saveProposal(groupId,{proposal,proposalFile=null,expectedVersion}={}){
+  const user=await requireActiveUser(),role=await requireAcademicAccess();checkIdentifier(groupId);
+  const group=(await get(path(`groups/${groupId}`))).val();
+  if(!group||['deleting','archived'].includes(group.status)||group.archived===true)throw new Error('O grupo não está disponível para alterar a proposta.');
+  if(!(role==='coordinator'||role==='advisor'&&group.advisorId===user.uid||group.members?.[user.uid]===true))throw new Error('Somente os integrantes e o orientador atual podem editar a proposta.');
+  const current=group.proposal||null;
+  if(expectedVersion!==undefined&&(expectedVersion??'')!==(current?.version||''))throw new Error('A proposta foi atualizada. Confira a versão atual antes de salvar.');
+  const currentFile=proposal?.mode==='file'&&!proposalFile&&current?.mode==='file'?(await get(path(`proposalFiles/${groupId}`))).val():null;
+  const prepared=await prepareProposal(groupId,{proposal,proposalFile,current,currentFile,user});
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  await update(path(),{[`groups/${groupId}/proposal`]:prepared.metadata,[`proposalFiles/${groupId}`]:prepared.payload});
+  return prepared.metadata;
+}
+export async function getProposal(groupId){
+  const user=await requireActiveUser();checkIdentifier(groupId);
+  const proposal=(await get(path(`groups/${groupId}/proposal`))).val();
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  return proposal;
+}
+export async function getProposalFile(groupId){
+  const user=await requireActiveUser();checkIdentifier(groupId);
+  const [metadataSnapshot,fileSnapshot]=await Promise.all([get(path(`groups/${groupId}/proposal`)),get(path(`proposalFiles/${groupId}`))]);
+  const metadata=metadataSnapshot.val(),payload=fileSnapshot.val();
+  if(!metadata||metadata.mode!=='file'||!proposalMetadataValid(metadata,payload))throw new Error('O arquivo da proposta não está disponível nesta versão.');
+  const bytes=Uint8Array.from(atob(payload.base64),value=>value.charCodeAt(0));
+  if(bytes.length!==metadata.size||detectAgreementType(bytes)!==metadata.contentType)throw new Error('O arquivo da proposta está incompleto ou possui formato inválido.');
+  const latest=(await get(path(`groups/${groupId}/proposal/version`))).val();
+  await requireActiveUser(user);
+  if(latest!==metadata.version)throw new Error('A proposta mudou durante o download. Tente novamente.');
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
+  return {blob:new Blob([bytes],{type:metadata.contentType}),filename:agreementFilename(metadata.filename,metadata.contentType,2027),contentType:metadata.contentType};
+}
+export function subscribeProposal(groupId,callback){
+  const user=needUser();checkIdentifier(groupId);let stopped=false,version=0,proposalStop=()=>{};
+  const emit=(proposal,ready,error)=>{if(!stopped)callback({proposal,ready,...(error?{error}:{})});};
+  const detach=()=>{version++;proposalStop();proposalStop=()=>{};};
+  const flagStop=onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{
+    if(stopped)return;detach();const current=version;
+    if(snapshot.val()===true){emit(null,false,new Error('Este cadastro está excluído da plataforma.'));return;}
+    let live=true;const rawStop=onValue(path(`groups/${groupId}/proposal`),snap=>{if(stopped||!live||current!==version)return;emit(snap.val(),true);},error=>{if(stopped||!live||current!==version)return;live=false;detach();emit(null,false,error);});
+    proposalStop=()=>{live=false;rawStop();};
+  },error=>{if(stopped)return;detach();emit(null,false,error);});
+  return()=>{stopped=true;flagStop();detach();};
 }

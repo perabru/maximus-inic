@@ -88,6 +88,7 @@ export async function runOnboardingContractEventTests({env,db,ok,no,count}) {
  await ok('teacher sees invitations received by own UID',get(query(ref(db('a2'),'maximusInic/invitations'),orderByChild('toUid'),equalTo('a2'))));
  const studentGroup={name:'Convite para professor',topic:'Pesquisa',description:'',year:2027,advisorId:'',members:{s2:true},memberNames:{s2:'Aluno 2'},createdBy:'s2',createdAt:Date.now(),status:'active'};
  await env.withSecurityRulesDisabled(async context=>set(ref(context.database(),'maximusInic/groups/inviteTeacher'),studentGroup));
+ await student('saveProposal','inviteTeacher',{proposal:{mode:'text',topics:{problem:'Proposta sintética',objective:'',method:'',expectedResult:''}}});
  const teacherInvite=await student('invite',{groupId:'inviteTeacher',toUid:'a2',type:'advisor'});expect(Boolean(teacherInvite));count('actual student invites approved teacher by UID');
  await ok('actual teacher accepts received orientation invitation',teacher('respondInvitation',teacherInvite,true));
  expect((await get(ref(db('a2'),'maximusInic/groups/inviteTeacher/advisorId'))).val()==='a2');

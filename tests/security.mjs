@@ -5,17 +5,25 @@ import {runMandatoryTermProposalTests} from './mandatory-term-proposal.test.mjs'
 import {runMemberProposalTests} from './member-proposal.test.mjs';
 import {runAgreementReviewTests} from './agreement-review.test.mjs';
 import {runAgreementSignatureTests} from './agreement-signatures.test.mjs';
+import {runUserManagementTests} from './user-management.test.mjs';
+import {runOrientationTransitionTests} from './orientation-transitions.test.mjs';
+import {runAutomaticOrientationTests} from './automatic-orientation.test.mjs';
+import {runInicResultsTests} from './inic-results.test.mjs';
+import {runInicResultsRuntimeTests} from './inic-results-runtime.test.mjs';
+import {runProposalTests} from './proposal.test.mjs';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
 import {ref,set,get,update,query,orderByChild,equalTo,serverTimestamp} from 'firebase/database';
 const env=await initializeTestEnvironment({projectId:'demo-maximus-inic',database:{host:'127.0.0.1',port:9000,rules:readFileSync(new URL('../database.rules.json', import.meta.url),'utf8')}});
 const stamp=Date.now();
-const person=(name,email)=>({name,email,requestedRole:'student',year:'1º ano',createdAt:stamp});
+// Third-year fixtures exercise freely selected advisors; first/second-year
+// automatic orientation has a dedicated scenario suite.
+const person=(name,email)=>({name,email,requestedRole:'student',year:'3º ano',createdAt:stamp});
 const group=(id,student,advisor)=>({name:id,topic:'Tema de pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[student]:true},memberNames:{[student]:'Estudante'},createdBy:student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1'});
 const task={title:'Artigo',dueDate:'2027-07-31',completed:false,completedBy:'',weight:1,createdBy:'a1',createdAt:stamp};
 const termBytes=Buffer.from('%PDF-test fixture');
 const termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp});
 const termFile={base64:termBytes.toString('base64'),size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp};
-await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database()),{items:{preserved:'existing'},maximusInic:{agreements:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termFile]))},roles:{c:'coordinator',a1:'advisor',a2:'advisor',a3:'advisor'},users:{c:person('Coordenação','c@example.com'),s1:person('Aluno 1','s1@example.com'),s2:person('Aluno 2','s2@example.com'),s3:person('Aluno 3','s3@example.com'),a1:person('Orientador 1','a1@example.com'),a2:person('Orientador 2','a2@example.com'),a3:person('Orientador 3','a3@example.com')},advisorDirectory:{a1:{uid:'a1',name:'Orientador1'},a2:{uid:'a2',name:'Orientador2'},a3:{uid:'a3',name:'Orientador3'}},groups:{g1:{...group('Grupo 1','s1','a1'),advisorRequestPolicy:null},g2:{...group('Grupo 2','s2','a2'),advisorRequestPolicy:null}},tasks:{g1:{t1:task}},userGroups:{s1:{g1:true},s2:{g2:true}}}}));
+await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database()),{items:{preserved:'existing'},maximusInic:{agreements:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termFile]))},roles:{c:'coordinator',a1:'advisor',a2:'advisor',a3:'advisor'},users:{c:person('Coordenação','c@example.com'),s1:person('Aluno 1','s1@example.com'),s2:person('Aluno 2','s2@example.com'),s3:person('Aluno 3','s3@example.com'),a1:person('Orientador 1','a1@example.com'),a2:person('Orientador 2','a2@example.com'),a3:person('Orientador 3','a3@example.com')},advisorDirectory:{a1:{uid:'a1',name:'Orientador 1'},a2:{uid:'a2',name:'Orientador 2'},a3:{uid:'a3',name:'Orientador 3'}},groups:{g1:{...group('Grupo 1','s1','a1'),advisorRequestPolicy:null},g2:{...group('Grupo 2','s2','a2'),advisorRequestPolicy:null}},tasks:{g1:{t1:task}},userGroups:{s1:{g1:true},s2:{g2:true}}}}));
 const db=(uid,emailVerified=true)=>env.authenticatedContext(uid,{email:`${uid}@example.com`,email_verified:emailVerified}).database();
 let passed=0;
 const ok=async(name,promise)=>{await assertSucceeds(promise);passed++;console.log('PASS',name);};
@@ -58,14 +66,15 @@ try{
  await no('student cannot assign self as advisor',set(ref(db('s1'),'maximusInic/groups/g1/advisorId'),'s1'));
  const advisorInvitation={...invitation,toEmail:'',toUid:'a3',type:'advisor'};
  await no('new unindexed coordinator advisor invite is denied',set(ref(db('c'),'maximusInic/invitations/i2'),advisorInvitation));
- await ok('coordination explicitly clears an advisor before reassignment',set(ref(db('c'),'maximusInic/groups/g1/advisorId'),''));
+ await no('coordination cannot silently clear an advisor without audited transition',set(ref(db('c'),'maximusInic/groups/g1/advisorId'),''));
+ await env.withSecurityRulesDisabled(context=>set(ref(context.database(),'maximusInic/groups/g1/advisorId'),''));
  await ok('coordinator invites approved advisor with authoritative slot',update(ref(db('c'),'maximusInic'),{'invitations/i2':advisorInvitation,'advisorRequests/g1/a3':'i2','advisorRequestSlots/g1/0':'a3','groups/g1/advisorRequestVersion':1}));
  await ok('advisor accepts own invitation admission',set(ref(db('a3'),'maximusInic/admissions/g1/a3'),'i2'));
  await no('isolated advisor grant cannot leave pending invitation',set(ref(db('a3'),'maximusInic/groups/g1/advisorId'),'a3'));
- await ok('atomic advisor acceptance links and consumes invitation',update(ref(db('a3'),'maximusInic'),{'groups/g1/advisorId':'a3','invitations/i2/status':'accepted','advisorConfirmations/g1':{studentUid:'s1',advisorUid:'a3',advisorName:'Orientador 3',invitationId:'i2',createdAt:serverTimestamp(),requestVersion:1}}));
+ await ok('audited advisor acceptance links and consumes invitation',loadService(db('a3'),'a3')('respondInvitation','i2',true));
  await no('old advisor loses group access',get(ref(db('a1'),'maximusInic/groups/g1')));
  await ok('new advisor reads assigned group',get(ref(db('a3'),'maximusInic/groups/g1')));
- const newGroup=group('Novo grupo','s1','');
+ const newGroup={...group('Novo grupo','s1',''),proposalRequired:true};
  await ok('student creates own group',set(ref(db('s1'),'maximusInic/groups/newGroup'),newGroup));
  await ok('student creates default schedule milestone',set(ref(db('s1'),'maximusInic/tasks/newGroup/tema'),{...task,createdBy:'s1'}));
  await no('student cannot create arbitrary milestone',set(ref(db('s1'),'maximusInic/tasks/newGroup/random'),{...task,createdBy:'s1'}));
@@ -76,7 +85,7 @@ try{
  await no('fractional group year rejected',update(ref(db('c'),'maximusInic/groups/g1'),{year:2027.5}));
  await no('invalid month rejected',update(ref(db('c'),'maximusInic/tasks/g1/t1'),{dueDate:'2027-19-10'}));
  await no('task creation cannot forge author',set(ref(db('a3'),'maximusInic/tasks/g1/badAuthor'),{...task,createdBy:'s1'}));
- await ok('atomic group plus private index creation',update(ref(db('s3'),'maximusInic'),{'groups/atomicGroup':group('Atômico','s3',''),'userGroups/s3/atomicGroup':true}));
+ await ok('atomic group plus private index creation',update(ref(db('s3'),'maximusInic'),{'groups/atomicGroup':{...group('Atômico','s3',''),proposalRequired:true},'userGroups/s3/atomicGroup':true}));
  await ok('approved teacher can create group assigned to self',update(ref(db('a3'),'maximusInic'),{'groups/teacherGroup':group('Orientado','a3','a3'),'userGroups/a3/teacherGroup':true}));
  const cancelInvite={...invitation,toEmail:'s2@example.com'};
  await ok('new invitation for cancellation test',set(ref(db('c'),'maximusInic/invitations/i3'),cancelInvite));
@@ -151,12 +160,13 @@ try{
  await ok('advisor queries all group invitations for cleanup',get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g1'))));
  await no('advisor cannot query foreign group invitations',get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g2'))));
  const invitationsToDelete=(await get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g1')))).val()||{};
- const cascade={'groups/g1':null,'tasks/g1':null,'messages/g1':null,'evaluations/g1':null,'admissions/g1':null,'memberRevocations/g1':null,'advisorRequests/g1':null,'advisorRequestSlots/g1':null,'advisorConfirmations/g1':null,'userGroups/s1/g1':null,'userGroups/a3/g1':null};
+ const cascade={'groups/g1':null,'tasks/g1':null,'messages/g1':null,'evaluations/g1':null,'admissions/g1':null,'memberRevocations/g1':null,'advisorRequests/g1':null,'advisorRequestSlots/g1':null,'advisorConfirmations/g1':null,'orientationTransitions/g1':null,'userGroups/s1/g1':null,'userGroups/a3/g1':null};
  for(const id of Object.keys(invitationsToDelete))cascade[`invitations/${id}`]=null;
  await ok('advisor atomically deletes locked group and all resources',update(ref(db('a3'),'maximusInic'),cascade));
  await env.withSecurityRulesDisabled(async context=>{for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/g1`))).exists())throw new Error(`Cascade left ${resource}`);});
  for(const id of Object.keys(invitationsToDelete))if((await get(ref(db('c'),`maximusInic/invitations/${id}`))).exists())throw new Error('Cascade left invitation');
- await ok('coordinator replaces advisor on another creator group',set(ref(db('c'),'maximusInic/groups/teacherGroup/advisorId'),'a2'));
+ await no('coordinator cannot silently overwrite an advisor without audited transition',set(ref(db('c'),'maximusInic/groups/teacherGroup/advisorId'),'a2'));
+ await env.withSecurityRulesDisabled(context=>set(ref(context.database(),'maximusInic/groups/teacherGroup/advisorId'),'a2'));
  await no('former advisor creator cannot edit metadata after replacement',set(ref(db('a3'),'maximusInic/groups/teacherGroup/topic'),'Former advisor edit'));
  await no('former advisor cannot read deleted group',get(ref(db('a3'),'maximusInic/groups/g1')));
  await ok('foreign group remains intact after deletion',get(ref(db('a2'),'maximusInic/groups/g2')));
@@ -221,5 +231,11 @@ try{
  await runMemberProposalTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runAgreementReviewTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runAgreementSignatureTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runUserManagementTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runOrientationTransitionTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runAutomaticOrientationTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runInicResultsTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runInicResultsRuntimeTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runProposalTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  console.log(`SECURITY TESTS PASSED: ${passed}`);
 }finally{await env.cleanup();}

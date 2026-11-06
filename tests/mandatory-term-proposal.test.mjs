@@ -6,6 +6,7 @@ import {loadService} from './service-runtime.mjs';
 // clients are the guarded demo-maximus-inic emulator clients supplied by it.
 export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  const root='maximusInic';
+ const textProposal={mode:'text',topics:{problem:'Proposta sintética',objective:'',method:'',expectedResult:''}};
  const stamp=Date.now();
  const pdf=Buffer.from('%PDF-1.7\nSynthetic signed-term test fixture\n%%EOF');
  const bytesFile={name:'Termo assinado.pdf',type:'application/pdf',size:pdf.length,arrayBuffer:async()=>pdf.buffer.slice(pdf.byteOffset,pdf.byteOffset+pdf.byteLength)};
@@ -15,7 +16,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  const document=()=>({base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp});
  const term=(uid,year=2027)=>({[`agreements/${year}/${uid}`]:metadata(uid,year),[`agreementFiles/${year}/${uid}`]:document()});
  const invitation=(groupId,toUid)=>({groupId,groupName:`Grupo ${groupId}`,toEmail:'',toUid,type:'advisor',senderId:'npReady',senderName:'npReady',status:'pending',createdAt:serverTimestamp()});
- const proposal=(uid)=>({...group(uid),advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:0});
+ const proposal=(uid)=>({...group(uid),advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:0,proposalRequired:true});
  const admin=async(fn)=>env.withSecurityRulesDisabled(async context=>fn(context.database()));
  const value=async(path)=>{
   let result;
@@ -185,8 +186,8 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assertion('mandatory term: rejected upload leaves no retained metadata or file',!(await value('agreements/2027/npRejected'))&&!(await value('agreementFiles/2027/npRejected')));
 
  for(const [name,advisorIds] of [['four selected advisors',['npAdvisor1','npAdvisor2','npAdvisor3','npAdvisor4']],['duplicate selected advisor',['npAdvisor1','npAdvisor1']],['unapproved selected advisor',['npOther']]])
-  await reject(`proposal: actual creation rejects ${name}`,()=>ready('createGroup',{name:'Proposta inválida',topic:'Pesquisa',advisorIds}));
- const proposalId=await ready('createGroup',{name:'Proposta de três orientadores',topic:'Pesquisa de TCC',advisorIds:['npAdvisor1','npAdvisor2','npAdvisor3']});
+  await reject(`proposal: actual creation rejects ${name}`,()=>ready('createGroup',{name:'Proposta inválida',topic:'Pesquisa',proposal:textProposal,advisorIds}));
+ const proposalId=await ready('createGroup',{name:'Proposta de três orientadores',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1','npAdvisor2','npAdvisor3']});
  let slots=await value(`advisorRequests/${proposalId}`);
  assertion('proposal: actual creation reserves exactly three unique approved candidates',slots&&Object.keys(slots).sort().join(',')==='npAdvisor1,npAdvisor2,npAdvisor3'&&new Set(Object.values(slots)).size===3);
  const invitations=(await get(query(ref(db('npCoord'),`${root}/invitations`),orderByChild('groupId'),equalTo(proposalId)))).val()||{};
@@ -206,7 +207,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assertion('proposal: declined choice can be replaced while keeping three pending candidates',slots&&Object.keys(slots).length===3&&slots.npAdvisor4===replacement&&!slots.npAdvisor3&&(await value(`invitations/${firstDeclined}/status`))==='declined');
  await ok('proposal: selected advisor prepares admission before atomic confirmation',set(ref(db('npAdvisor1'),`${root}/admissions/${proposalId}/npAdvisor1`),slots.npAdvisor1));
  await no('proposal: raw acceptance cannot omit cancellation of other pending candidates',update(ref(db('npAdvisor1'),root),{[`groups/${proposalId}/advisorId`]:'npAdvisor1',[`invitations/${slots.npAdvisor1}/status`]:'accepted',[`advisorConfirmations/${proposalId}`]:{studentUid:'npReady',advisorUid:'npAdvisor1',advisorName:'npAdvisor1',invitationId:slots.npAdvisor1,createdAt:serverTimestamp(),requestVersion:await value(`groups/${proposalId}/advisorRequestVersion`)}}));
- const emptyId=await ready('createGroup',{name:'Proposta sem candidato',topic:'Pesquisa de TCC',advisorIds:[]});
+ const emptyId=await ready('createGroup',{name:'Proposta sem candidato',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:[]});
  await no('proposal: standalone raw advisor invitation cannot bypass reserved slots',set(ref(db('npReady'),`${root}/invitations/npNoSlot`),invitation(emptyId,'npAdvisor1')));
  await no('proposal: new student advisor invitation on a legacy group still needs slots',set(ref(db('npReady'),`${root}/invitations/npLegacyNoSlot`),invitation('npLegacyProposal','npAdvisor4')));
  await no('proposal: new coordinator advisor invitation on a legacy group also needs slots',set(ref(db('npCoord'),`${root}/invitations/npLegacyStaffNoSlot`),{...invitation('npLegacyProposal','npAdvisor4'),senderId:'npCoord',senderName:'npCoord'}));
@@ -239,7 +240,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assert.deepEqual(await value(`advisorConfirmations/${proposalId}`),confirmation);
  count('proposal: acceptance acknowledgement is stable across repeated and late responses');
 
- const versionedId=await ready('createGroup',{name:'Proposta concorrente',topic:'Pesquisa de TCC',advisorIds:['npAdvisor1']});
+ const versionedId=await ready('createGroup',{name:'Proposta concorrente',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
  const versionedSlots=await value(`advisorRequests/${versionedId}`);
  let releaseAcceptance,reachedAcceptance,pausedAcceptance=false;
  const acceptanceGate=new Promise(resolve=>{releaseAcceptance=resolve;});
@@ -256,15 +257,15 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  await staleRejected;
  assertion('proposal: stale acknowledgement cannot leave a partially assigned advisor',!(await value(`advisorConfirmations/${versionedId}`))&&(await value(`groups/${versionedId}/advisorId`))===''&&(await value(`invitations/${versionedSlots.npAdvisor1}/status`))==='pending'&&(await value(`invitations/${addedDuringAcceptance}/status`))==='pending');
  await ok('proposal: advisor retries acceptance against fresh candidate version',pausedTeacher('respondInvitation',versionedSlots.npAdvisor1,true));
- assertion('proposal: fresh acceptance binds current version and cancels concurrent candidate',(await value(`advisorConfirmations/${versionedId}/requestVersion`))===(await value(`groups/${versionedId}/advisorRequestVersion`))&&(await value(`invitations/${addedDuringAcceptance}/status`))==='cancelled');
+ assertion('proposal: fresh acceptance binds current version and cancels concurrent candidate',(await value(`advisorConfirmations/${versionedId}/requestVersion`))+1===(await value(`groups/${versionedId}/advisorRequestVersion`))&&(await value(`invitations/${addedDuringAcceptance}/status`))==='cancelled');
 
- const declinedId=await ready('createGroup',{name:'Proposta de recusa silenciosa',topic:'Pesquisa de TCC',advisorIds:['npAdvisor2']});
+ const declinedId=await ready('createGroup',{name:'Proposta de recusa silenciosa',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor2']});
  const declinedSlots=await value(`advisorRequests/${declinedId}`);
  await ok('proposal: advisor can decline a received proposal',teacher2('respondInvitation',declinedSlots.npAdvisor2,false));
  assertion('proposal: decline creates no student acknowledgement or assigned advisor',(await value(`invitations/${declinedSlots.npAdvisor2}/status`))==='declined'&&!(await value(`advisorConfirmations/${declinedId}`))&&(await value(`groups/${declinedId}/advisorId`))==='');
  const retryInvite=await ready('invite',{groupId:declinedId,toUid:'npAdvisor3',type:'advisor'});
  assertion('proposal: student can select a new candidate after a decline without losing invitation history',(await value(`advisorRequests/${declinedId}/npAdvisor3`))===retryInvite&&(await value(`invitations/${declinedSlots.npAdvisor2}/status`))==='declined');
- const lockedId=await ready('createGroup',{name:'Proposta bloqueada',topic:'Pesquisa de TCC',advisorIds:['npAdvisor1']});
+ const lockedId=await ready('createGroup',{name:'Proposta bloqueada',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
  await ok('proposal: coordinator locks proposal before deletion',coordinator('updateGroup',lockedId,{status:'deleting'}));
  await reject('proposal: actual advisor requests stop during deletion lock',()=>ready('invite',{groupId:lockedId,toUid:'npAdvisor2',type:'advisor'}));
  await no('proposal: server prevents raw request during deletion lock',update(ref(db('npReady'),root),{[`advisorRequests/${lockedId}/npAdvisor2`]:'npLockedRequest',[`advisorRequestSlots/${lockedId}/1`]:'npAdvisor2',[`groups/${lockedId}/advisorRequestVersion`]:(await value(`groups/${lockedId}/advisorRequestVersion`))+1,'invitations/npLockedRequest':invitation(lockedId,'npAdvisor2')}));

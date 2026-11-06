@@ -8,7 +8,7 @@ export async function runAgreementReviewTests({env,db,ok,no,count}) {
  const ids={student:'reviewstudent',other:'reviewother',teacher:'reviewteacher',pending:'reviewpending',coordinator:'reviewcoord',worker:'reviewworker',legacy:'reviewlegacy',missing:'reviewmissing',race:'reviewrace',concurrent:'reviewconcurrent',coordinator2:'reviewcoordtwo',orphan:'revieworphan',mismatch:'reviewmismatch'};
  const pdf=Buffer.from('%PDF-1.7\nSynthetic review fixture\n%%EOF');
  const file=(label='Termo.pdf')=>({name:label,type:'application/pdf',size:pdf.length,arrayBuffer:async()=>pdf.buffer.slice(pdf.byteOffset,pdf.byteOffset+pdf.byteLength)});
- const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:'student',year:'2º ano',createdAt:stamp});
+ const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:'student',year:'3º ano',createdAt:stamp});
  const changes={};
  for(const uid of Object.values(ids))changes[`users/${uid}`]=person(uid);
  changes[`roles/${ids.coordinator}`]='coordinator';changes[`roles/${ids.coordinator2}`]='coordinator';changes[`roles/${ids.teacher}`]='advisor';

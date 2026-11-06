@@ -1,0 +1,97 @@
+import assert from 'node:assert/strict';
+import {ref,get,set,update,serverTimestamp} from 'firebase/database';
+import {loadService} from './service-runtime.mjs';
+
+// Synthetic accounts only; service-runtime enforces a local demo emulator.
+export async function runOrientationTransitionTests({env,db,ok,no,count}) {
+ const root='maximusInic',stamp=Date.now(),ids={coord:'otcoord',dual:'otdual',student:'otstudent',peer:'otpeer',old:'otold',next:'otnext',loser:'otloser',outsider:'otoutsider',inactive:'otinactive'};
+ const profile=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:[ids.coord,ids.dual,ids.old,ids.next,ids.loser,ids.inactive].includes(uid)?'advisor':'student',year:'3º ano',createdAt:stamp});
+ const group=(name,advisor=ids.old)=>({name,topic:'Tema preservado',description:'Pesquisa do grupo',year:2027,advisorId:advisor,members:{[ids.student]:true,[ids.peer]:true,[advisor]:true},memberNames:{[ids.student]:ids.student,[ids.peer]:ids.peer,[advisor]:advisor},createdBy:ids.student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:4,orientationRevision:2});
+ const changes={};
+ for(const uid of Object.values(ids))changes[`users/${uid}`]=profile(uid);
+ for(const uid of [ids.coord,ids.dual]){changes[`roles/${uid}`]='coordinator';changes[`advisorDirectory/${uid}`]={uid,name:uid};}
+ for(const uid of [ids.old,ids.next,ids.loser,ids.inactive]){changes[`roles/${uid}`]='advisor';changes[`advisorDirectory/${uid}`]={uid,name:uid};}
+ changes[`inactiveUsers/${ids.inactive}`]=true;
+ for(const gid of ['ot-replace','ot-withdraw','ot-race','ot-deleting','ot-raw']){
+  changes[`groups/${gid}`]={...group(gid),...(gid==='ot-deleting'?{status:'deleting'}:{})};
+  for(const uid of [ids.student,ids.peer,ids.old])changes[`userGroups/${uid}/${gid}`]=true;
+  changes[`invitations/${gid}-accepted`]={groupId:gid,groupName:gid,toEmail:'',toUid:ids.old,type:'advisor',senderId:ids.coord,senderName:ids.coord,status:'accepted',createdAt:stamp-5000};
+  changes[`admissions/${gid}/${ids.old}`]=`${gid}-accepted`;
+  changes[`advisorConfirmations/${gid}`]={studentUid:ids.student,advisorUid:ids.old,advisorName:ids.old,invitationId:`${gid}-accepted`,createdAt:stamp-4000,requestVersion:4};
+  changes[`advisorRequests/${gid}`]={[ids.old]:`${gid}-accepted`};changes[`advisorRequestSlots/${gid}`]={0:ids.old};
+ }
+ changes['groups/ot-dual']=group('ot-dual',ids.dual);
+ for(const uid of [ids.student,ids.peer,ids.dual])changes[`userGroups/${uid}/ot-dual`]=true;
+ changes[`evaluations/ot-replace/members/${ids.old}`]={score:10,feedback:'Acesso antigo',updatedBy:ids.coord,evaluatorName:ids.coord,updatedAt:stamp};
+ changes[`evaluations/ot-replace/members/${ids.student}`]={score:9,feedback:'Nota do aluno preservada',updatedBy:ids.old,evaluatorName:ids.old,updatedAt:stamp};
+ changes['evaluations/ot-replace/group']={score:8,feedback:'Nota coletiva preservada',updatedBy:ids.old,evaluatorName:ids.old,updatedAt:stamp};
+ changes['tasks/ot-replace/task']={title:'Artigo preservado',dueDate:'2027-07-01',completed:false,completedBy:'',weight:1,createdBy:ids.old,createdAt:stamp};
+ changes['events/ot-replace/event']={title:'Encontro preservado',date:'2027-05-10',description:'',createdBy:ids.old,createdAt:stamp,updatedBy:ids.old,updatedAt:stamp};
+ changes['messages/ot-replace/history']={text:'Conversa preservada',senderId:ids.old,senderName:ids.old,createdAt:stamp};
+ changes['invitations/ot-pending-loser']={groupId:'ot-replace',groupName:'ot-replace',toEmail:'',toUid:ids.loser,type:'advisor',senderId:ids.coord,senderName:ids.coord,status:'pending',createdAt:stamp-1000};
+ changes['advisorRequests/ot-replace'][ids.loser]='ot-pending-loser';changes['advisorRequestSlots/ot-replace'][1]=ids.loser;
+ await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),changes));
+ const admin=operation=>env.withSecurityRulesDisabled(context=>operation(context.database()));
+ const value=async path=>{let result;await admin(async database=>{result=(await get(ref(database,`${root}/${path}`))).val();});return result;};
+ const at=(uid,path)=>ref(db(uid),`${root}/${path}`);
+ const check=(name,condition)=>{assert.ok(condition,name);count(`orientation: ${name}`);};
+ const rejects=async(name,operation)=>{let rejected=false;try{await operation();}catch{rejected=true;}check(name,rejected);};
+ const coord=loadService(db(ids.coord),ids.coord),old=loadService(db(ids.old),ids.old),next=loadService(db(ids.next),ids.next),student=loadService(db(ids.student),ids.student),dual=loadService(db(ids.dual),ids.dual);
+ const replaceOptions={reason:'Redistribuição de orientação pela coordenação',expectedAdvisorUid:ids.old,expectedRevision:2};
+ await rejects('student cannot replace its orientador',()=>student('replaceAdvisor','ot-replace',ids.next,replaceOptions));
+ await rejects('current professor cannot substitute another professor unilaterally',()=>old('replaceAdvisor','ot-replace',ids.next,replaceOptions));
+ await rejects('coordinator replacement requires a reason',()=>coord('replaceAdvisor','ot-replace',ids.next,{...replaceOptions,reason:''}));
+ await rejects('coordinator cannot replace with same orientador',()=>coord('replaceAdvisor','ot-replace',ids.old,replaceOptions));
+ await rejects('unapproved registration cannot become orientador',()=>coord('replaceAdvisor','ot-replace',ids.outsider,replaceOptions));
+ await rejects('inactive professor cannot become orientador',()=>coord('replaceAdvisor','ot-replace',ids.inactive,replaceOptions));
+ await rejects('replacement refuses a deleting group',()=>coord('replaceAdvisor','ot-deleting',ids.next,replaceOptions));
+ await rejects('replacement refuses stale advisor identity',()=>coord('replaceAdvisor','ot-replace',ids.next,{...replaceOptions,expectedAdvisorUid:ids.loser}));
+ await rejects('replacement refuses stale revision',()=>coord('replaceAdvisor','ot-replace',ids.next,{...replaceOptions,expectedRevision:1}));
+ await no('orientation: raw coordinator cannot silently clear assignment',set(at(ids.coord,'groups/ot-raw/advisorId'),''));
+ await no('orientation: raw coordinator cannot silently overwrite assignment',set(at(ids.coord,'groups/ot-raw/advisorId'),ids.next));
+ await ok('orientation: coordination replaces advisor through audited transition',coord('replaceAdvisor','ot-replace',ids.next,replaceOptions));
+ const assigned=await value('groups/ot-replace'),audit=assigned.advisorAssignment,transition=await value(`orientationTransitions/ot-replace/${audit.transitionId}`);
+ check('replacement advances revision and invitation epoch once',assigned.advisorId===ids.next&&assigned.orientationRevision===3&&assigned.advisorRequestVersion===5);
+ check('replacement audit records old new actor reason and server time',audit.action==='replace'&&audit.previousAdvisorUid===ids.old&&audit.advisorUid===ids.next&&audit.assignedBy===ids.coord&&audit.reason===replaceOptions.reason&&audit.revision===3&&audit.requestVersion===4&&Number.isInteger(audit.assignedAt)&&audit.assignedAt>=stamp);
+ check('immutable transition matches current assignment receipt',transition.action==='replace'&&transition.oldAdvisorUid===ids.old&&transition.newAdvisorUid===ids.next&&transition.actorUid===ids.coord&&transition.reason===replaceOptions.reason&&transition.revision===audit.revision&&transition.createdAt===audit.assignedAt);
+ for(const path of [`groups/ot-replace/members/${ids.old}`,`groups/ot-replace/memberNames/${ids.old}`,`userGroups/${ids.old}/ot-replace`,`admissions/ot-replace/${ids.old}`,`evaluations/ot-replace/members/${ids.old}`,'advisorConfirmations/ot-replace','advisorRequests/ot-replace','advisorRequestSlots/ot-replace'])check(`replacement removes former access ${path}`,(await value(path))===null);
+ check('replacement retains students content grades and history',(await value(`groups/ot-replace/members/${ids.student}`))===true&&(await value(`groups/ot-replace/members/${ids.peer}`))===true&&(await value(`evaluations/ot-replace/members/${ids.student}/score`))===9&&(await value('evaluations/ot-replace/group/score'))===8&&(await value('tasks/ot-replace/task/title'))==='Artigo preservado'&&(await value('events/ot-replace/event/title'))==='Encontro preservado'&&(await value('messages/ot-replace/history/senderName'))===ids.old);
+ check('replacement cancels pending advisor and stores revocation barrier',(await value('invitations/ot-pending-loser/status'))==='cancelled'&&typeof(await value(`memberRevocations/ot-replace/${ids.old}`))==='number');
+ await no('orientation: former teacher loses group immediately',get(at(ids.old,'groups/ot-replace')));
+ await no('orientation: former teacher loses messages immediately',get(at(ids.old,'messages/ot-replace')));
+ await no('orientation: former teacher cannot edit its former group',set(at(ids.old,'groups/ot-replace/topic'),'Retomar acesso'));
+ await ok('orientation: replacement teacher gains assigned group',get(at(ids.next,'groups/ot-replace')));
+ await ok('orientation: replacement teacher may manage assigned group',next('updateGroup','ot-replace',{topic:'Tema revisado pelo novo orientador'}));
+ const notices=Object.fromEntries(await Promise.all([ids.old,ids.next,ids.loser].map(async uid=>[uid,await value(`orientationNotices/${uid}/${audit.transitionId}`)])));
+ check('old new and unavailable professors receive separate transition notices',notices[ids.old]?.type==='replaced'&&notices[ids.next]?.type==='assigned'&&notices[ids.loser]?.type==='unavailable');
+ check('notices identify group transition and reason',Object.values(notices).every(notice=>notice.groupId==='ot-replace'&&notice.transitionId===audit.transitionId&&notice.reason===replaceOptions.reason&&notice.createdAt===audit.assignedAt&&notice.read===false));
+ await ok('orientation: removed teacher can still read its own replacement notice',get(at(ids.old,`orientationNotices/${ids.old}/${audit.transitionId}`)));
+ await no('orientation: teacher cannot read another teacher notification',get(at(ids.old,`orientationNotices/${ids.next}/${audit.transitionId}`)));
+ await no('orientation: student cannot read teacher notifications',get(at(ids.student,`orientationNotices/${ids.old}`)));
+ await ok('orientation: notice recipient marks own notice read',old('markOrientationNoticeRead',audit.transitionId));
+ check('read receipt persists for the correct recipient',(await value(`orientationNotices/${ids.old}/${audit.transitionId}/read`))===true&&(await value(`orientationNotices/${ids.next}/${audit.transitionId}/read`))===false);
+ await no('orientation: recipient cannot rewrite message reason',set(at(ids.old,`orientationNotices/${ids.old}/${audit.transitionId}/reason`),'Motivo forjado'));
+ await no('orientation: recipient cannot reset its read receipt',set(at(ids.old,`orientationNotices/${ids.old}/${audit.transitionId}/read`),false));
+ await no('orientation: recipient cannot forge a new transition notification',set(at(ids.old,`orientationNotices/${ids.old}/forged`),{...notices[ids.old],createdAt:serverTimestamp(),transitionId:'forged'}));
+ await no('orientation: coordinator cannot rewrite transition history',update(at(ids.coord,`orientationTransitions/ot-replace/${audit.transitionId}`),{reason:'Histórico reescrito'}));
+ await no('orientation: former teacher cannot read private group transition log',get(at(ids.old,'orientationTransitions/ot-replace')));
+ await ok('orientation: current teacher reads current group transition log',get(at(ids.next,'orientationTransitions/ot-replace')));
+ await rejects('replacement request cannot be replayed after revision changes',()=>coord('replaceAdvisor','ot-replace',ids.loser,replaceOptions));
+ await rejects('foreign professor cannot withdraw another orientation',()=>next('withdrawAdvisor','ot-withdraw',{reason:'Saída',expectedAdvisorUid:ids.old,expectedRevision:2}));
+ await rejects('coordinator cannot impersonate professor withdrawal',()=>coord('withdrawAdvisor','ot-withdraw',{reason:'Saída',expectedAdvisorUid:ids.old,expectedRevision:2}));
+ await rejects('withdrawal refuses stale revision',()=>old('withdrawAdvisor','ot-withdraw',{reason:'Saída',expectedAdvisorUid:ids.old,expectedRevision:1}));
+ await ok('orientation: actual professor withdraws its own orientation',old('withdrawAdvisor','ot-withdraw',{reason:'Indisponibilidade de horário',expectedAdvisorUid:ids.old,expectedRevision:2}));
+ const withdrawn=await value('groups/ot-withdraw');
+ check('withdrawal clears assignment and preserves group for reassignment',withdrawn.advisorId===''&&withdrawn.orientationRevision===3&&withdrawn.advisorRequestVersion===5&&withdrawn.advisorAssignment.action==='withdraw'&&withdrawn.advisorAssignment.assignedBy===ids.old&&withdrawn.members[ids.student]===true&&!withdrawn.members[ids.old]);
+ await no('orientation: withdrawing professor loses former group',get(at(ids.old,'groups/ot-withdraw')));
+ await ok('orientation: coordinator may assign an available professor after withdrawal',coord('assignAdvisor','ot-withdraw',ids.next));
+ check('reassignment advances revision without reviving former membership',(await value('groups/ot-withdraw/orientationRevision'))===4&&(await value('groups/ot-withdraw/advisorId'))===ids.next&&(await value(`groups/ot-withdraw/members/${ids.old}`))===null);
+ await ok('orientation: dual coordinator professor can withdraw only its own orientation',dual('withdrawAdvisor','ot-dual',{reason:'Redistribuição de orientação',expectedAdvisorUid:ids.dual,expectedRevision:2}));
+ check('dual-role withdrawal preserves coordination role and directory',(await value(`roles/${ids.dual}`))==='coordinator'&&(await value(`advisorDirectory/${ids.dual}`))!==null&&(await value('groups/ot-dual/advisorId'))==='');
+ let raced=false;
+ const staleCoord=loadService(db(ids.coord),ids.coord,{beforeUpdate:async()=>{if(!raced){raced=true;await old('withdrawAdvisor','ot-race',{reason:'Saída concorrente',expectedAdvisorUid:ids.old,expectedRevision:2});}}});
+ await rejects('concurrent withdrawal wins over stale coordinator replacement',()=>staleCoord('replaceAdvisor','ot-race',ids.next,replaceOptions));
+ const raceGroup=await value('groups/ot-race'),raceHistory=await value('orientationTransitions/ot-race');
+ check('failed stale replacement creates no competing transition or assignment',raced&&raceGroup.advisorId===''&&raceGroup.orientationRevision===3&&raceGroup.advisorAssignment.action==='withdraw'&&Object.keys(raceHistory).length===1&&Object.values(raceHistory)[0].action==='withdraw');
+ check('failed stale replacement leaves no phantom new-professor notification',!(await value(`orientationNotices/${ids.next}`))||Object.values(await value(`orientationNotices/${ids.next}`)).every(notice=>notice.groupId!=='ot-race'));
+}

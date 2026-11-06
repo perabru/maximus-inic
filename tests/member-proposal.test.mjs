@@ -6,8 +6,9 @@ import {loadService} from './service-runtime.mjs';
 // by loadService. Creating a proposal must never enroll invited peers directly.
 export async function runMemberProposalTests({env,db,ok,no,count}) {
  const root='maximusInic',stamp=Date.now();
+ const textProposal={mode:'text',topics:{problem:'Proposta sintética',objective:'',method:'',expectedResult:''}};
  const pdf=Buffer.from('%PDF-1.7\nSynthetic term fixture\n%%EOF');
- const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:'student',year:'2º ano',createdAt:stamp});
+ const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:'student',year:'3º ano',createdAt:stamp});
  const metadata=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp});
  const file={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
  const changes={};
@@ -26,7 +27,7 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
  const rejects=async(name,fn)=>{let rejected=false;try{await fn();}catch{rejected=true;}check(name,rejected);};
  let authorUpdates=0,capturedChanges;
  const author=loadService(db('mpauthor'),'mpauthor',{beforeUpdate:async(target,patch)=>{authorUpdates++;capturedChanges=structuredClone(patch);}});
- const proposalId=await author('createGroup',{name:'Grupo com colegas',topic:'Pesquisa de TCC',advisorIds:['mpadvisor1','mpadvisor2','mpadvisor3'],memberEmails:[' MPPEER@example.com ','mppeer@example.com',' MPAUTHOR@example.com ','newstudent@example.com']});
+ const proposalId=await author('createGroup',{name:'Grupo com colegas',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['mpadvisor1','mpadvisor2','mpadvisor3'],memberEmails:[' MPPEER@example.com ','mppeer@example.com',' MPAUTHOR@example.com ','newstudent@example.com']});
  check('member proposal: one atomic update creates proposal schedule and every invitation',authorUpdates===1);
  const proposal=await value(`groups/${proposalId}`),tasks=await value(`tasks/${proposalId}`),all=await value('invitations');
  const invites=Object.entries(all).filter(([,invitation])=>invitation.groupId===proposalId).map(([id,invitation])=>({id,...invitation}));
@@ -76,7 +77,7 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
   failedInviteIds=Object.keys(patch).filter(path=>path.startsWith('invitations/')).map(path=>path.split('/')[1]);
   patch[invitePath].senderId='mpstranger';
  }});
- await rejects('member proposal: rejection of one peer invitation rejects the entire proposal batch',()=>rejectedBatch('createGroup',{name:'Deve falhar inteira',topic:'Pesquisa',advisorIds:['mpadvisor1'],memberEmails:['mppeer@example.com']}));
+ await rejects('member proposal: rejection of one peer invitation rejects the entire proposal batch',()=>rejectedBatch('createGroup',{name:'Deve falhar inteira',topic:'Pesquisa',proposal:textProposal,advisorIds:['mpadvisor1'],memberEmails:['mppeer@example.com']}));
  check('member proposal: rejected batch leaves no partial group schedule or private index',!(await value(`groups/${failedGroupId}`))&&!(await value(`tasks/${failedGroupId}`))&&!(await value(`userGroups/mpauthor/${failedGroupId}`)));
  check('member proposal: rejected batch leaves no peer advisor or request-index residue',await Promise.all(failedInviteIds.map(id=>value(`invitations/${id}`))).then(values=>values.every(result=>result===null))&&!(await value(`advisorRequests/${failedGroupId}`))&&!(await value(`advisorRequestSlots/${failedGroupId}`)));
  const noPeersId=await author('createGroup',{name:'Sem colegas por enquanto',topic:'Pesquisa',memberEmails:[]});

@@ -71,7 +71,7 @@ O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, 
 
 A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Enviar proposta e convites**; a confirmação do termo não dispara convites sozinha.
 
-Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Professores e outros alunos não têm acesso. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
+Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Outros alunos não têm acesso. Orientadores acessam somente os termos aprovados dos integrantes dos grupos sob sua orientação. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
 
 ### Assinaturas eletrônicas da equipe escolar
 
@@ -90,7 +90,7 @@ O remetente também acompanha confirmações de orientação. Envia o aviso de a
 
 ### Validação
 
-532 cenários aprovados no Firebase Realtime Database Emulator, incluindo o serviço real, cadastro Google, arquivos de até 3 MiB, privacidade de contratos e notas, eventos, convites do professor, exclusão com retomada e escopo restrito do remetente. Também passaram 119 regressões da interface, sete testes de calendário e 46 testes de Web Push/service worker sem envios reais. A geração do PDF e a preservação do original passaram em 18 testes. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
+851 cenários aprovados no Firebase Realtime Database Emulator, mais 19 testes adicionais das APIs de proposta, com o serviço real: privacidade, contratos, convites, gestão recuperável, conflitos de orientação, Bruno automático, resultados e propostas. Também passaram 210 regressões da interface, sete testes de calendário, 28 do dashboard, 13 do editor da proposta e 46 de Web Push/service worker sem envios reais. A geração do PDF e a preservação do original passaram em 18 testes. Onze verificações independentes conferiram a limpeza dos streams após perda de acesso e outros estados de sessão. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
 ### Grupos, integrantes e avaliações
 
@@ -99,3 +99,35 @@ A coordenação gerencia todos os grupos. O orientador gerencia apenas os grupos
 A aba **Avaliações** reúne a nota coletiva e as notas individuais, de 0 a 10, com comentário opcional, autor e data. Cada aluno consulta a nota coletiva e a própria nota individual. Orientador e coordenação podem editar ou excluir essas avaliações.
 
 **Excluir grupo** pede confirmação e remove integrantes, entregas, mensagens, convites, índices e avaliações do grupo. Se a conexão cair durante a exclusão, o grupo fica bloqueado e a opção **Concluir exclusão** permite terminar a limpeza. Perfis e outros grupos permanecem cadastrados.
+
+### Cadastros de alunos e professores
+
+A coordenação edita nome, série e perfil de acesso, exclui cadastros da lista de ativos e restaura os excluídos. Excluir bloqueia o acesso imediatamente e remove vínculos com grupos; o processo pode ser retomado se houver falha de conexão. Restaurar não refaz grupos, notas individuais nem convites antigos. Contas da coordenação ficam protegidas contra exclusão e rebaixamento por essa gestão. O e-mail de autenticação permanece inalterado.
+
+A exclusão é do cadastro na plataforma, com restauração pela coordenação. Documentos, pareceres e registros de assinatura ficam preservados para consulta autorizada. O primeiro passo da exclusão também remove a inscrição de avisos daquele usuário.
+
+### Chat do grupo de TCC
+
+Cada equipe possui um **Chat do grupo**, disponível pela lista de grupos e pela aba interna. As mensagens são compartilhadas entre os integrantes, o orientador e a coordenação. Não existem canais individuais nem seletor de destinatário. As regras exigem acesso ao grupo em cada leitura e envio; contas excluídas não podem conversar.
+
+### Atribuição, substituição e saída da orientação
+
+Estudantes cadastrados no **1º ou 2º ano** criam o grupo já com **Bruno Michel Pera** como orientador. O formulário destaca essa atribuição e não envia convites concorrentes a outros orientadores; os convites aos colegas continuam disponíveis. Para estudantes do **3º ano**, permanece a escolha de até três candidatos à orientação. A coordenação pode ajustar a orientação posteriormente. O serviço confirma o cadastro ativo e aprovado do orientador antes de gravar a proposta, sem conceder permissões por comparação de e-mail.
+
+Em **Todos os grupos**, a coordenação usa **Atribuir orientador** quando a equipe ainda não tem professor. A atribuição vincula diretamente um orientador aprovado e ativo, inclusive um coordenador cadastrado também no diretório de orientação. O grupo passa a aparecer para o professor e os integrantes sem exigir outro aceite.
+
+Um grupo já orientado oferece **Substituir orientador** somente para a coordenação. Essa ação exige outro professor, um motivo e confirmação. O orientador atual pode usar **Sair da orientação**, com confirmação e motivo opcional. A saída deixa a equipe disponível para nova atribuição. Em ambos os casos, preservam-se os estudantes, as entregas, a conversa coletiva e o histórico; o professor anterior perde seu vínculo e o acesso decorrente dele. A conta da coordenação conserva o acesso geral da escola.
+
+A confirmação de uma orientação encerra os outros convites pendentes. Os professores envolvidos recebem um card em **Convites → Avisos de orientação**, com a situação atual e a opção de marcar como lido. Esses avisos não criam conversas individuais. Versões verificadas pelo servidor impedem que um aceite atrasado, uma substituição antiga ou duas alterações simultâneas sobrescrevam a orientação atual.
+
+### Resultados do INIC e indicadores da coordenação
+
+No grupo, cada estudante informa o próprio resultado do INIC; o professor registra os resultados dos estudantes das equipes que orienta. A coordenação pode registrar todos. As opções são **Aguardando resultado**, **Aprovado**, **Reprovado** e **Correção pendente**. A correção exige uma descrição. O registro identifica a conta e o papel de quem informou, com data, e permanece separado das notas de 0 a 10 da disciplina. Não representa uma consulta ou validação automática nos sistemas oficiais do evento.
+
+**Indicadores INIC** é uma área exclusiva da coordenação. A coordenação cadastra e atualiza as bancas, avaliadores, datas, situação e ajustes necessários. Seis gráficos mostram grupos por orientador, situação das bancas, resultados declarados por orientação, bancas por mês, progresso das entregas e correções/atrasos. Filtros por edição, orientador, grupo e resultado cruzam os registros reais. Alunos distintos e participações em grupos aparecem com contagens separadas; dados ausentes são apresentados como pendentes, sem criar resultados de exemplo.
+
+### Proposta antes do convite de orientação
+
+Antes de enviar um novo convite de TCC ao professor, o estudante escreve uma proposta com até quatro tópicos — tema e problema, objetivo, como será feito e resultado esperado — ou anexa um PDF, JPG ou PNG de até 3 MiB. É preciso preencher pelo menos um tópico ou anexar o arquivo. A proposta acompanha o grupo e pode ser consultada pelo professor no card do convite antes de aceitar ou recusar.
+
+Os anexos da proposta têm armazenamento separado dos termos assinados. Um professor candidato acessa a proposta somente enquanto seu convite está pendente; recusa, cancelamento ou perda de vínculo encerram esse acesso. Os bytes não usam URL pública nem entram no cache offline. Convites antigos continuam identificados como anteriores à exigência, sem inventar uma proposta para eles.

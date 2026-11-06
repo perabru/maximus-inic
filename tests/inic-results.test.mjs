@@ -1,0 +1,64 @@
+import {ref,set,get,update,serverTimestamp} from 'firebase/database';
+
+// Synthetic, prefixed fixtures only; no production account or data is used.
+export async function runInicResultsTests({env,db,ok,no,count}) {
+const stamp=Date.now(),person=(name)=>({name,email:name+'@example.com',requestedRole:'student',year:'1º ano',createdAt:stamp});
+const termBytes=Buffer.from('%PDF-test fixture'),termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp}),termFile={base64:termBytes.toString('base64'),size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp};
+const group=(uid,advisor)=>({name:'TCC',topic:'Pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[uid]:true,irs3:true},memberNames:{[uid]:uid,irs3:'irs3'},createdBy:uid,createdAt:stamp,status:'active'});
+const seed={roles:{irc:'coordinator',ira1:'advisor',ira2:'advisor'},users:Object.fromEntries(['irc','ira1','ira2','irs1','irs2','irs3','irpending'].map(uid=>[uid,{...person(uid),...(uid==='irpending'?{requestedRole:'advisor'}:{})}])),groups:{irg1:group('irs1','ira1'),irg2:group('irs2','ira2')},agreements:{2027:Object.fromEntries(['irs1','irs2','irs3'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['irs1','irs2','irs3'].map(uid=>[uid,termFile]))}};
+const changes={};
+function flatten(prefix,value){if(value!==null&&typeof value==='object')for(const [key,child] of Object.entries(value))flatten(prefix?`${prefix}/${key}`:key,child);else changes[prefix]=value;}
+flatten('',seed);
+await env.withSecurityRulesDisabled(async ctx=>update(ref(ctx.database(),'maximusInic'),changes));
+const p=(uid,target)=>ref(db(uid),'maximusInic/'+target);
+const result=(actor,student,status='approved',old=0)=>({year:2027,groupId:'irg1',studentUid:student,status,correction:'',updatedByUid:actor,updatedByName:actor,updatedByRole:actor==='irc'?'coordinator':actor.startsWith('ira')?'advisor':'student',updatedAt:serverTimestamp(),previousUpdatedAt:old});
+const board=(title='Banca',old=0)=>({year:2027,groupId:'irg1',title,date:'2027-10-15',time:'10:30',evaluatorsText:'Professora 1 e Professor 2',status:'approved',correction:'',updatedByUid:'irc',updatedByName:'irc',updatedByRole:'coordinator',updatedAt:serverTimestamp(),previousUpdatedAt:old,createdAt:serverTimestamp(),createdByUid:'irc'});
+ await ok('student declares own approved',set(p('irs1','inicResults/2027/irg1/irs1'),result('irs1','irs1')));
+ const original=(await get(p('irs1','inicResults/2027/irg1/irs1'))).val();
+ await no('student cannot declare peer',set(p('irs1','inicResults/2027/irg1/irs3'),result('irs1','irs3')));
+ await no('student cannot read peer',get(p('irs1','inicResults/2027/irg1/irs3')));
+ await no('student cannot read group map',get(p('irs1','inicResults/2027/irg1')));
+ await no('foreign professor denied',set(p('ira2','inicResults/2027/irg1/irs1'),result('ira2','irs1','rejected',original.updatedAt)));
+ await ok('assigned professor records own member',set(p('ira1','inicResults/2027/irg1/irs1'),result('ira1','irs1','rejected',original.updatedAt)));
+ const rejected=(await get(p('ira1','inicResults/2027/irg1/irs1'))).val();
+ await no('stale CAS rejected',set(p('ira1','inicResults/2027/irg1/irs1'),result('ira1','irs1','approved',original.updatedAt)));
+ await no('forged actor rejected',set(p('ira1','inicResults/2027/irg1/irs1'),result('irc','irs1','approved',rejected.updatedAt)));
+ await no('forged name rejected',set(p('ira1','inicResults/2027/irg1/irs1'),{...result('ira1','irs1','approved',rejected.updatedAt),updatedByName:'Other'}));
+ await no('forged role rejected',set(p('ira1','inicResults/2027/irg1/irs1'),{...result('ira1','irs1','approved',rejected.updatedAt),updatedByRole:'coordinator'}));
+ await no('missing correction rejected',set(p('ira1','inicResults/2027/irg1/irs1'),result('ira1','irs1','correction',rejected.updatedAt)));
+ await ok('actual correction accepted',set(p('ira1','inicResults/2027/irg1/irs1'),{...result('ira1','irs1','correction',rejected.updatedAt),correction:'Corrigir referências'}));
+ await no('result future timestamp rejected',set(p('ira1','inicResults/2027/irg1/irs3'),{...result('ira1','irs3'),updatedAt:Date.now()+86400000}));
+ await no('result wrong year rejected',set(p('ira1','inicResults/2028/irg1/irs3'),{...result('ira1','irs3'),year:2028}));
+ await no('coordinator cannot harddelete live result',set(p('irc','inicResults/2027/irg1/irs1'),null));
+ await ok('coordinator reads global results',get(p('irc','inicResults/2027')));
+ await no('professor cannot read global results',get(p('ira1','inicResults/2027')));
+ await no('professor cannot write board',set(p('ira1','inicBoards/2027/irg1/b1'),board()));
+ await ok('coordinator records board',set(p('irc','inicBoards/2027/irg1/b1'),board()));
+ const initialBoard=(await get(p('irc','inicBoards/2027/irg1/b1'))).val();
+ await no('student cannot read boards',get(p('irs1','inicBoards/2027')));
+ await no('professor cannot read boards',get(p('ira1','inicBoards/2027/irg1/b1')));
+ await no('coordinator cannot harddelete board',set(p('irc','inicBoards/2027/irg1/b1'),null));
+ await no('non-leap 29 February denied',set(p('irc','inicBoards/2027/irg1/badDate'),{...board(),date:'2027-02-29'}));
+ await no('31 April denied',set(p('irc','inicBoards/2027/irg1/badDate'),{...board(),date:'2027-04-31'}));
+ await no('invalid time denied',set(p('irc','inicBoards/2027/irg1/badTime'),{...board(),time:'24:01'}));
+ await no('invalid enum denied',set(p('irc','inicBoards/2027/irg1/badStatus'),{...board(),status:'verified'}));
+ await no('stale board edit rejected',set(p('irc','inicBoards/2027/irg1/b1'),board('Stale',0)));
+ await no('board creator immutable',set(p('irc','inicBoards/2027/irg1/b1'),{...initialBoard,title:'Edit',updatedAt:serverTimestamp(),previousUpdatedAt:initialBoard.updatedAt,createdByUid:'ira1'}));
+ await ok('board softdelete with CAS accepted',set(p('irc','inicBoards/2027/irg1/b1'),{...initialBoard,updatedAt:serverTimestamp(),previousUpdatedAt:initialBoard.updatedAt,deleted:true,deletedAt:serverTimestamp(),deletedByUid:'irc'}));
+ const deleted=(await get(p('irc','inicBoards/2027/irg1/b1'))).val();
+ await no('board cannot undelete',set(p('irc','inicBoards/2027/irg1/b1'),{...initialBoard,updatedAt:serverTimestamp(),previousUpdatedAt:deleted.updatedAt}));
+ await env.withSecurityRulesDisabled(async ctx=>update(ref(ctx.database(),'maximusInic'),{'inactiveUsers/irs1':true,'groups/irg1/members/irpending':true,'groups/irg1/members/ira2':true}));
+ await no('archived student cannot read own result',get(p('irs1','inicResults/2027/irg1/irs1')));
+ await no('assigned professor cannot read inactive target before cleanup',get(p('ira1','inicResults/2027/irg1/irs1')));
+ await no('assigned professor cannot write inactive target',set(p('ira1','inicResults/2027/irg1/irs1'),result('ira1','irs1')));
+ await ok('coordinator keeps audit read for inactive target',get(p('irc','inicResults/2027/irg1/irs1')));
+ await no('coordinator cannot create student declaration for staff target',set(p('irc','inicResults/2027/irg1/ira2'),result('irc','ira2')));
+ await no('coordinator cannot create student declaration for pending advisor target',set(p('irc','inicResults/2027/irg1/irpending'),result('irc','irpending')));
+ await env.withSecurityRulesDisabled(async ctx=>update(ref(ctx.database(),'maximusInic'),{'inactiveUsers/irs1':null,'agreementFiles/2027/irs1':null}));
+ const current=(await get(p('irc','inicResults/2027/irg1/irs1'))).val();
+ await no('student without term cannot declare',set(p('irs1','inicResults/2027/irg1/irs1'),result('irs1','irs1','approved',current.updatedAt)));
+ await ok('coordinator updates target despite missing term',set(p('irc','inicResults/2027/irg1/irs1'),result('irc','irs1','approved',current.updatedAt)));
+ await env.withSecurityRulesDisabled(async ctx=>update(ref(ctx.database(),'maximusInic'),{'groups/irg1/status':'deleting'}));
+ await no('deleting group rejects board save',set(p('irc','inicBoards/2027/irg1/b2'),board()));
+ await no('deleting group rejects result save',set(p('irc','inicResults/2027/irg1/irs3'),result('irc','irs3')));
+}
