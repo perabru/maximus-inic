@@ -263,6 +263,58 @@ export function subscribeGroup(groupId, callback) {
   ];
   return () => {stopped=true;resultVersion++;resultStop();evaluationVersion++;stops.forEach(stop=>stop());evaluationStops.forEach(stop=>stop());};
 }
+
+const articleSectionKeys=['title','authors','abstract','keywords','introduction','methodology','results','discussion','conclusion','references'];
+export function subscribeArticle(groupId,callback) {
+  checkIdentifier(groupId);const user=needUser();
+  let stopped=false,denied=false,articleStop=()=>{},attached=false;
+  let group=null,role=null,inactive=false,groupReady=false,roleReady=false,inactiveReady=false;
+  const stops=[];let sections={},ready=false,connected=false;
+  const emit=()=>{if(!stopped&&!denied)callback({sections,ready,connected});};
+  const report=error=>{
+    if(stopped||denied)return;
+    const revoked=String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED');
+    if(revoked){denied=true;articleStop();stops.forEach(stop=>stop());sections={};ready=false;}
+    callback({sections,ready:false,connected,error,revoked});
+  };
+  const scope=()=>{
+    if(stopped||denied||!groupReady||!roleReady||!inactiveReady)return;
+    const allowed=!inactive&&group&&!['deleting','archived'].includes(group.status)&&group.archived!==true&&(role==='coordinator'||role==='advisor'&&group.advisorId===user.uid||role==='student'&&group.members?.[user.uid]===true);
+    if(!allowed){report({code:'PERMISSION_DENIED',message:'Seu acesso ao artigo deste grupo foi encerrado.'});return;}
+    if(!attached){attached=true;articleStop=onValue(path(`articles/${groupId}`),snapshot=>{if(stopped||denied)return;sections=snapshot.val()||{};ready=true;emit();},report);}
+  };
+  stops.push(onValue(path(`groups/${groupId}`),snapshot=>{group=snapshot.val();groupReady=true;scope();},report));
+  stops.push(onValue(path(`roles/${user.uid}`),snapshot=>{role=snapshot.val()||'student';roleReady=true;scope();},report));
+  stops.push(onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{inactive=snapshot.val()===true;inactiveReady=true;scope();},report));
+  stops.push(onValue(ref(db,'.info/connected'),snapshot=>{connected=snapshot.val()===true;emit();},report));
+  stops.push(onAuthStateChanged(auth,active=>{if(active?.uid!==user.uid)report({code:'PERMISSION_DENIED',message:'A sessão foi encerrada.'});}));
+  return ()=>{stopped=true;sections={};articleStop();stops.forEach(stop=>stop());};
+}
+export async function saveArticleSection(groupId,section,text,expectedRevision) {
+  const actor=needUser();checkIdentifier(groupId);
+  if(!articleSectionKeys.includes(section))throw new Error('Escolha uma seção válida do artigo.');
+  const max={title:300,authors:2000,keywords:500}[section]||30000;
+  if(typeof text!=='string'||text.length>max)throw new Error(`Use até ${max.toLocaleString('pt-BR')} caracteres nesta seção.`);
+  if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)throw new Error('Reabra a seção antes de salvar.');
+  await requireAcademicAccess();
+  const [groupSnapshot,roleSnapshot,profileSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${actor.uid}`)),get(path(`users/${actor.uid}`))]);
+  const group=groupSnapshot.val(),role=roleSnapshot.val()||'student';
+  if(!group||['deleting','archived'].includes(group.status)||group.archived===true||!(role==='coordinator'||role==='advisor'&&group.advisorId===actor.uid||role==='student'&&group.members?.[actor.uid]===true))throw new Error('Você não tem acesso para escrever neste artigo.');
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('A sessão mudou. Entre novamente para salvar.');
+  const target=path(`articles/${groupId}/${section}`);
+  const record={text,revision:expectedRevision+1,updatedBy:actor.uid,authorName:clean(profileSnapshot.val()?.name||actor.displayName||'Integrante',100),updatedAt:serverTimestamp()};
+  try {await set(target,record);}
+  catch(error) {
+    // Rules compare revisions on the server, so two clients cannot overwrite a
+    // section using the same baseline. Independent sections remain independent.
+    if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED')){
+      let remote;try{remote=(await get(target)).val();}catch{throw error;}
+      if((remote?.revision||0)!==expectedRevision)throw Object.assign(new Error('Outra pessoa alterou esta seção. Compare os textos antes de salvar.'),{code:'article/conflict',remote});
+    }
+    throw error;
+  }
+  return (await get(target)).val();
+}
 export async function saveProfile(patch) {
   await requireActiveUser();
   const user=needUser();
@@ -498,7 +550,7 @@ export async function deleteGroup(groupId) {
   const frozen=lockedGroup.val();
   if(!frozen)return;
   const changes={};
-  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations','orientationTransitions'])changes[`${resource}/${groupId}`]=null;
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations','orientationTransitions','articles'])changes[`${resource}/${groupId}`]=null;
   changes[`proposalFiles/${groupId}`]=null;
   changes[`inicResults/${frozen.year}/${groupId}`]=null;changes[`inicBoards/${frozen.year}/${groupId}`]=null;
   const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));

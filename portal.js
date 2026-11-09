@@ -4,6 +4,7 @@ import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261105-12';
 import { createCalendarView } from './calendar.js?v=20261105-8';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
+import { createArticleEditor } from './article-editor.js?v=20261109-1';
 
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
@@ -12,6 +13,7 @@ const state = {user:null,profile:null,role:'student',users:[],advisors:[],groups
 const groupData = new Map();
 const groupListeners = new Map();
 const groupAccess = new Map();
+const articleEditors = new Map();
 const seenAdvisorConfirmations = new Set();
 let sessionVersion = 0;
 let service;
@@ -196,11 +198,12 @@ function navigate(view, groupId = '', tab = 'overview') {
   else location.hash = destination;
 }
 function readRoute() {
+  if(currentRoute.view==='group'&&currentRoute.tab==='article')articleEditors.get(currentRoute.groupId)?.editor.flush();
   const parts = location.hash.replace(/^#/,'').split('/');
   if (parts[0] === 'grupo' && parts[1]) {
     let id;
     try {id = decodeURIComponent(parts[1]);} catch {id = '';}
-    currentRoute = {view:'group',groupId:id,tab:['overview','tasks','messages','evaluations'].includes(parts[2]) ? parts[2] : 'overview'};
+    currentRoute = {view:'group',groupId:id,tab:['overview','tasks','article','messages','evaluations'].includes(parts[2]) ? parts[2] : 'overview'};
   } else currentRoute = {view:Object.entries(hashes).find(([,hash]) => hash === parts[0])?.[0] || 'dashboard',groupId:'',tab:'overview'};
   renderedKey = '';
   render();
@@ -334,6 +337,8 @@ $('#forgot-password').addEventListener('click',() => {
   }});
 });
 $('#logout').addEventListener('click',event => action(event.currentTarget,async() => {
+  await Promise.all([...articleEditors.values()].map(({editor})=>editor.flush()));
+  if([...articleEditors.values()].some(({editor})=>editor.hasUnsaved())&&!window.confirm('Ainda há texto do artigo sem confirmação de salvamento. Sair agora descarta esse texto pendente. Deseja sair mesmo assim?'))return;
   try {await disableNotifications(service,state.user);} catch(error) {console.warn('Avisos:',error.code||'desativação indisponível');}
   await service.logout();
 }));
@@ -354,6 +359,7 @@ function showProfileForm() {
 }
 
 function syncGroupListeners() {
+  pruneArticleEditors();
   if(!canAccessAcademic()){
     for(const unsubscribe of groupListeners.values())unsubscribe();
     groupListeners.clear();groupAccess.clear();groupData.clear();
@@ -411,6 +417,7 @@ function verificationNotice() {
   }
 }
 function sessionChanged(user) {
+  for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();
   destroyIndicators();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
   const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';
   proposalDraft=null;
@@ -505,6 +512,7 @@ function updateShell() {
   $('.mobile-nav').hidden=![...document.querySelectorAll('.mobile-nav [data-route]')].some(item=>!item.hidden);
 }
 function render() {
+  pruneArticleEditors();
   if (!state.user) return;
   if(currentRoute.view!=='indicators')destroyIndicators();
   if(state.archived){renderAccountArchived();return;}
@@ -1424,7 +1432,7 @@ function renderGroup() {
     const meta=node('div','group-summary-meta');meta.id='group-meta';copy.append(meta);head.append(copy);
     const actions=node('div','actions');actions.id='group-header-actions';head.append(actions);fragment.append(head);
     const prog=node('div','group-progress-panel');prog.id='group-progress';fragment.append(prog);
-    const tabs=node('nav','group-tabs');tabs.setAttribute('aria-label','Áreas do grupo');[['overview','Resumo'],['tasks','Entregas'],['messages','Chat do grupo'],['evaluations','Avaliações']].forEach(([tab,label])=>{const a=link(label,routeHref('group',group.id,tab));if(tab===currentRoute.tab)a.setAttribute('aria-current','page');tabs.append(a);});fragment.append(tabs);
+    const tabs=node('nav','group-tabs');tabs.setAttribute('aria-label','Áreas do grupo');[['overview','Resumo'],['tasks','Entregas'],['article','Artigo INIC'],['messages','Chat do grupo'],['evaluations','Avaliações']].forEach(([tab,label])=>{const a=link(label,routeHref('group',group.id,tab));if(tab===currentRoute.tab)a.setAttribute('aria-current','page');tabs.append(a);});fragment.append(tabs);
     const content=node('div');content.id='group-panel';fragment.append(content);$('#view-content').replaceChildren(fragment);renderedKey=key;
     if(currentRoute.tab==='messages')buildMessagesView(group);
   }
@@ -1439,11 +1447,29 @@ function renderGroup() {
   if(isGroupManager(group))actions.append(button('Excluir grupo','text-button destructive-action',()=>showDeleteGroup(group)));
   const data=groupData.get(group.id);const tasks=data?.tasks||[];const prog=$('#group-progress');prog.replaceChildren(progressBlock(tasks,'Progresso da pesquisa'),node('p','',`${tasks.filter(t=>t.completed).length} de ${tasks.length} entregas concluídas.`));
   const late=tasks.filter(t=>statusOf(t).key==='late').length;prog.append(node('div','due-summary',late?`${late} ${late===1?'etapa precisa':'etapas precisam'} de atenção.`:'Um passo de cada vez. Mantenha o grupo em dia.'));
+  if(currentRoute.tab==='article'){renderGroupArticle(group);return;}
   if(!data){$('#group-panel').replaceChildren(loadingPanel('Carregando as entregas e mensagens do grupo…'));return;}
   if(currentRoute.tab==='overview')renderGroupOverview(group,tasks);
   else if(currentRoute.tab==='tasks')renderGroupTasks(group,tasks);
   else if(currentRoute.tab==='evaluations')renderGroupEvaluations(group,data);
   else {if(!$('#messages-list'))buildMessagesView(group);paintMessages(data.messages||[]);}
+}
+function articleScope(group){return `${state.user?.uid}/${state.role}/${state.role==='advisor'?group.advisorId||'':''}/${state.role==='student'?Boolean(group.members?.[state.user?.uid]):''}/${group.status||''}/${group.year||2027}`;}
+function pruneArticleEditors(){
+  for(const [id,entry]of articleEditors){const group=state.groups.find(item=>item.id===id);if(!canAccessAcademic()||!group||['deleting','archived'].includes(group.status)||group.archived===true||state.role==='advisor'&&group.advisorId!==state.user?.uid||state.role==='student'&&group.members?.[state.user?.uid]!==true||entry.scope!==articleScope(group)){entry.editor.destroy();articleEditors.delete(id);}}
+}
+function renderGroupArticle(group){
+  if(!articleEditors.has(group.id)){
+    if(typeof service.subscribeArticle!=='function'||typeof service.saveArticleSection!=='function'){$('#group-panel').replaceChildren(emptyState('Atualize o aplicativo','Recarregue a página para abrir o editor do artigo.'));return;}
+    const actor=state.user.uid,session=sessionVersion,scope=articleScope(group);
+    const editor=createArticleEditor({group,user:{uid:actor},subscribe:callback=>service.subscribeArticle(group.id,callback),onSave:(key,text,revision)=>{
+      const current=state.groups.find(item=>item.id===group.id);
+      if(state.user?.uid!==actor||sessionVersion!==session||!canAccessAcademic()||!current||articleScope(current)!==scope)throw new Error('O acesso ao grupo mudou. Reabra o artigo antes de salvar.');
+      return service.saveArticleSection(group.id,key,text,revision);
+    }});articleEditors.set(group.id,{editor,scope});
+  }
+  const editor=articleEditors.get(group.id).editor;
+  if(editor.element.parentNode!==$('#group-panel'))$('#group-panel').replaceChildren(editor.element);
 }
 function renderGroupOverview(group,tasks) {
   const columns=node('div','two-columns');const about=node('section','panel');const top=node('div','panel-heading');top.append(node('h3','','Sobre a pesquisa'));about.append(top,node('p','group-description',group.description||'Registre aqui a ideia, o problema e o caminho que o grupo quer investigar.'));
@@ -1752,11 +1778,12 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261105-12');
+  service = await import('./firebase-service.js?v=20261109-1');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {
   authStatus('Não foi possível conectar ao serviço de acesso. Confira a conexão e recarregue esta página.','error');
   const retry=button('Tentar novamente','text-button',()=>location.reload());$('#auth-status').append(document.createTextNode(' '),retry);
 }
-window.addEventListener('pagehide',event=>{if(!event.persisted){revokeProposalUrls();cleanupDialog();destroyIndicators();sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
+window.addEventListener('beforeunload',event=>{if([...articleEditors.values()].some(({editor})=>editor.hasUnsaved())){event.preventDefault();event.returnValue='';}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();revokeProposalUrls();cleanupDialog();destroyIndicators();sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
