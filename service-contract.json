@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-06-management-orientation-results",
+  "version": "2026-11-09-collaborative-article",
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -69,7 +69,9 @@
     "saveProposal(groupId,{proposal,proposalFile,expectedVersion})": "Promise<metadata>; current member, assigned advisor or coordinator. Up to4 named topics, each≤2000 chars, at least1 filled; alternatively PDF/JPEG/PNG≤3MiB. Atomic canonical metadata+private bytes, fresh version and server time; expectedVersion null represents absent proposal.",
     "getProposal(groupId)": "Promise<metadata|null>; authenticated currently authorized group scope, including a pending invited advisor.",
     "getProposalFile(groupId)": "Promise<{blob,filename,contentType}>; authenticated point read, validates current version and format; pending invited advisor loses access on decline/cancellation. No public file URL.",
-    "subscribeProposal(groupId,callback)": "Unsubscribe; {proposal,ready,error?}; clears and suppresses stale callbacks after scope permission loss or account archive."
+    "subscribeProposal(groupId,callback)": "Unsubscribe; {proposal,ready,error?}; clears and suppresses stale callbacks after scope permission loss or account archive.",
+    "subscribeArticle(groupId,callback)": "Assinatura em tempo real do artigo privado do grupo, com estado de conexão e revogação de acesso.",
+    "saveArticleSection(groupId,section,text,expectedRevision)": "Salva uma seção com revisão verificada no servidor e retorna a versão confirmada; conflitos retornam article/conflict e remote."
   },
   "schema": {
     "users/{uid}": {
@@ -216,6 +218,13 @@
       "signaturePng": "optional PNG data URL up to180000 characters; empty means authenticated account attestation without drawing",
       "consent": "true, explicit user choice required",
       "groupId": "empty for coordination; current active assigned group containing student for advisor"
+    },
+    "articles/{gid}/{section}": {
+      "text": "string; até 30000 caracteres; título 300, autores 2000, palavras-chave 500",
+      "revision": "inteiro positivo; revisão anterior + 1",
+      "updatedBy": "UID autenticado",
+      "authorName": "nome do autor, até 100 caracteres",
+      "updatedAt": "timestamp do servidor"
     }
   },
   "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
@@ -243,5 +252,6 @@
   "managementNotice": "Deleting a platform registration is recoverable deactivation, not deletion of Firebase Auth credentials. Existing coordinators and own coordinator access are protected. Restoring never recreates former memberships or permits old invitation replay. Email-only historical invitations may retain pending status, but persistent server issue-time cutoff and recipient stream filters prevent replay.",
   "orientationNotice": "Revisions and immutable transition proofs serialize assignment, replacement, withdrawal and first acceptance. Losing invited teachers receive private unavailable notices; an old advisor receives a summary without continued group access. Declines remain silent to students. Bruno may act as coordinator and advisor; his coordinator global access remains intentional.",
   "automaticAdvisorNotice": "Groups newly created by a student whose school year is1º/2º ano (normalized variants) automatically use approved active Bruno Michel Pera UID GZv2JuQ7JJg2G4ErhdOEKQOzM3z2. Candidate selections are ignored for those groups. Third-year proposals retain up to3 invitation candidates. Unavailable Bruno blocks creation without partial writes; coordination may subsequently replace or release the advisor.",
-  "proposalNotice": "New student-origin advisor invitations require a text proposal in at most4 named fields or one PDF/JPEG/PNG file up to3MiB. Existing pending legacy invitations remain respondable. group.proposal text/metadata follows the existing group read scope (including the reminder worker group metadata); proposalFiles bytes are private and never readable by that worker. Declined/cancelled candidates lose file access. Proposal versions serialize edits and file replacement; creation/group/invitations are atomic."
+  "proposalNotice": "New student-origin advisor invitations require a text proposal in at most4 named fields or one PDF/JPEG/PNG file up to3MiB. Existing pending legacy invitations remain respondable. group.proposal text/metadata follows the existing group read scope (including the reminder worker group metadata); proposalFiles bytes are private and never readable by that worker. Declined/cancelled candidates lose file access. Proposal versions serialize edits and file replacement; creation/group/invitations are atomic.",
+  "articleNotice": "Compartilhado somente com integrantes atuais, orientador atual e coordenação. Salvamento automático por seção com revisão verificada no servidor. Conflitos preservam o rascunho para comparação. Texto offline pendente fica na memória da sessão. Publicar as regras de articles antes de liberar o cliente."
 }

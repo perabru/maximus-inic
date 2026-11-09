@@ -131,3 +131,15 @@ No grupo, cada estudante informa o próprio resultado do INIC; o professor regis
 Antes de enviar um novo convite de TCC ao professor, o estudante escreve uma proposta com até quatro tópicos — tema e problema, objetivo, como será feito e resultado esperado — ou anexa um PDF, JPG ou PNG de até 3 MiB. É preciso preencher pelo menos um tópico ou anexar o arquivo. A proposta acompanha o grupo e pode ser consultada pelo professor no card do convite antes de aceitar ou recusar.
 
 Os anexos da proposta têm armazenamento separado dos termos assinados. Um professor candidato acessa a proposta somente enquanto seu convite está pendente; recusa, cancelamento ou perda de vínculo encerram esse acesso. Os bytes não usam URL pública nem entram no cache offline. Convites antigos continuam identificados como anteriores à exigência, sem inventar uma proposta para eles.
+
+### Artigo INIC compartilhado
+
+Dentro de cada grupo, a aba **Artigo INIC** reúne título, autores e afiliações, resumo, palavras-chave, introdução, metodologia, resultados, discussão, conclusão e referências. As cinco seções principais incluem explicação, perguntas-guia, exemplo e links conferidos do curso **TCC Sem Drama 4.0** no Drive de Pobre. Resultados e discussão oferecem aulas de pesquisa de campo e revisão de literatura. A orientação escrita foi elaborada para este aplicativo; as aulas externas são materiais de apoio.
+
+O texto é salvo automaticamente por seção, após uma breve pausa na digitação, e recebido em tempo real pelos integrantes, pelo orientador atual e pela coordenação. **Salvar agora** antecipa o envio. O indicador só confirma o salvamento depois da resposta do servidor. Alterações de outras seções não recriam o campo em edição. Se duas pessoas usam a mesma revisão de uma seção, o servidor aceita apenas uma; o outro autor compara a versão compartilhada com seu rascunho e escolhe qual usar ou revisa o próprio texto antes de salvar.
+
+**Ver artigo montado** reúne os campos na ordem do artigo; **Baixar rascunho** exporta um arquivo TXT, incluindo o texto ainda pendente da sessão. A prévia é um rascunho e não substitui o modelo oficial da edição do INIC. Nenhuma submissão ao evento é feita pelo aplicativo.
+
+A falta de conexão mantém o texto pendente na memória da página e retoma o envio ao reconectar. Mantenha a sessão aberta até aparecer a confirmação ou baixe uma cópia. Sair da conta e fechar a página alertam sobre alterações pendentes; não há armazenamento persistente de artigos no navegador. Troca de conta, remoção do integrante, exclusão do grupo e substituição do orientador encerram os respectivos acessos. O orientador anterior perde o artigo; os estudantes continuam com o mesmo documento. Excluir o grupo também remove o artigo.
+
+**Ordem de implantação:** publique primeiro `database.rules.json` no projeto Firebase já utilizado pelo aplicativo e só depois publique esta versão do cliente no GitHub Pages. A nova área usa `maximusInic/articles/{grupo}/{seção}` e não exige migração dos grupos existentes. As permissões dos demais dados foram preservadas. Sem a publicação das regras, o Firebase bloqueia a leitura/escrita do artigo.

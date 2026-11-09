@@ -82,3 +82,9 @@ npx firebase emulators:exec --project demo-maximus-inic --only database "node pr
 ```
 
 Saída esperada dessa verificação adicional: `PROPOSAL RUNTIME TESTS PASSED: 19`.
+
+## Editor de artigos (09/11/2026)
+
+`node --test article-editor.test.mjs` verifica explicações e links, debounce, confirmação do servidor, edições durante um envio, prévia com texto não confiável, conflitos, reconexão e limpeza ao perder acesso. Três cenários adicionais em `portal-ui.test.cjs` verificam a aba integrada, preservação do editor nas atualizações e navegação, alteração do orientador e encerramento da sessão.
+
+`npx firebase emulators:exec --project demo-maximus-inic --only database "node article-security.mjs"` executa 43 verificações com o serviço real e regras reais: leitura compartilhada, isolamento de outros grupos, orientador atual, dados de autoria, limites, termos obrigatórios, corridas entre escritores, notificações ao vivo e exclusão do artigo junto do grupo. Essa execução é exclusiva do emulador local e não acessa dados de produção.
