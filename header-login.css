@@ -36,7 +36,7 @@ THE SOFTWARE.
   padding: 0 24px;
   flex-shrink: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size:15px;
   font-weight: 650;
   line-height: 1;
   letter-spacing: .025em;
@@ -92,7 +92,7 @@ THE SOFTWARE.
 html[data-theme="dark"] .header-login.header-login { --header-login-ink: #b6b8ff; }
 html[data-theme="dark"] .header-login.header-login:is(:hover, :focus-visible) { color: #22234c; }
 @media(max-width:600px) {
-  .header-login.header-login { height: 40px; min-width: 82px; padding-inline: 18px; font-size: 12px; }
+  .header-login.header-login { height: 40px; min-width: 82px; padding-inline: 18px; font-size:15px; }
 }
 @media(prefers-reduced-motion:reduce) {
   .header-login.header-login, .header-login .header-login__frame::before { transition: none; }

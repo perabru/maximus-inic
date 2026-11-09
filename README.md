@@ -13,7 +13,7 @@ Página de divulgação da iniciação científica estudantil, com fotografias, 
 ## Conteúdo
 
 - Logo PNG transparente e cabeçalho responsivo, com tema e Entrar no canto direito.
-- Botões com Montserrat ExtraBold Italic (alias CSS Maximus Interface), hospedada localmente sob SIL OFL 1.1.
+- Interface com fonte de sistema em estilo normal, textos maiores e controles sem itálico. Os arquivos Montserrat anteriores permanecem com a licença SIL OFL 1.1.
 
 - Identidade visual da Escola Máximu’s: índigo `#3d4094` e laranja `#f38635`.
 - 28 fotografias fornecidas para esta publicação, otimizadas em WebP, com miniaturas e textos alternativos.
@@ -143,3 +143,7 @@ O texto é salvo automaticamente por seção, após uma breve pausa na digitaç�
 A falta de conexão mantém o texto pendente na memória da página e retoma o envio ao reconectar. Mantenha a sessão aberta até aparecer a confirmação ou baixe uma cópia. Sair da conta e fechar a página alertam sobre alterações pendentes; não há armazenamento persistente de artigos no navegador. Troca de conta, remoção do integrante, exclusão do grupo e substituição do orientador encerram os respectivos acessos. O orientador anterior perde o artigo; os estudantes continuam com o mesmo documento. Excluir o grupo também remove o artigo.
 
 **Ordem de implantação:** publique primeiro `database.rules.json` no projeto Firebase já utilizado pelo aplicativo e só depois publique esta versão do cliente no GitHub Pages. A nova área usa `maximusInic/articles/{grupo}/{seção}` e não exige migração dos grupos existentes. As permissões dos demais dados foram preservadas. Sem a publicação das regras, o Firebase bloqueia a leitura/escrita do artigo.
+
+### Leitura e tipografia
+
+Textos gerais ampliados, controles em fonte normal com peso 600 e contraste reforçado. O artigo usa 18 px na escrita em telas maiores e 17 px no celular; explicações, ajudas e metadados também foram ampliados. A proposta acompanha as cores dos temas claro e escuro. `readability.css` reúne ajustes de espaçamento, quebras de linha e áreas de toque; a fonte usa as famílias do sistema, sem download adicional.

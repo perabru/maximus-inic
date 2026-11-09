@@ -1,0 +1,50 @@
+/* Larger, upright interface type. System fonts render locally on each device. */
+:root{--interface-font:"Segoe UI","Noto Sans",Roboto,Arial,sans-serif}
+body{font-family:var(--interface-font);text-rendering:optimizeLegibility;-webkit-font-smoothing:auto}
+button,input,textarea,select{font-family:var(--interface-font)}
+h1,h2,h3,h4{letter-spacing:-.02em}
+p,li,label,small{overflow-wrap:break-word}
+input::placeholder,textarea::placeholder,.field input::placeholder,.field textarea::placeholder{opacity:1}
+.button,.uiverse-button.uiverse-button{line-height:1.5;white-space:normal;min-height:44px}
+.button.compact{min-height:42px}
+.auth-card{width:min(100%,460px)}
+.auth-card>h2{font-size:30px;line-height:1.25}
+.auth-subtitle,.auth-bottom,.auth-footer{line-height:1.7}
+.field{font-size:16px;line-height:1.5}
+.field input,.field textarea,.field select{font-size:17px;line-height:1.6}
+.field small,.form-note{font-size:14px}
+.section-title h2{font-size:26px}
+.panel-heading h3{font-size:21px}
+.app-header h1{font-size:30px;line-height:1.25}
+.group-detail-header h2{font-size:30px}
+.article-preview .article-paper-section p{font-size:18px;line-height:1.85}
+.account-copy small,.article-field-meta{font-size:13px}
+.sidebar{overflow-y:auto}
+.group-tabs{gap:16px 24px;flex-wrap:wrap;overflow:visible}
+.group-tabs a{white-space:normal;line-height:1.5}
+.notice-card-close,.icon-button,.calendar-step{flex-shrink:0}
+.cd-svg-label,.cd-svg-value{font-family:var(--interface-font)}
+.header-login.header-login{height:auto;min-height:44px;line-height:1.4}
+.site-header nav{white-space:normal;flex-wrap:wrap;line-height:1.5}
+@media(max-width:760px){
+  .auth-card>h2{font-size:29px}
+  .app-header h1{font-size:27px}
+  .section-title h2{font-size:24px}
+  .group-detail-header h2{font-size:27px}
+  .app-main{padding-bottom:45px}
+  .mobile-nav{min-height:78px;align-items:stretch}
+  .mobile-nav a{font-size:13px;min-width:0;justify-content:center;text-align:center;overflow-wrap:anywhere}
+  .mobile-nav a>span{font-size:21px}
+  .app-shell{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .site-header nav{gap:10px 16px;justify-content:center;font-size:14px}
+}
+@media screen{
+  .screen-header nav,.screen-header button,.instructions p:not(.kicker){font-size:16px}
+  .instructions .privacy{font-size:14px!important}
+  .instructions .actions :is(button,a){font-size:15px}
+}
+@media(max-width:380px){
+  .account-actions{width:100%;justify-content:flex-end;flex-wrap:wrap}
+  .mobile-nav a{font-size:12px;padding-inline:3px}
+  .dialog-actions .button{flex:1 1 auto}
+}

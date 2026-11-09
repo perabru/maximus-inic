@@ -1,4 +1,5 @@
-/* Button typography inspired by the geometric, bold, inclined school wordmark.
+/* Retained font assets from the earlier button style; interface controls use upright
+   system fonts for clear reading at larger sizes. Original font credits:
    Base font: Montserrat ExtraBold Italic (800), distributed under SIL OFL 1.1.
    "Maximus Interface" is a CSS family alias; the font's author credits are retained. */
 @font-face {
@@ -35,9 +36,9 @@
   .uiverse-button.uiverse-button,
   .header-login.header-login
 ) {
-  font-family:"Maximus Interface","Arial Black","Segoe UI",Arial,sans-serif;
-  font-weight:800;
-  font-style:italic;
+  font-family:"Segoe UI","Noto Sans",Roboto,Arial,sans-serif;
+  font-weight:600;
+  font-style:normal;
   font-synthesis:none;
-  letter-spacing:.01em;
+  letter-spacing:normal;
 }
