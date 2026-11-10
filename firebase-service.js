@@ -267,28 +267,32 @@ export function subscribeGroup(groupId, callback) {
 const articleSectionKeys=['title','authors','abstract','keywords','introduction','methodology','results','discussion','conclusion','references'];
 export function subscribeArticle(groupId,callback) {
   checkIdentifier(groupId);const user=needUser();
-  let stopped=false,denied=false,articleStop=()=>{},attached=false;
+  let stopped=false,denied=false,articleStop=()=>{},milestoneStop=()=>{},attached=false;
   let group=null,role=null,inactive=false,groupReady=false,roleReady=false,inactiveReady=false;
-  const stops=[];let sections={},ready=false,connected=false;
-  const emit=()=>{if(!stopped&&!denied)callback({sections,ready,connected});};
+  const stops=[];let sections={},milestones={},articlesReady=false,milestonesReady=false,connected=false;
+  const emit=()=>{if(!stopped&&!denied)callback({sections,milestones,ready:articlesReady&&milestonesReady,connected});};
   const report=error=>{
     if(stopped||denied)return;
     const revoked=String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED');
-    if(revoked){denied=true;articleStop();stops.forEach(stop=>stop());sections={};ready=false;}
-    callback({sections,ready:false,connected,error,revoked});
+    if(revoked){denied=true;articleStop();milestoneStop();stops.forEach(stop=>stop());sections={};milestones={};articlesReady=false;milestonesReady=false;}
+    callback({sections,milestones,ready:false,connected,error,revoked});
   };
   const scope=()=>{
     if(stopped||denied||!groupReady||!roleReady||!inactiveReady)return;
     const allowed=!inactive&&group&&!['deleting','archived'].includes(group.status)&&group.archived!==true&&(role==='coordinator'||role==='advisor'&&group.advisorId===user.uid||role==='student'&&group.members?.[user.uid]===true);
     if(!allowed){report({code:'PERMISSION_DENIED',message:'Seu acesso ao artigo deste grupo foi encerrado.'});return;}
-    if(!attached){attached=true;articleStop=onValue(path(`articles/${groupId}`),snapshot=>{if(stopped||denied)return;sections=snapshot.val()||{};ready=true;emit();},report);}
+    if(!attached){
+      attached=true;
+      articleStop=onValue(path(`articles/${groupId}`),snapshot=>{if(stopped||denied)return;sections=snapshot.val()||{};articlesReady=true;emit();},report);
+      milestoneStop=onValue(path(`articleMilestones/${groupId}`),snapshot=>{if(stopped||denied)return;milestones=snapshot.val()||{};milestonesReady=true;emit();},report);
+    }
   };
   stops.push(onValue(path(`groups/${groupId}`),snapshot=>{group=snapshot.val();groupReady=true;scope();},report));
   stops.push(onValue(path(`roles/${user.uid}`),snapshot=>{role=snapshot.val()||'student';roleReady=true;scope();},report));
   stops.push(onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{inactive=snapshot.val()===true;inactiveReady=true;scope();},report));
   stops.push(onValue(ref(db,'.info/connected'),snapshot=>{connected=snapshot.val()===true;emit();},report));
   stops.push(onAuthStateChanged(auth,active=>{if(active?.uid!==user.uid)report({code:'PERMISSION_DENIED',message:'A sessão foi encerrada.'});}));
-  return ()=>{stopped=true;sections={};articleStop();stops.forEach(stop=>stop());};
+  return ()=>{stopped=true;sections={};milestones={};articleStop();milestoneStop();stops.forEach(stop=>stop());};
 }
 export async function saveArticleSection(groupId,section,text,expectedRevision) {
   const actor=needUser();checkIdentifier(groupId);
@@ -310,6 +314,37 @@ export async function saveArticleSection(groupId,section,text,expectedRevision) 
     if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED')){
       let remote;try{remote=(await get(target)).val();}catch{throw error;}
       if((remote?.revision||0)!==expectedRevision)throw Object.assign(new Error('Outra pessoa alterou esta seção. Compare os textos antes de salvar.'),{code:'article/conflict',remote});
+    }
+    throw error;
+  }
+  return (await get(target)).val();
+}
+export async function completeArticleSection(groupId,section,expectedRevision) {
+  const actor=needUser();checkIdentifier(groupId);
+  if(!articleSectionKeys.includes(section))throw new Error('Escolha uma etapa válida do artigo.');
+  if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1)throw new Error('Salve o texto antes de concluir esta etapa.');
+  await requireAcademicAccess();
+  const [groupSnapshot,roleSnapshot,profileSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${actor.uid}`)),get(path(`users/${actor.uid}`))]);
+  const group=groupSnapshot.val(),role=roleSnapshot.val()||'student';
+  if(!group||['deleting','archived'].includes(group.status)||group.archived===true||!(role==='coordinator'||role==='advisor'&&group.advisorId===actor.uid||role==='student'&&group.members?.[actor.uid]===true))throw new Error('Você não tem acesso para concluir etapas deste trabalho.');
+  const articleRef=path(`articles/${groupId}/${section}`),target=path(`articleMilestones/${groupId}/${section}`);
+  const [articleSnapshot,milestoneSnapshot]=await Promise.all([get(articleRef),get(target)]);
+  const article=articleSnapshot.val(),previous=milestoneSnapshot.val();
+  const stale=()=>Object.assign(new Error('O texto desta etapa mudou. Confira a versão salva antes de concluir novamente.'),{code:'article/stale-completion'});
+  if(article?.revision!==expectedRevision)throw stale();
+  if(typeof article.text!=='string'||!article.text.trim())throw new Error('Escreva e salve o texto antes de concluir esta etapa.');
+  if(auth.currentUser?.uid!==actor.uid)throw new Error('A sessão mudou. Entre novamente para concluir a etapa.');
+  // The key is the section itself. A repeated click cannot create another trophy.
+  if(previous?.revision===expectedRevision)return previous;
+  const milestone={revision:expectedRevision,completedBy:actor.uid,completedByName:clean(profileSnapshot.val()?.name||actor.displayName||'Participante',100),completedAt:serverTimestamp(),firstCompletedAt:previous?.firstCompletedAt||serverTimestamp()};
+  try {await set(target,milestone);}
+  catch(error) {
+    if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED')){
+      let freshArticle,freshMilestone;
+      try{[freshArticle,freshMilestone]=await Promise.all([get(articleRef),get(target)]);}catch{throw error;}
+      if(freshArticle.val()?.revision!==expectedRevision)throw stale();
+      // A colleague may have completed the same revision while this request was in flight.
+      if(freshMilestone.val()?.revision===expectedRevision)return freshMilestone.val();
     }
     throw error;
   }
@@ -470,13 +505,16 @@ function proposalMemberEmails(emails,selfEmail) {
   }
   return [...unique];
 }
-export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[],proposal=null,proposalFile=null}) {
+export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[],proposal=null,proposalFile=null,workMode='group'}) {
   const user=needUser(),role=await requireAcademicAccess();
+  if(!['individual','group'].includes(workMode))throw new Error('Escolha Individual ou Em grupo para este trabalho.');
+  if(workMode==='individual'&&role!=='student')throw new Error('O trabalho individual deve ser iniciado pela conta do aluno.');
   const edition=Number(year);
   if(!Number.isInteger(edition)||edition<2025||edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
   const groupName=clean(name,100),groupTopic=clean(topic,240);
   if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
   const colleagues=proposalMemberEmails(memberEmails,user.email);
+  if(workMode==='individual'&&colleagues.length)throw new Error('O trabalho individual tem um único aluno. Escolha Em grupo para convidar colegas.');
   const schoolYear=role==='student'?String((await get(path(`users/${user.uid}/year`))).val()||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim():'';
   const automaticBruno=role==='student'&&/^[12](?:[º°oaª])?\s*(?:ano|serie|em|ensino medio)\b/.test(schoolYear);
   const brunoUid='GZv2JuQ7JJg2G4ErhdOEKQOzM3z2';
@@ -486,7 +524,7 @@ export async function createGroup({name,topic,description='',year=2027,advisorId
   const groupId=push(path('groups')).key;
   const preparedProposal=proposal?await prepareProposal(groupId,{proposal,proposalFile,user}):null;
   if(role==='student'&&candidates.length&&!preparedProposal)throw new Error('Preencha ou envie a proposta antes de convidar os orientadores.');
-  const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
+  const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,workMode,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
   if(role==='student'){group.advisorRequestPolicy='first-accept-v1';group.proposalRequired=true;}
   if(preparedProposal)group.proposal=preparedProposal.metadata;
   const changes={[`groups/${groupId}`]:group,[`userGroups/${user.uid}/${groupId}`]:true};
@@ -550,7 +588,7 @@ export async function deleteGroup(groupId) {
   const frozen=lockedGroup.val();
   if(!frozen)return;
   const changes={};
-  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations','orientationTransitions','articles'])changes[`${resource}/${groupId}`]=null;
+  for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations','advisorRequests','advisorRequestSlots','advisorConfirmations','orientationTransitions','articles','articleMilestones'])changes[`${resource}/${groupId}`]=null;
   changes[`proposalFiles/${groupId}`]=null;
   changes[`inicResults/${frozen.year}/${groupId}`]=null;changes[`inicBoards/${frozen.year}/${groupId}`]=null;
   const relatedUsers=new Set([...Object.keys(frozen.members||{}),frozen.createdBy,frozen.advisorId].filter(Boolean));
@@ -586,6 +624,7 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   if(group.status==='deleting')throw new Error('A exclusão deste grupo está em andamento.');
   if(!(role==='coordinator'||(role==='advisor'&&group.advisorId===user.uid)||(role!=='advisor'&&group.members?.[user.uid])))throw new Error('Você não pode enviar convites para este grupo.');
   if(!['member','advisor'].includes(type))throw new Error('Tipo de convite inválido.');
+  if(type==='member'&&group.workMode==='individual')throw new Error('Este INIC é individual. Você pode convidar um orientador, mas não outros alunos.');
   if(type==='member'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido para o convite.');
   if(type==='advisor'&&role==='student'){
     const payload=group.proposal?.mode==='file'?(await get(path(`proposalFiles/${groupId}`))).val():null;

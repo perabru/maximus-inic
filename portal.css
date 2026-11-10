@@ -268,3 +268,19 @@ html[data-theme="dark"]{color-scheme:dark;--primary:#a7aaff;--primary-hover:#c6c
 .inic-result-row strong{font-size:16px;display:block;margin-bottom:9px;overflow-wrap:anywhere}
 .inic-result-row>.button{flex-shrink:0}
 @media(max-width:700px){.advisor-assignment-card h3{font-size:17px}.inic-result-row{align-items:flex-start;flex-direction:column;gap:13px}.inic-result-row>.button{width:100%}.orientation-notice-card{padding:20px}.orientation-notice-card>.actions>.button{width:100%}}
+
+/* Explicit choice of individual or collaborative research. */
+.proposal-mode-picker{border:0;padding:0;margin:0 0 4px;min-width:0}
+.proposal-mode-picker>legend{padding:0;margin-bottom:12px;font-size:17px;line-height:1.5;font-weight:650;color:var(--ink)}
+.proposal-mode-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.proposal-mode-option{display:flex;align-items:flex-start;gap:12px;padding:17px;border:1px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer;min-width:0;transition:border-color .15s,background-color .15s}
+.proposal-mode-option.is-selected{border-color:var(--primary);background:var(--surface-soft);box-shadow:inset 0 0 0 1px var(--primary)}
+.proposal-mode-option:focus-within{outline:3px solid var(--orange);outline-offset:3px}
+.proposal-mode-option input[type=radio]{appearance:auto;accent-color:var(--primary);width:20px;height:20px;flex:0 0 20px;padding:0;margin:3px 0 0}
+.proposal-mode-copy{display:grid;gap:7px;min-width:0}
+.proposal-mode-copy>strong{font-size:17px;line-height:1.4;color:var(--ink)}
+.proposal-mode-copy>small{font-size:14px;font-weight:400;line-height:1.65;color:var(--muted)}
+.work-mode-badge{background:var(--surface-soft);color:var(--primary);border:1px solid var(--border)}
+.group-detail-header .work-mode-badge{margin-left:8px}
+.group-card[data-work-mode=individual] .card-top{flex-wrap:wrap;gap:8px}
+@media(max-width:540px){.proposal-mode-options{grid-template-columns:1fr}.proposal-mode-option{padding:16px;min-height:90px}.proposal-mode-copy>small{font-size:15px}}

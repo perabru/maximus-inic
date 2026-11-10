@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-09-collaborative-article",
+  "version": "2026-11-10-individual-trophies",
   "sdkVersion": "13.2.0",
   "root": "maximusInic",
   "roles": [
@@ -70,8 +70,10 @@
     "getProposal(groupId)": "Promise<metadata|null>; authenticated currently authorized group scope, including a pending invited advisor.",
     "getProposalFile(groupId)": "Promise<{blob,filename,contentType}>; authenticated point read, validates current version and format; pending invited advisor loses access on decline/cancellation. No public file URL.",
     "subscribeProposal(groupId,callback)": "Unsubscribe; {proposal,ready,error?}; clears and suppresses stale callbacks after scope permission loss or account archive.",
-    "subscribeArticle(groupId,callback)": "Assinatura em tempo real do artigo privado do grupo, com estado de conexão e revogação de acesso.",
-    "saveArticleSection(groupId,section,text,expectedRevision)": "Salva uma seção com revisão verificada no servidor e retorna a versão confirmada; conflitos retornam article/conflict e remote."
+    "subscribeArticle(groupId,callback)": "Assinatura privada {sections,milestones,ready,connected,error?,revoked?}; ready somente depois dos dois snapshots. Perda de acesso limpa artigo e troféus e encerra os respectivos listeners.",
+    "saveArticleSection(groupId,section,text,expectedRevision)": "Salva uma seção com revisão verificada no servidor e retorna a versão confirmada; conflitos retornam article/conflict e remote.",
+    "createGroup({name,topic,description,year,advisorIds,advisorId,memberEmails,proposal,proposalFile,workMode})": "Promise<groupId>; workMode group (padrão) ou individual. Aluno individual é autor único e mantém orientação, artigo, cronograma e termos. Individual rejeita memberEmails; novos grupos persistem a modalidade. Legados sem campo continuam em grupo.",
+    "completeArticleSection(groupId,section,expectedRevision)": "Promise<milestone>; exige texto preenchido já salvo na revisão indicada. Registra autoria e datas do servidor, preserva firstCompletedAt. Repetição da mesma revisão é idempotente; edição concorrente retorna article/stale-completion."
   },
   "schema": {
     "users/{uid}": {
@@ -103,7 +105,8 @@
       "createdAt": "epoch ms",
       "status": "active|archived|deleting; deleting exclusivo gestor e irreversível até concluir exclusão",
       "advisorRequestPolicy": "first-accept-v1; marcador obrigatório para nova proposta de estudante, imutável",
-      "advisorRequestVersion": "inteiro >= 0; 0 sem candidatos iniciais, 1 com candidatos; cada novo lote de solicitações incrementa 1. Aceite deve usar versão atual, rejeitando snapshot desatualizado."
+      "advisorRequestVersion": "inteiro >= 0; 0 sem candidatos iniciais, 1 com candidatos; cada novo lote de solicitações incrementa 1. Aceite deve usar versão atual, rejeitando snapshot desatualizado.",
+      "workMode": "individual|group; imutável depois de criar; ausente em grupos legados. Individual aceita somente createdBy em members e memberNames; advisorId continua separado."
     },
     "invitations/{id}": {
       "groupId": "gid",
@@ -225,6 +228,13 @@
       "updatedBy": "UID autenticado",
       "authorName": "nome do autor, até 100 caracteres",
       "updatedAt": "timestamp do servidor"
+    },
+    "articleMilestones/{gid}/{section}": {
+      "revision": "revisão positiva do artigo concluído; precisa coincidir com a versão salva",
+      "completedBy": "UID de quem confirmou",
+      "completedByName": "nome para exibição",
+      "completedAt": "timestamp do servidor da última conclusão",
+      "firstCompletedAt": "timestamp do servidor da primeira conquista; imutável"
     }
   },
   "planningNotice": "As datas geradas são um planejamento interno para 2027, não calendário oficial confirmado do INIC. O orientador/coordenador pode ajustar todas as entregas.",
@@ -234,15 +244,20 @@
     "securityTests": 851,
     "engine": "Firebase Realtime Database Emulator 4.11.2",
     "cli": "Firebase CLI 15.35.0",
-    "result": "Todos os 851 cenários passaram no Firebase Realtime Database Emulator local demo-maximus-inic: 532 anteriores, 151 de gestão, 57 de orientação, 15 de atribuição automática Bruno, 40 RPC de resultados/bancas, 23 de runtime de resultados e métricas e 33 de propostas. Compilação e execução validaram o arquivo exato final de regras (253978 bytes). Auth simulado; o runtime recusa bancos fora do emulador local. Nenhum dado de produção foi alterado.",
-    "sourceSha256": "4f7be74ceecc41d60cd56470bcb19f6ebedc6acab0c62f64597f23daf698db4f",
-    "rulesSha256": "0f4f32a0910905f7ccff85bd5c82928be257f63eae45241211068efa8ff1e1ce",
-    "independentChecks": "11 checagens independentes de streams aprovadas no mesmo SHA do serviço/regras; 28 do dashboard, 210 de UI e 112 unitários/componentes separados reportados pelos responsáveis.",
+    "result": "Em 10/11/2026, 851 cenários existentes, 43 de artigo e 75 de modalidade individual/troféus passaram com o serviço e regras atuais no Firebase Emulator local demo-maximus-inic. Os testes usam dados fictícios e autenticação simulada.",
+    "sourceSha256": "bff3cc4457db9a414d5e7616cfef78c7f4d87a3d60200fc8d8a90b77b3f925ce",
+    "rulesSha256": "42c6cb570ebca59a576323d39f387c9f586da6ab1048dcf511cd0404907c9cb7",
+    "independentChecks": "222 cenários do portal e 23 testes do editor de artigo passaram nesta atualização.",
     "proposalRuntimeTests": 19,
-    "proposalRuntimeResult": "19 cenários adicionais do serviço de propostas passaram isoladamente no mesmo SHA: criação atômica, retenção de arquivo, CAS, downloads e revogação após recusa. A suíte principal permanece em 851 cenários."
+    "proposalRuntimeResult": "19 cenários adicionais do serviço de propostas passaram isoladamente no mesmo SHA: criação atômica, retenção de arquivo, CAS, downloads e revogação após recusa. A suíte principal permanece em 851 cenários.",
+    "articleSecurityTests": 43,
+    "individualAndTrophySecurityTests": 75,
+    "totalSecurityTests": 969,
+    "portalUiTests": 222,
+    "articleEditorTests": 23
   },
   "evaluationPrivacy": "Só coordenador ou orientador atualmente atribuído lê todas avaliações individuais. Integrante lê nota coletiva e sua própria nota. Nenhum aluno escreve notas; remover o integrante revoga a leitura e apaga sua avaliação.",
-  "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação.",
+  "deletionNotice": "A exclusão bloqueia novas atividades e congela membros, convites e cronograma. A limpeza usa o grupo antigo para autorização e uma atualização atômica; perfis globais, Auth e outros grupos permanecem fora da operação. Artigo e troféus são removidos na mesma atualização. A exclusão de grupo que omita troféus existentes é recusada.",
   "agreementPrivacy": "Owners and coordination can read signed-term metadata and individual original files; bulk bytes remain forbidden. A current assigned teacher may read only the approved term of a current member of an active assigned group, through a server-validated group proof. Pending invitations, unrelated groups, role self-choice and stale proofs do not grant file access. Before approval, only status/reviewedAt are visible to that teacher for live status updates; no file, metadata or reason. The technical notification worker cannot read terms, reviews, grants or signatures. Only completed-profile students upload their own original pair; only coordination writes review decisions. Each new upload changes nonce and timestamp and invalidates previous review/signatures.",
   "notificationWorkerPrivacy": "Worker técnico lê somente groups/tasks/events/pushSubscriptions/notificationDeliveries/advisorConfirmations; não lê perfis, convites, mensagens, notas ou contratos. Confirmações são somente leitura, enviadas apenas ao estudante ainda integrante de grupo ativo com o mesmo orientador. Recusas nunca geram confirmação/push.",
   "mandatoryAgreementNotice": "Todo estudante deve enviar o termo assinado de 2027 antes de escrever em grupos, convites aceitos, mensagens, cronograma e metadados acadêmicos. Perfil, upload/download do próprio termo, leitura autorizada e preferências de notificação continuam acessíveis. A autorização é validada nas regras do banco e no serviço. Arquivo recebido não significa verificação humana das assinaturas.",
@@ -253,5 +268,7 @@
   "orientationNotice": "Revisions and immutable transition proofs serialize assignment, replacement, withdrawal and first acceptance. Losing invited teachers receive private unavailable notices; an old advisor receives a summary without continued group access. Declines remain silent to students. Bruno may act as coordinator and advisor; his coordinator global access remains intentional.",
   "automaticAdvisorNotice": "Groups newly created by a student whose school year is1º/2º ano (normalized variants) automatically use approved active Bruno Michel Pera UID GZv2JuQ7JJg2G4ErhdOEKQOzM3z2. Candidate selections are ignored for those groups. Third-year proposals retain up to3 invitation candidates. Unavailable Bruno blocks creation without partial writes; coordination may subsequently replace or release the advisor.",
   "proposalNotice": "New student-origin advisor invitations require a text proposal in at most4 named fields or one PDF/JPEG/PNG file up to3MiB. Existing pending legacy invitations remain respondable. group.proposal text/metadata follows the existing group read scope (including the reminder worker group metadata); proposalFiles bytes are private and never readable by that worker. Declined/cancelled candidates lose file access. Proposal versions serialize edits and file replacement; creation/group/invitations are atomic.",
-  "articleNotice": "Compartilhado somente com integrantes atuais, orientador atual e coordenação. Salvamento automático por seção com revisão verificada no servidor. Conflitos preservam o rascunho para comparação. Texto offline pendente fica na memória da sessão. Publicar as regras de articles antes de liberar o cliente."
+  "articleNotice": "Compartilhado somente com integrantes atuais, orientador atual e coordenação. Salvamento automático por seção com revisão verificada no servidor. Conflitos preservam o rascunho para comparação. Texto offline pendente fica na memória da sessão. Publicar as regras de articles antes de liberar o cliente.",
+  "individualWorkNotice": "Aluno escolhe Individual ou Em grupo ao criar. Individual tem somente o criador como aluno e aceita convites de orientação. 1º/2º ano preserva Bruno automático. Grupos existentes não são reclassificados.",
+  "articleTrophyNotice": "Dez conquistas por trabalho, concluídas explicitamente após o texto salvo. Troféu histórico permanece ao editar; revisão atual precisa ser reconcluída. Estado é sincronizado com integrantes e orientador e limpo ao revogar acesso. Não representa aprovação ou nota."
 }

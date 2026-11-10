@@ -32,7 +32,7 @@ function make(){
   downloadSigningAgreement:async(uid,year)=>{mock.signingDownload={uid,year};const record=metadata(uid,{uploadVersion:'upload-1'});return {blob:new Blob(['%PDF-1.4\nFictitious test'],{type:'application/pdf'}),metadata:record,review:reviewedTerm().review,signatures:[],documentSha256:'a'.repeat(64)};},
   getProposal:async(...args)=>{(mock.proposalReads||=[]).push(args);return mock.proposalRecord||null;},saveProposal:async(...args)=>{mock.proposalSavePayload=args;},getProposalFile:async(...args)=>{mock.proposalFilePayload=args;return {blob:new Blob(['Fictitious proposal PDF'],{type:'application/pdf'}),filename:'proposta-teste.pdf'};},
   createGroup:async payload=>{mock.createPayload=payload;return 'g-new';},invite:async payload=>{mock.invitePayload=payload;},sendMessage:async(...args)=>{(mock.sentMessages||=[]).push(args);},
-  subscribeArticle:()=>()=>{},saveArticleSection:async(...args)=>{mock.articleSavePayload=args;},
+  subscribeArticle:()=>()=>{},saveArticleSection:async(...args)=>{mock.articleSavePayload=args;},completeArticleSection:async(...args)=>{mock.articleCompletePayload=args;return {section:args[1],revision:args[2]};},
   respondInvitation:async(...args)=>{mock.respondPayload=args;},saveProfile:async payload=>{mock.profilePayload=payload;},logout:async()=>{mock.logout=true;},
   addEvent:async payload=>{mock.eventPayload=payload;},updateEvent:async(...args)=>{mock.eventUpdate=args;},deleteEvent:async()=>{}
  };
@@ -65,6 +65,7 @@ function fileForm(q,file={name:'signed.pdf',size:123,type:'application/pdf'}){co
 const advisorFixtures=[{id:'prof-1',name:'Ângelo Silva'},{id:'prof-2',name:'Mariana Carmona'},{id:'prof-3',name:'Bruno Michel Pera'},{id:'prof-4',name:'Taynara Alves'}];
 function openProposal(q){q.ui.state.advisors=advisorFixtures.map(p=>({...p}));q.ui.showCreateGroup();for(const [name,value] of Object.entries({name:'Equipe Científica',topic:'Tecnologia na escola',description:'Desenvolvimento de um projeto de pesquisa',year:'2027'}))q.document.querySelector('#dialog-form [name='+name+']').value=value;return q.document.querySelector('#dialog-form');}
 function selectAdvisor(q,id,checked=true){const input=[...q.document.querySelectorAll('input[name=advisorIds]')].find(e=>e.value===id);assert.ok(input,'advisor checkbox '+id);input.checked=checked;input.dispatchEvent(new q.window.Event('change'));return input;}
+function selectWorkMode(q,mode){const input=q.document.querySelector(`input[name=workMode][value=${mode}]`);assert.ok(input,'work mode '+mode);input.checked=true;input.dispatchEvent(new q.window.Event('change'));return input;}
 function joinedGroup(q,patch={}){q.ui.state.groups=[{id:'g',name:'Projeto de pesquisa',topic:'Ciência aplicada',year:2027,advisorId:'',createdBy:'student-a',members:{'student-a':true},memberNames:{'student-a':'Joana Teste'},status:'active',...patch}];q.ui.syncGroupListeners();return q.mock.groupCallback;}
 function staffGroup(role='coordinator',assigned=true){const q=make();q.ui.setUser(role==='advisor'?'prof-1':'coord',role,{name:role==='advisor'?'Ângelo Silva':'Coordenação',requestedRole:role==='advisor'?'advisor':'student'});q.ui.state.advisors=advisorFixtures.map(p=>({...p}));joinedGroup(q,{advisorId:assigned?'prof-1':''});return q;}
 const receipt={studentUid:'student-a',advisorUid:'prof-1',advisorName:'Ângelo Silva',invitationId:'invite-1',createdAt:1793880000000};
@@ -340,5 +341,72 @@ function invitedProfessor(patch={}){const q=make();q.ui.sessionChanged({uid:'pro
  await test('article tab mounts once and preserves its controller across remote group renders and navigation',async()=>{const q=make().student(valid);joinedGroup(q);emitGroup(q,'g',{inicResultsReady:true});q.route('group','g','article');assert.equal(q.mock.articleEditors.length,1);assert.ok(q.document.querySelector('.group-tabs a[href="#grupo/g/article"]'));const element=q.document.querySelector('[data-qa-article-editor]');q.mock.groupCallbacks.get('g')({tasks:[],events:[],messages:[],inicResultsReady:true});q.ui.render();assert.ok(q.document.querySelector('[data-qa-article-editor]')===element);q.route('group','g','overview');q.route('group','g','article');assert.equal(q.mock.articleEditors.length,1);assert.ok(q.document.querySelector('[data-qa-article-editor]')===element);await q.mock.articleEditors[0].options.onSave('introduction','Texto',0);assert.deepEqual(Array.from(q.mock.articleSavePayload),['g','introduction','Texto',0]);q.close();});
  await test('article controller survives student advisor changes but is destroyed on lost membership or logout',async()=>{for(const cause of ['membership','logout']){const q=make().student(valid);joinedGroup(q);emitGroup(q,'g',{inicResultsReady:true});q.route('group','g','article');q.ui.state.groups[0].advisorId='prof-2';q.ui.render();assert.equal(q.mock.articleDestroyed,undefined);const old=q.mock.articleEditors[0];if(cause==='logout')q.ui.sessionChanged(null);else{q.ui.state.groups[0].members={};q.ui.syncGroupListeners();}assert.equal(q.mock.articleDestroyed,1);assert.throws(()=>old.options.onSave('introduction','Depois da revogação',0));assert.equal(q.mock.articleSavePayload,undefined);q.close();}});
  await test('unassigned advisors never mount the group article and replaced advisors lose the editor',async()=>{const q=staffGroup('advisor');emitGroup(q,'g',{inicResultsReady:true});q.route('group','g','article');assert.equal(q.mock.articleEditors.length,1);q.ui.state.groups[0].advisorId='prof-2';q.ui.syncGroupListeners();q.ui.render();assert.equal(q.mock.articleDestroyed,1);assert.equal(q.document.querySelector('[data-qa-article-editor]'),null);assert.match(body(q),/não está disponível/);q.close();});
+ await test('individual creation excludes colleague emails and keeps the selected orientation proposal',async()=>{
+  const q=make().student(valid);const form=openProposal(q);
+  assert.equal(form.querySelector('[name=workMode][value=group]').checked,true);
+  const email=form.querySelector('[name=memberEmails]');email.value='colega@example.invalid, endereco-incompleto';
+  selectWorkMode(q,'individual');selectAdvisor(q,'prof-2');
+  assert.equal(email.disabled,true);assert.equal(email.closest('label').hidden,true);
+  assert.match(form.querySelector('[name=name]').closest('label').textContent,/Nome do trabalho/);
+  assert.match(q.document.querySelector('#dialog-submit').textContent,/Criar meu INIC individual/);
+  dispatchForm(q);await flush();
+  assert.equal(q.mock.createPayload.workMode,'individual');assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),[]);
+  assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-2']);assert.equal(q.mock.createPayload.proposal.mode,'text');
+  assert.equal(q.mock.invitePayload,undefined);assert.match(q.document.querySelector('#app-notice').textContent,/INIC individual foi criado/);q.close();
+ });
+ await test('switching back to group preserves colleague inputs and restores the group creation flow',async()=>{
+  const q=make().student(valid);const form=openProposal(q),email=form.querySelector('[name=memberEmails]');email.value='colega@example.invalid';
+  selectWorkMode(q,'individual');selectWorkMode(q,'group');
+  assert.equal(email.disabled,false);assert.equal(email.closest('label').hidden,false);assert.equal(email.value,'colega@example.invalid');
+  assert.match(form.querySelector('[name=name]').closest('label').textContent,/Nome do grupo/);
+  dispatchForm(q);await flush();assert.equal(q.mock.createPayload.workMode,'group');assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),['colega@example.invalid']);q.close();
+ });
+ await test('individual draft retains its modality until the signed term permits creation',async()=>{
+  const q=make().student();q.ui.state.advisors=advisorFixtures;q.ui.showProposalDraft();
+  let form=q.document.querySelector('#dialog-form');for(const [name,value]of Object.entries({name:'Minha pesquisa',topic:'Água na escola',year:'2027'}))form.querySelector('[name='+name+']').value=value;
+  selectWorkMode(q,'individual');selectAdvisor(q,'prof-1');dispatchForm(q);await flush();assert.equal(q.mock.createPayload,undefined);
+  q.term(valid);q.ui.showCreateGroup();form=q.document.querySelector('#dialog-form');
+  assert.equal(form.querySelector('[name=workMode][value=individual]').checked,true);assert.equal(form.querySelector('[name=memberEmails]').disabled,true);
+  assert.equal(form.querySelector('[name=name]').value,'Minha pesquisa');assert.equal(form.querySelector('[name=advisorIds][value=prof-1]').checked,true);
+  dispatchForm(q);await flush();assert.equal(q.mock.createPayload.workMode,'individual');assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),[]);q.close();
+ });
+ await test('first and second year individual research retains automatic Bruno orientation',async()=>{
+  for(const year of ['1º ano','2º ano']){const q=make().student(valid);q.ui.state.profile.year=year;openProposal(q);selectWorkMode(q,'individual');
+   assert.match(q.document.querySelector('[data-automatic-advisor]').textContent,/Bruno Michel Pera.*trabalho individual/);
+   assert.equal(q.document.querySelector('[name=advisorIds]'),null);dispatchForm(q);await flush();
+   assert.equal(q.mock.createPayload.workMode,'individual');assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),[]);assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),[]);
+   assert.match(q.document.querySelector('#app-notice').textContent,/individual.*Bruno Michel Pera/);q.close();}
+ });
+ await test('individual cards and headings are explicit while a legacy one-member group remains a group',async()=>{
+  for(const mode of ['individual',undefined]){const q=make().student(valid);joinedGroup(q,{workMode:mode});emitGroup(q,'g',{inicResultsReady:true});q.route('groups');await flush();
+   assert.equal(Boolean(q.document.querySelector('.group-card .work-mode-badge')),mode==='individual');
+   q.route('group','g','article');assert.equal(Boolean(q.document.querySelector('#group-heading-copy .work-mode-badge')),mode==='individual');
+   assert.equal(q.mock.articleEditors[0].options.group.workMode,mode);assert.equal(q.mock.articleEditors[0].options.user.role,'student');q.close();}
+ });
+ await test('individual invitation forms only offer orientation and reject a forged member choice',async()=>{
+  const q=make().student(valid);joinedGroup(q,{workMode:'individual',proposal:proposalText()});q.ui.state.advisors=advisorFixtures;q.ui.showInviteForm('g','member');
+  const type=q.document.querySelector('[name=type]'),email=q.document.querySelector('[name=toEmail]');assert.equal(type.value,'advisor');assert.equal(email.disabled,true);
+  assert.equal(type.querySelector('[value=member]').disabled,true);assert.match(q.document.querySelector('#dialog-heading').textContent,/Convidar orientador/);
+  type.value='member';email.value='colega@example.invalid';dispatchForm(q);await flush();assert.equal(q.mock.invitePayload,undefined);assert.match(q.document.querySelector('#dialog-status').textContent,/somente para orientação/);
+  type.value='advisor';q.document.querySelector('[name=toUid]').value='prof-2';dispatchForm(q);await flush();assert.equal(q.mock.invitePayload.type,'advisor');assert.equal(q.mock.invitePayload.toUid,'prof-2');q.close();
+ });
+ await test('switching invitation scope between group and individual updates the allowed invitation type',async()=>{
+  const q=make().student(valid);joinedGroup(q,{proposal:proposalText()});q.ui.state.groups.push({...q.ui.state.groups[0],id:'solo',name:'Trabalho individual',workMode:'individual'});q.ui.state.advisors=advisorFixtures;
+  q.ui.showInviteForm('g','member');const group=q.document.querySelector('[name=groupId]'),type=q.document.querySelector('[name=type]');
+  group.value='solo';group.dispatchEvent(new q.window.Event('change'));assert.equal(type.value,'advisor');assert.equal(type.querySelector('[value=member]').disabled,true);
+  group.value='g';group.dispatchEvent(new q.window.Event('change'));assert.equal(type.querySelector('[value=member]').disabled,false);assert.equal(type.closest('label').hidden,false);
+  type.value='member';type.dispatchEvent(new q.window.Event('change'));q.document.querySelector('[name=toEmail]').value='colega@example.invalid';dispatchForm(q);await flush();
+  assert.equal(q.mock.invitePayload.groupId,'g');assert.equal(q.mock.invitePayload.type,'member');q.close();
+ });
+ await test('assigned individual work is visible to staff and does not offer colleague invitations',async()=>{
+  for(const role of ['student','advisor','coordinator']){const q=role==='student'?make().student(valid):staffGroup(role);joinedGroup(q,{workMode:'individual',advisorId:'prof-1'});emitGroup(q,'g',{inicResultsReady:true});q.route('group','g','article');
+   assert.ok(q.document.querySelector('#group-heading-copy .work-mode-badge'));assert.equal(q.mock.articleEditors.length,1);
+   assert.equal([...q.document.querySelectorAll('#group-header-actions button')].some(b=>b.textContent==='Convidar +'||b.textContent==='Convidar orientador'),false);q.close();}
+ });
+ await test('stage completion uses the article service and a stale editor cannot award after access is lost',async()=>{
+  const q=make().student(valid);joinedGroup(q,{workMode:'individual'});emitGroup(q,'g',{inicResultsReady:true});q.route('group','g','article');const editor=q.mock.articleEditors[0];
+  await editor.options.onComplete('introduction',3);assert.deepEqual(Array.from(q.mock.articleCompletePayload),['g','introduction',3]);delete q.mock.articleCompletePayload;
+  q.ui.state.groups[0].members={};q.ui.syncGroupListeners();assert.throws(()=>editor.options.onComplete('methodology',2));assert.equal(q.mock.articleCompletePayload,undefined);q.close();
+ });
  console.log('TOTAL '+count+' mandatory-term DOM/VM scenarios passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

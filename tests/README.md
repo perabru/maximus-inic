@@ -94,3 +94,15 @@ Saída esperada dessa verificação adicional: `PROPOSAL RUNTIME TESTS PASSED: 1
 Os 13 testes do editor incluem quatro novas regressões: retorno ao texto original durante um conflito, atualizações de outras seções e reconexão sem perda do rascunho, resolução explícita de versões, edição durante um salvamento pendente e respostas tardias após revogação do acesso. O conflito permanece pendente para os avisos de saída até ser resolvido. Callbacks tardios não podem reabrir o editor nem restaurar conteúdo privado depois de uma revogação.
 
 Nesta revisão também passaram os 213 cenários da interface do portal e as 43 verificações de acesso e sincronização do artigo no emulador. As regras de produção não foram alteradas; esta atualização corrige o controlador do editor.
+
+### Modalidade individual e troféus (10/11/2026)
+
+Esta atualização posterior inclui novas regras e novos fluxos. Foram aprovados **75 cenários de modalidade e troféus**, **43 cenários de artigo** e os **851 cenários anteriores de segurança**, usando o serviço real e o banco local fictício. As verificações de interface passaram em **222 cenários do portal** e **23 testes do editor**.
+
+```sh
+npx firebase emulators:exec --project demo-maximus-inic --only database "node individual-trophies-security.mjs && node article-security.mjs && node security.mjs"
+node portal-ui.test.cjs
+node --test article-editor.test.mjs
+```
+
+Os cenários novos verificam criação individual, orientação automática, convite e escrita do professor, bloqueio de segundo aluno inclusive em atualizações atômicas, compatibilidade dos grupos antigos, troféu somente para texto salvo e preenchido, concorrência, conclusão repetida sem duplicação, conservação da primeira conquista, revisão posterior, autoria e datas, isolamento entre trabalhos, revogação e limpeza atômica. Uma simulação de cliente antigo confirma que excluir o trabalho sem remover seus troféus é recusado. A interface verifica que uma resposta otimista não concede a conquista, falhas preservam o texto e a falta de conexão não prende a saída da conta.

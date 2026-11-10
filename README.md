@@ -149,3 +149,13 @@ A falta de conexão mantém o texto pendente na memória da página e retoma o e
 ### Leitura e tipografia
 
 Textos gerais ampliados, controles em fonte normal com peso 600 e contraste reforçado. O artigo usa 18 px na escrita em telas maiores e 17 px no celular; explicações, ajudas e metadados também foram ampliados. A proposta acompanha as cores dos temas claro e escuro. `readability.css` reúne ajustes de espaçamento, quebras de linha e áreas de toque; a fonte usa as famílias do sistema, sem download adicional.
+
+### INIC individual e troféus por etapa (10/11/2026)
+
+Em **Criar meu INIC**, o estudante escolhe **Individual** ou **Em grupo**. No individual, há um único autor e os convites são apenas para orientação. O trabalho continua com artigo, cronograma, conversa, avaliações e acompanhamento do professor e da coordenação. Estudantes do 1º e 2º ano continuam recebendo Bruno Michel Pera como orientador automaticamente. A escolha é guardada no trabalho e não muda ao editar seu nome ou tema. Grupos antigos continuam funcionando como grupos, mesmo quando ainda têm somente uma pessoa.
+
+Na aba **Artigo INIC**, a coleção contém dez troféus: título, autores e afiliações, resumo, palavras-chave, introdução, metodologia, resultados, discussão, conclusão e referências. Depois de escrever e aguardar o salvamento, o estudante usa **Concluir etapa e ganhar troféu**. A conquista só aparece após a confirmação do servidor. No individual, ela representa o progresso daquele aluno; no grupo, acompanha o mesmo artigo compartilhado e aparece para todos os participantes e para o orientador.
+
+A primeira conquista fica guardada. Ao editar uma seção já concluída, seu troféu permanece e a seção passa para **Em revisão**; **Concluir revisão** registra a versão atual sem contar outro troféu. Reabrir o aplicativo ou receber uma atualização de um colega não repete a celebração. As conquistas reconhecem o progresso da escrita; o orientador continua podendo sugerir ajustes e registrar a avaliação pelos controles existentes.
+
+**Dados e implantação:** `groups/{gid}/workMode` aceita `individual` ou `group`; registros legados sem esse campo permanecem válidos. `articleMilestones/{gid}/{section}` guarda a revisão concluída, autoria, data de conclusão e a data da primeira conquista. As regras limitam o individual ao criador e validam cada conquista contra o texto salvo e a revisão atual. O artigo e seus troféus são removidos juntos ao excluir o trabalho. Publique as regras antes do cliente; `scripts/upgrade-individual-trophies-rules.cjs` aplica a mudança aos JSON atuais, preservando outros namespaces e recusando reaplicação automática.
