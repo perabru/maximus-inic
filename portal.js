@@ -4,7 +4,7 @@ import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261105-12';
 import { createCalendarView } from './calendar.js?v=20261105-8';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
-import { createArticleEditor } from './article-editor.js?v=20261109-1';
+import { createArticleEditor } from './article-editor.js?v=20261110-1';
 
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};

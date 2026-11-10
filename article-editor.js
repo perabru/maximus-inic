@@ -8,7 +8,7 @@ let sequence=0;
 // never stored in the public service-worker cache or browser persistent storage.
 export function createArticleEditor({group,user,onSave,subscribe,saveDelay=800}={}) {
   const prefix=`article-${++sequence}`;
-  let disposed=false,ready=false,connected=false,readError=null,activeKey='introduction',previewMode=false;
+  let disposed=false,accessRevoked=false,ready=false,connected=false,readError=null,activeKey='introduction',previewMode=false;
   let stop=()=>{};
   const entries=new Map(),timers=new Map(),downloads=new Set();
   const element=make('section','inic-article');element.dataset.groupId=group.id;
@@ -92,15 +92,17 @@ export function createArticleEditor({group,user,onSave,subscribe,saveDelay=800}=
   function schedule(key){clearTimeout(timers.get(key));timers.delete(key);const entry=entries.get(key);if(!disposed&&connected&&ready&&!readError&&entry.dirty&&!entry.conflicted&&!entry.pending)timers.set(key,setTimeout(()=>{timers.delete(key);save(key);},saveDelay));}
   function adopt(entry,record){entry.record=record;entry.baseRevision=record?.revision||0;entry.baseText=record?.text||'';entry.text=entry.baseText;entry.dirty=false;entry.conflicted=false;entry.failure='';}
   function receive({sections={},connected:online,ready:loaded,error,revoked=false}={}) {
-    if(disposed)return;
-    if(error){readError=error;ready=false;for(const timer of timers.values())clearTimeout(timer);timers.clear();for(const entry of entries.values()){if(revoked){adopt(entry,null);entry.remote.textContent='';entry.pending=null;}paintEntry(entry);}preview.replaceChildren();paintStatus();return;}
+    if(disposed||accessRevoked)return;
+    if(error){readError=error;ready=false;accessRevoked=revoked;for(const timer of timers.values())clearTimeout(timer);timers.clear();for(const entry of entries.values()){if(revoked){adopt(entry,null);entry.remote.textContent='';entry.pending=null;}paintEntry(entry);}preview.replaceChildren();paintStatus();return;}
     if(typeof online==='boolean')connected=online;
     if(loaded===true){ready=true;readError=null;
       for(const [key,entry]of entries){
         const record=sections[key]||null;
         // Firebase emits optimistic local writes; they are not server confirmations.
         if(entry.pending&&record?.revision===entry.pending.revision&&record?.updatedBy===user.uid&&record?.text===entry.pending.text)continue;
-        if(!entry.dirty&&!entry.pending)adopt(entry,record);
+        // Returning to the old baseline does not resolve a conflict with a
+        // newer shared revision. Preserve that choice until it is resolved.
+        if(!entry.dirty&&!entry.pending&&!entry.conflicted)adopt(entry,record);
         else if((record?.revision||0)!==entry.baseRevision|| (record?.text||'')!==entry.baseText){entry.record=record;entry.conflicted=entry.text!==(record?.text||'');if(!entry.conflicted&&!entry.pending)adopt(entry,record);}
         paintEntry(entry);
       }
@@ -114,14 +116,14 @@ export function createArticleEditor({group,user,onSave,subscribe,saveDelay=800}=
     const sent={text:entry.text,revision:entry.baseRevision+1};entry.pending=sent;entry.failure='';paintEntry(entry);paintStatus();
     try {
       const record=await onSave(key,sent.text,entry.baseRevision);
-      if(disposed)return;
+      if(disposed||accessRevoked)return;
       entry.pending=null;
       const latest=(entry.record?.revision||0)>(record?.revision||0)?entry.record:record;
       if(entry.text===sent.text){adopt(entry,latest);}
       else if(latest?.text===sent.text){entry.record=latest;entry.baseRevision=latest.revision;entry.baseText=latest.text;entry.dirty=entry.text!==entry.baseText;entry.conflicted=false;}
       else {entry.record=latest;entry.conflicted=true;}
     } catch(error) {
-      if(disposed)return;entry.pending=null;
+      if(disposed||accessRevoked)return;entry.pending=null;
       if(error.code==='article/conflict'){entry.record=error.remote||null;entry.conflicted=true;}
       else entry.failure=error.message||'Não foi possível salvar. Confira a conexão e tente novamente.';
     }
@@ -132,5 +134,5 @@ export function createArticleEditor({group,user,onSave,subscribe,saveDelay=800}=
   function download(){if(disposed||!ready||readError)return;const sections=Object.fromEntries([...entries].map(([key,entry])=>[key,{text:entry.text}]));const blob=new Blob([articlePlainText({group,sections})],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);downloads.add(url);const a=make('a');a.href=url;a.download=`artigo-inic-${group.year||2027}.txt`;element.append(a);a.click();a.remove();setTimeout(()=>{URL.revokeObjectURL(url);downloads.delete(url);},1000);}
   paintMode();for(const entry of entries.values())paintEntry(entry);paintStatus();
   try{stop=subscribe(receive)||(()=>{});}catch(error){receive({error});}
-  return {element,flush,hasUnsaved:()=>!disposed&&[...entries.values()].some(e=>e.dirty||e.pending),destroy(){if(disposed)return;disposed=true;stop();for(const timer of timers.values())clearTimeout(timer);timers.clear();for(const url of downloads)URL.revokeObjectURL(url);downloads.clear();for(const entry of entries.values()){entry.text='';entry.record=null;entry.input.value='';entry.input.disabled=true;entry.remote.textContent='';}element.replaceChildren();entries.clear();}};
+  return {element,flush,hasUnsaved:()=>!disposed&&[...entries.values()].some(e=>e.dirty||e.pending||e.conflicted),destroy(){if(disposed)return;disposed=true;stop();for(const timer of timers.values())clearTimeout(timer);timers.clear();for(const url of downloads)URL.revokeObjectURL(url);downloads.clear();for(const entry of entries.values()){entry.text='';entry.record=null;entry.input.value='';entry.input.disabled=true;entry.remote.textContent='';}element.replaceChildren();entries.clear();}};
 }

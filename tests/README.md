@@ -88,3 +88,9 @@ Saída esperada dessa verificação adicional: `PROPOSAL RUNTIME TESTS PASSED: 1
 `node --test article-editor.test.mjs` verifica explicações e links, debounce, confirmação do servidor, edições durante um envio, prévia com texto não confiável, conflitos, reconexão e limpeza ao perder acesso. Três cenários adicionais em `portal-ui.test.cjs` verificam a aba integrada, preservação do editor nas atualizações e navegação, alteração do orientador e encerramento da sessão.
 
 `npx firebase emulators:exec --project demo-maximus-inic --only database "node article-security.mjs"` executa 43 verificações com o serviço real e regras reais: leitura compartilhada, isolamento de outros grupos, orientador atual, dados de autoria, limites, termos obrigatórios, corridas entre escritores, notificações ao vivo e exclusão do artigo junto do grupo. Essa execução é exclusiva do emulador local e não acessa dados de produção.
+
+### Regressões verificadas em 10/11/2026
+
+Os 13 testes do editor incluem quatro novas regressões: retorno ao texto original durante um conflito, atualizações de outras seções e reconexão sem perda do rascunho, resolução explícita de versões, edição durante um salvamento pendente e respostas tardias após revogação do acesso. O conflito permanece pendente para os avisos de saída até ser resolvido. Callbacks tardios não podem reabrir o editor nem restaurar conteúdo privado depois de uma revogação.
+
+Nesta revisão também passaram os 213 cenários da interface do portal e as 43 verificações de acesso e sincronização do artigo no emulador. As regras de produção não foram alteradas; esta atualização corrige o controlador do editor.

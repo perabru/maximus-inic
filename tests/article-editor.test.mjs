@@ -28,6 +28,54 @@ test('remote updates do not replace the textarea or discard a dirty local draft'
 test('a server conflict preserves the draft until the user chooses the shared version',async()=>{
  const q=setup({onSave:async()=>{throw Object.assign(new Error('Conflito'),{code:'article/conflict',remote:record('Versão compartilhada',2,'a1')});}});try{q.emit({ready:true,connected:true,sections:{introduction:record('Antes')}});q.input('Local');await q.editor.flush();assert.equal(q.field().value,'Local');q.button('Usar versão compartilhada').click();assert.equal(q.field().value,'Versão compartilhada');assert.equal(q.editor.hasUnsaved(),false);}finally{q.close();}
 });
+test('returning to the original text during a conflict stays unsaved across other sections and reconnection',async()=>{
+ const q=setup();try{
+  const shared=record('Revisão do orientador',2,'a1');
+  q.emit({ready:true,connected:true,sections:{introduction:record('Original')}});
+  const field=q.input('Minha revisão');
+  q.emit({ready:true,connected:true,sections:{introduction:shared}});
+  q.input('Original');
+  assert.equal(q.editor.hasUnsaved(),true,'the unresolved local choice must still warn before leaving');
+  q.emit({ready:true,connected:true,sections:{introduction:shared,methodology:record('Outro integrante escreveu o método',1,'s2')}});
+  assert.equal(q.field(),field);assert.equal(field.value,'Original');
+  assert.equal(q.field('methodology').value,'Outro integrante escreveu o método');
+  q.emit({ready:true,connected:false,sections:{introduction:shared}});
+  q.emit({ready:true,connected:true,sections:{introduction:shared}});
+  assert.equal(field.value,'Original');assert.equal(q.editor.hasUnsaved(),true);
+  assert.equal(field.closest('section').querySelector('.article-conflict').hidden,false);
+  await q.editor.flush();assert.equal(q.calls.length,0,'an unresolved conflict must not be saved automatically');
+  q.button('Salvar meu texto revisado').click();await tick();
+  assert.deepEqual(q.calls[0],['introduction','Original',2]);
+  assert.equal(field.value,'Original');assert.equal(q.editor.hasUnsaved(),false);
+ }finally{q.close();}
+});
+test('a reverted local draft can explicitly accept the shared version to resolve its conflict',async()=>{
+ const q=setup();try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Original')}});
+  q.input('Rascunho');q.emit({ready:true,connected:true,sections:{introduction:record('Compartilhado',2,'a1')}});
+  q.input('Original');assert.equal(q.editor.hasUnsaved(),true);
+  q.button('Usar versão compartilhada').click();
+  assert.equal(q.field().value,'Compartilhado');assert.equal(q.editor.hasUnsaved(),false);
+  assert.equal(q.field().closest('section').querySelector('.article-conflict').hidden,true);
+  assert.equal(q.calls.length,0);
+ }finally{q.close();}
+});
+test('a local revert while a save is pending survives a newer shared revision and the save acknowledgement',async()=>{
+ let finish;let first=true;
+ const q=setup({onSave:async(key,text,revision)=>{if(first){first=false;return new Promise(resolve=>{finish=resolve;});}return record(text,revision+1);}});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Original')}});
+  q.input('Texto enviado');const saving=q.editor.flush();q.input('Original');
+  const shared=record('Revisão mais recente do orientador',3,'a1');
+  q.emit({ready:true,connected:true,sections:{introduction:shared}});
+  finish(record('Texto enviado',2));await saving;
+  assert.equal(q.field().value,'Original');assert.equal(q.editor.hasUnsaved(),true);
+  q.emit({ready:true,connected:true,sections:{introduction:shared,results:record('Resultado do grupo',1,'s2')}});
+  assert.equal(q.field().value,'Original');assert.equal(q.editor.hasUnsaved(),true);
+  q.button('Salvar meu texto revisado').click();await tick();
+  assert.deepEqual(q.calls[1],['introduction','Original',3]);
+  assert.equal(q.editor.hasUnsaved(),false);
+ }finally{q.close();}
+});
 test('different sections save independently and preview escapes untrusted text',async()=>{
  const q=setup();try{q.emit({ready:true,connected:true,sections:{}});q.input('<img src=x onerror=alert(1)>');q.input('Procedimento','methodology');await q.editor.flush();assert.deepEqual(q.calls.map(c=>c[0]).sort(),['introduction','methodology']);q.button('Ver artigo montado').click();assert.ok(q.document.querySelector('.article-preview').textContent.includes('<img src=x onerror=alert(1)>'));assert.equal(q.document.querySelector('.article-preview img'),null);assert.match(q.document.querySelector('.article-preview').textContent,/Procedimento/);}finally{q.close();}
 });
@@ -39,4 +87,24 @@ test('failed saves remain visible and can be retried',async()=>{
 });
 test('access revocation immediately clears drafts and preview; destroy cancels timers',async()=>{
  const q=setup({saveDelay:15});q.emit({ready:true,connected:true,sections:{}});q.input('Conteúdo privado');q.button('Ver artigo montado').click();q.emit({revoked:true,error:{code:'PERMISSION_DENIED',message:'Acesso encerrado'}});assert.equal(q.field().value,'');assert.equal(q.field().disabled,true);assert.equal(q.document.querySelector('.article-preview').textContent,'');assert.equal(q.editor.hasUnsaved(),false);q.close();await new Promise(r=>setTimeout(r,30));assert.equal(q.calls.length,0);assert.equal(q.stops,1);q.emit({ready:true,connected:true,sections:{introduction:record('Mensagem tardia')}});assert.equal(q.document.querySelector('textarea'),null);
+});
+test('late save responses and subscriptions cannot restore private content after access revocation',async()=>{
+ for(const response of ['success','conflict']){
+  let finish,fail;
+  const q=setup({onSave:()=>new Promise((resolve,reject)=>{finish=resolve;fail=reject;})});try{
+   q.emit({ready:true,connected:true,sections:{introduction:record('Texto privado')}});
+   q.input('Revisão privada');const saving=q.editor.flush();
+   q.emit({revoked:true,error:{code:'PERMISSION_DENIED',message:'Acesso encerrado'}});
+   const remote=record('Conteúdo compartilhado privado',2,'a1');
+   if(response==='success')finish(remote);
+   else fail(Object.assign(Error('Conflito'),{code:'article/conflict',remote}));
+   await saving;
+   q.emit({ready:true,connected:true,sections:{introduction:remote}});
+   const field=q.field(),panel=field.closest('section');
+   assert.equal(field.value,'',response);assert.equal(field.disabled,true,response);
+   assert.equal(panel.querySelector('.article-remote').textContent,'',response);
+   assert.equal(panel.querySelector('.article-conflict').hidden,true,response);
+   assert.equal(q.editor.hasUnsaved(),false,response);assert.match(q.status(),/Acesso encerrado/);
+  }finally{q.close();}
+ }
 });
