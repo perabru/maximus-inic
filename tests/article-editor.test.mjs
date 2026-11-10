@@ -7,11 +7,12 @@ import {articleSections,articleSectionLimit,articleWordCount,articlePlainText} f
 const source=readFileSync(new URL('../article-editor.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace('export function createArticleEditor','function createArticleEditor');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const record=(text,revision=1,updatedBy='s1')=>({text,revision,updatedBy,authorName:updatedBy==='s1'?'Ana':'Orientador',updatedAt:Date.now()});
-function setup({onSave,subscribe,uid='s1',saveDelay=100000}={}){
-  const {document,window}=parseHTML('<html><body></body></html>');let receive,stops=0,calls=[];
+const milestone=(revision=1,completedBy='s1',firstCompletedAt=Date.now())=>({revision,completedBy,completedByName:completedBy==='s1'?'Ana':'Orientador',completedAt:Date.now(),firstCompletedAt});
+function setup({onSave,onComplete,subscribe,uid='s1',saveDelay=100000,workMode='group'}={}){
+  const {document,window}=parseHTML('<html><body></body></html>');let receive,stops=0,calls=[],completionCalls=[];
   const context=vm.createContext({document,window,console,setTimeout,clearTimeout,Intl,Blob,URL,Map,articleSections,articleSectionLimit,articleWordCount,articlePlainText});vm.runInContext(source,context);
-  const editor=context.createArticleEditor({group:{id:'g',name:'Equipe',topic:'Estufa',year:2027},user:{uid},saveDelay,onSave:async(...args)=>{calls.push(args);return onSave?onSave(...args):record(args[1],args[2]+1,uid);},subscribe:callback=>{receive=callback;return subscribe?subscribe(callback):()=>{stops++;};}});document.body.append(editor.element);
-  return {document,window,editor,calls,get stops(){return stops;},emit(value){receive(value);},field(key='introduction'){return document.querySelector(`textarea[name=${key}]`);},input(text,key='introduction'){const input=this.field(key);input.value=text;input.dispatchEvent(new window.Event('input'));return input;},button(text){return [...document.querySelectorAll('button')].find(e=>e.textContent===text&&!e.closest('[hidden]'));},status(){return document.querySelector('.article-sync').textContent;},close(){editor.destroy();}};
+  const editor=context.createArticleEditor({group:{id:'g',name:'Equipe',topic:'Estufa',year:2027,workMode},user:{uid},saveDelay,onSave:async(...args)=>{calls.push(args);return onSave?onSave(...args):record(args[1],args[2]+1,uid);},onComplete:async(...args)=>{completionCalls.push(args);return onComplete?onComplete(...args):milestone(args[1],uid);},subscribe:callback=>{receive=callback;return subscribe?subscribe(callback):()=>{stops++;};}});document.body.append(editor.element);
+  return {document,window,editor,calls,completionCalls,get stops(){return stops;},emit(value){receive(value);},field(key='introduction'){return document.querySelector(`textarea[name=${key}]`);},input(text,key='introduction'){const input=this.field(key);input.value=text;input.dispatchEvent(new window.Event('input'));return input;},button(text){return [...document.querySelectorAll('button')].find(e=>e.textContent===text&&!e.closest('[hidden]'));},completeButton(key='introduction'){return this.field(key).closest('section').querySelector('.article-completion button');},trophy(key='introduction'){return document.querySelector(`.article-trophy[data-section=${key}]`);},count(){return document.querySelector('.article-trophy-count').textContent;},announcement(){return document.querySelector('.article-achievement-notice');},status(){return document.querySelector('.article-sync').textContent;},close(){editor.destroy();}};
 }
 test('five requested sections contain explanations and verified course links',()=>{
  const q=setup();try{for(const key of ['introduction','methodology','results','discussion','conclusion']){const panel=q.field(key).closest('section');assert.ok(panel.querySelector('.article-guidance p').textContent.length>80);assert.ok(panel.querySelector('a[href^="https://drivedepobre.com/outros-cursos/"]'));}assert.equal(q.field().disabled,true);q.emit({ready:true,connected:true,sections:{}});assert.equal(q.field().disabled,false);assert.match(q.status(),/estão salvas/);}finally{q.close();}
@@ -107,4 +108,137 @@ test('late save responses and subscriptions cannot restore private content after
    assert.equal(q.editor.hasUnsaved(),false,response);assert.match(q.status(),/Acesso encerrado/);
   }finally{q.close();}
  }
+});
+
+test('the ten-stage trophy collection navigates to sections and uses individual wording when selected',()=>{
+ const q=setup({workMode:'individual'});try{
+  assert.equal(q.document.querySelectorAll('.article-trophy').length,10);
+  assert.equal(new Set(articleSections.map(section=>section.trophy)).size,10);
+  assert.match(q.document.querySelector('.article-heading').textContent,/ESCRITA INDIVIDUAL/);
+  assert.match(q.document.querySelector('.article-trophies h4').textContent,/Suas conquistas/);
+  assert.equal(q.count(),'0 de 10 troféus');assert.equal(q.completeButton().disabled,true);
+  q.emit({ready:true,connected:true,sections:{},milestones:{}});
+  q.trophy('conclusion').click();
+  assert.equal(q.field('conclusion').closest('section').hidden,false);
+  assert.equal(q.field('introduction').closest('section').hidden,true);
+  q.button('Ver artigo montado').click();assert.match(q.document.querySelector('.article-preview').textContent,/SEU RASCUNHO/);
+  assert.match(q.status(),/salvas no seu artigo/);
+ }finally{q.close();}
+});
+
+test('completion requires nonblank confirmed text and is blocked by offline, pending edits, or conflicts',async()=>{
+ let finish;
+ const q=setup({onSave:()=>new Promise(resolve=>{finish=resolve;})});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record(' \n ')},milestones:{}});
+  q.completeButton().click();assert.equal(q.completeButton().disabled,true);assert.equal(q.completionCalls.length,0);
+  q.emit({ready:true,connected:true,sections:{introduction:record('Introdução salva')},milestones:{}});
+  assert.equal(q.completeButton().disabled,false);
+  q.emit({connected:false});assert.equal(q.completeButton().disabled,true);q.completeButton().click();assert.equal(q.completionCalls.length,0);
+  q.emit({connected:true});q.input('Introdução revisada');assert.equal(q.completeButton().disabled,true);
+  const saving=q.editor.flush();assert.equal(q.completeButton().disabled,true);
+  finish(record('Introdução revisada',2));await saving;assert.equal(q.completeButton().disabled,false);
+  q.input('Outra revisão');q.emit({ready:true,connected:true,sections:{introduction:record('Revisão do orientador',3,'a1')},milestones:{}});
+  assert.equal(q.completeButton().disabled,true);q.completeButton().click();assert.equal(q.completionCalls.length,0);
+ }finally{q.close();}
+});
+
+test('an optimistic milestone cannot award a trophy before acknowledgement and repeated clicks are deduplicated',async()=>{
+ let finish;
+ const q=setup({onComplete:()=>new Promise(resolve=>{finish=resolve;})});try{
+  const sections={introduction:record('Introdução pronta')},earned=milestone();
+  q.emit({ready:true,connected:true,sections,milestones:{}});q.completeButton().click();q.completeButton().click();
+  assert.equal(q.completionCalls.length,1);assert.deepEqual(q.completionCalls[0],['introduction',1]);
+  q.emit({ready:true,connected:true,sections,milestones:{introduction:earned}});
+  assert.equal(q.count(),'0 de 10 troféus');assert.equal(q.announcement().hidden,true);assert.equal(q.editor.hasUnsaved(),true);
+  let flushed=false;const flushing=q.editor.flush().then(()=>{flushed=true;});await tick();assert.equal(flushed,false);
+  finish(earned);await flushing;
+  assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'earned');assert.equal(q.announcement().hidden,false);assert.match(q.announcement().textContent,/Troféu conquistado: Problema apresentado/);
+  assert.equal(q.editor.hasUnsaved(),false);assert.equal(q.completeButton().disabled,true);
+  const notice=q.announcement();q.emit({ready:true,connected:true,sections,milestones:{introduction:earned}});
+  assert.equal(q.announcement(),notice);assert.equal(q.completionCalls.length,1);assert.equal(q.count(),'1 de 10 troféus');
+ }finally{q.close();}
+});
+
+test('loaded or remotely completed stages synchronize without replaying a celebration',()=>{
+ const q=setup(),other=setup({uid:'s2'});try{
+  const sections={introduction:record('Introdução'),methodology:record('Método')},intro=milestone(),method=milestone(1,'a1');
+  for(const editor of [q,other])editor.emit({ready:true,connected:true,sections,milestones:{introduction:intro}});
+  assert.equal(q.count(),'1 de 10 troféus');assert.equal(other.count(),q.count());assert.equal(q.announcement().hidden,true);
+  for(const editor of [q,other])editor.emit({ready:true,connected:true,sections,milestones:{introduction:intro,methodology:method}});
+  assert.equal(q.count(),'2 de 10 troféus');assert.equal(other.count(),q.count());assert.equal(q.announcement().hidden,true);assert.equal(other.announcement().hidden,true);
+  assert.match(other.field('methodology').closest('section').querySelector('.article-completion-help').textContent,/Orientador/);
+ }finally{q.close();other.close();}
+});
+
+test('failed completion restores the previous collection and ignores a replayed optimistic milestone until rollback',async()=>{
+ let reject;let fails=true;
+ const earned=milestone(),q=setup({onComplete:async()=>fails?new Promise((_resolve,fail)=>{reject=fail;}):earned});try{
+  const sections={introduction:record('Texto salvo')};q.emit({ready:true,connected:true,sections,milestones:{}});
+  q.completeButton().click();q.emit({ready:true,connected:true,sections,milestones:{introduction:earned}});
+  reject(Error('A conexão falhou'));await tick();
+  assert.equal(q.count(),'0 de 10 troféus');assert.equal(q.announcement().hidden,true);assert.equal(q.field().value,'Texto salvo');assert.equal(q.editor.hasUnsaved(),false);
+  assert.match(q.field().closest('section').querySelector('.article-completion-error').textContent,/conexão falhou/);
+  q.emit({ready:true,connected:true,sections,milestones:{introduction:earned}});assert.equal(q.count(),'0 de 10 troféus');
+  q.emit({ready:true,connected:true,sections,milestones:{}});fails=false;q.completeButton().click();await tick();
+  assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'earned');assert.equal(q.completionCalls.length,2);
+ }finally{q.close();}
+});
+
+test('earned trophies survive later edits and reconcluding a revision does not duplicate the award',async()=>{
+ const original=milestone(1,'s1',1000);
+ const q=setup({onComplete:async(_key,revision)=>milestone(revision,'s1',1000)});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Versão inicial')},milestones:{introduction:original}});
+  q.input('Texto revisado');assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'review');
+  await q.editor.flush();assert.equal(q.completeButton().textContent,'Concluir revisão');assert.equal(q.completeButton().disabled,false);
+  q.completeButton().click();await tick();
+  assert.deepEqual(q.completionCalls[0],['introduction',2]);assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'earned');
+  assert.match(q.announcement().textContent,/Revisão de Introdução concluída/);assert.equal(q.announcement().dataset.celebrate,'false');
+  q.input('');await q.editor.flush();assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'review');assert.equal(q.completeButton().disabled,true);
+ }finally{q.close();}
+});
+
+test('typing during completion preserves the draft and leaves the awarded stage in review',async()=>{
+ let finish;
+ const q=setup({onComplete:()=>new Promise(resolve=>{finish=resolve;})});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Versão salva')},milestones:{}});
+  q.completeButton().click();q.input('Nova ideia durante a conclusão');finish(milestone());await tick();
+  assert.equal(q.field().value,'Nova ideia durante a conclusão');assert.equal(q.count(),'1 de 10 troféus');assert.equal(q.trophy().dataset.state,'review');assert.equal(q.editor.hasUnsaved(),true);
+  await q.editor.flush();assert.equal(q.field().value,'Nova ideia durante a conclusão');assert.equal(q.trophy().dataset.state,'review');assert.equal(q.completeButton().disabled,false);
+ }finally{q.close();}
+});
+
+test('a concurrent text revision prevents stale completion without losing the shared text',async()=>{
+ let reject;
+ const q=setup({onComplete:()=>new Promise((_resolve,fail)=>{reject=fail;})});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Versão anterior')},milestones:{}});
+  q.completeButton().click();q.emit({ready:true,connected:true,sections:{introduction:record('Nova revisão do professor',2,'a1')},milestones:{}});
+  reject(Object.assign(Error('O texto mudou. Revise a versão atual antes de concluir.'),{code:'article/conflict'}));await tick();
+  assert.equal(q.field().value,'Nova revisão do professor');assert.equal(q.count(),'0 de 10 troféus');assert.equal(q.announcement().hidden,true);assert.equal(q.completeButton().disabled,false);
+ }finally{q.close();}
+});
+
+test('late completion responses and milestones cannot restore trophies after revocation or destruction',async()=>{
+ for(const mode of ['revoked','destroyed'])for(const response of ['success','failure']){
+  let finish,reject;
+  const q=setup({onComplete:()=>new Promise((resolve,fail)=>{finish=resolve;reject=fail;})});try{
+   const sections={introduction:record('Texto privado')};q.emit({ready:true,connected:true,sections,milestones:{}});q.completeButton().click();
+   if(mode==='revoked')q.emit({revoked:true,error:{code:'PERMISSION_DENIED',message:'Acesso encerrado'}});else q.close();
+   if(response==='success')finish(milestone());else reject(Error('Erro tardio'));await tick();
+   q.emit({ready:true,connected:true,sections,milestones:{introduction:milestone()}});
+   assert.equal(q.editor.hasUnsaved(),false);
+   if(mode==='revoked'){assert.equal(q.count(),'0 de 10 troféus');assert.equal(q.announcement().hidden,true);assert.equal(q.field().value,'');assert.equal(q.document.querySelector('.article-trophies').hidden,true);}else assert.equal(q.document.querySelector('.article-trophy'),null);
+  }finally{q.close();}
+ }
+});
+
+test('disconnecting releases flush so logout can warn about a pending completion without losing text',async()=>{
+ let finish;
+ const q=setup({onComplete:()=>new Promise(resolve=>{finish=resolve;})});try{
+  q.emit({ready:true,connected:true,sections:{introduction:record('Texto já salvo')},milestones:{}});q.completeButton().click();
+  let done=false;const flushing=q.editor.flush().then(()=>{done=true;});await tick();assert.equal(done,false);
+  q.emit({connected:false});await tick();assert.equal(done,true);await flushing;
+  assert.equal(q.editor.hasUnsaved(),true);assert.equal(q.field().value,'Texto já salvo');assert.equal(q.count(),'0 de 10 troféus');
+  await q.editor.flush();assert.equal(q.editor.hasUnsaved(),true);
+  q.emit({connected:true});finish(milestone());await tick();assert.equal(q.editor.hasUnsaved(),false);assert.equal(q.count(),'1 de 10 troféus');
+ }finally{q.close();}
 });
