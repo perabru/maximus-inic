@@ -750,9 +750,9 @@ function renderAgreements() {
     if(state.role==='coordinator')fragment.append(heading('Termos de aceite · 2027','Acompanhe os arquivos recebidos e as pendências.',[link('Visualizar o termo','conformidade.html','button secondary')]));
     if(state.role==='student'){
       const grid=node('div','term-action-grid');
-      const download=node('section','term-download');download.append(node('span','term-step','01 · DOCUMENTO'),node('h2','','Termo de aceite · 2027'),node('p','','Baixe, imprima e recolha as assinaturas.'));
-      const pdf=link('Baixar termo em PDF','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf','button term-download-button');pdf.download='Termo_Compromisso_INIC_2027_Maximus.pdf';
-      download.append(pdf,link('Visualizar e imprimir','conformidade.html','term-preview-link'));
+      const download=node('section','term-download');download.append(node('span','term-step','01 · DOCUMENTO'),node('h2','','Termo de aceite · 2027'),node('p','','Preencha o termo e escolha: aluno e responsável podem desenhar as assinaturas na tela ou assinar a versão impressa. Depois, envie o arquivo assinado.'));
+      const pdf=link('Baixar termo em PDF em branco','documentos/Termo_Compromisso_INIC_2027_Maximus.pdf','button term-download-button');pdf.download='Termo_Compromisso_INIC_2027_Maximus.pdf';
+      download.append(pdf,link('Preencher e assinar na tela','conformidade.html','term-preview-link'));
       const gate=node('p','agreement-gate agreement-gate--compact');gate.id='agreement-gate';gate.append(node('span','badge warning','Envio obrigatório'),document.createTextNode(' Envie o termo assinado para liberar sua participação.'));download.append(gate);
       grid.append(download,buildAgreementUpload());fragment.append(grid);
       const reviewSlot=node('div','agreement-review-slot');reviewSlot.id='agreement-review-slot';fragment.append(reviewSlot,proposalCallout());
@@ -1021,7 +1021,7 @@ function taskPreview(task) {
   const status=statusOf(task);row.append(tile,main,node('span',`badge ${status.className}`,status.text));return row;
 }
 function supportCard() {
-  const card=node('div','support-card');const copy=node('div');copy.append(node('h3','','Compromisso com a pesquisa, combinado em família.'),node('p','','Leia o termo, preencha os dados e leve a versão impressa à coordenação para as assinaturas. Valores e datas do evento em 2027 ainda serão confirmados.'));card.append(copy,link('Acessar o termo','conformidade.html','button secondary'));return card;
+  const card=node('div','support-card');const copy=node('div');copy.append(node('h3','','Compromisso com a pesquisa, combinado em família.'),node('p','','Leia o termo e preencha os dados. Aluno e responsável podem desenhar as assinaturas na tela ou assinar a versão impressa. Envie o arquivo assinado pelo aplicativo ou entregue a cópia à coordenação. Valores e datas do evento em 2027 ainda serão confirmados.'));card.append(copy,link('Acessar o termo','conformidade.html','button secondary'));return card;
 }
 function renderDashboard() {
   const fragment=document.createDocumentFragment();
@@ -2036,3 +2036,4 @@ try {
 }
 window.addEventListener('beforeunload',event=>{if([...articleEditors.values()].some(({editor})=>editor.hasUnsaved())){event.preventDefault();event.returnValue='';}});
 window.addEventListener('pagehide',event=>{if(!event.persisted){for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();revokeProposalUrls();cleanupDialog();destroyIndicators();destroyCommunity();sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
+

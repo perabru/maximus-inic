@@ -5,39 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#3d4094">
   <title>Termo de ciência e compromisso INIC 2027 | Máximu’s</title>
-  <meta name="description" content="Preencha e imprima o termo de ciência e compromisso para o INIC 2027, com os responsáveis da escola identificados. Envie a cópia assinada pelo aluno e responsável à coordenação.">
+  <meta name="description" content="Preencha o termo de ciência e compromisso para o INIC 2027, com os responsáveis da escola identificados. Aluno e responsável podem desenhar a assinatura ou assinar no papel.">
   <link rel="icon" href="assets/logo-mark.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Máximu’s INIC">
-  <link rel="stylesheet" href="conformidade.css?v=20261112-10">
+  <link rel="stylesheet" href="conformidade.css?v=20261112-signatures-1">
   <script src="theme.js?v=20261105-3" defer></script>
 <link rel="stylesheet" href="uiverse-components.css?v=20261109-2"><link rel="stylesheet" href="experience.css?v=20261109-2"><script src="experience.js?v=20261105-3" defer></script><link rel="stylesheet" href="responsive.css?v=20261109-2"><link rel="stylesheet" href="brand-typography.css?v=20261109-2"><link rel="stylesheet" href="readability.css?v=20261109-2"><link rel="stylesheet" href="pwa-install.css?v=20261112-10"><script src="pwa.js?v=20261112-10" defer></script></head>
 <body>
 <header class="screen-header"><a href="index.html" aria-label="Voltar ao site Máximu’s no INIC"><img src="assets/logo-maximus.png" alt="Escola Máximu’s" width="170" height="50"></a><nav aria-label="Navegação do documento"><a href="portal.html">Área do aluno</a><button type="button" data-theme-toggle aria-label="Alternar modo claro e escuro">Claro / escuro</button></nav></header>
 <main>
-  <section class="instructions" aria-labelledby="instruction-title"><div><p class="kicker">INIC 2027 · DOCUMENTO DA ESCOLA</p><h1 id="instruction-title">Leia, preencha e imprima.</h1><p>O aluno e o responsável leem, imprimem e assinam o termo. Envie a cópia pelo aplicativo. Os nomes do professor da disciplina e da coordenação já estão preenchidos; cada pessoa deve confirmar a própria assinatura.</p><p class="privacy">Os campos abaixo são preenchidos apenas nesta página. Estes dados não são enviados nem salvos pelo formulário.</p></div><div class="actions"><button type="button" id="print-document" class="primary">Imprimir termo preenchido</button><a href="documentos/Termo_Compromisso_INIC_2027_Maximus.pdf?v=20261112-10" class="secondary" download>Baixar modelo em PDF</a><button type="button" id="clear-document" class="plain">Limpar campos</button></div></section>
+  <section class="instructions" aria-labelledby="instruction-title"><div><p class="kicker">INIC 2027 · DOCUMENTO DA ESCOLA</p><h1 id="instruction-title">Leia, preencha e assine.</h1><p>O aluno e o responsável podem desenhar a própria assinatura abaixo ou assinar no papel. O desenho aparece automaticamente na linha de cada pessoa no termo. Imprima ou escolha “Salvar como PDF” na janela de impressão e envie a cópia pelo aplicativo. Os nomes do professor da disciplina e da coordenação já estão preenchidos; cada pessoa deve confirmar a própria assinatura.</p><p class="privacy">Os campos e desenhos ficam apenas nesta página. O formulário não envia nem salva esses dados. Ao fechar ou recarregar a página, eles serão perdidos.</p></div><div class="actions"><button type="button" id="print-document" class="primary">Imprimir / salvar como PDF</button><a href="documentos/Termo_Compromisso_INIC_2027_Maximus.pdf?v=20261112-10" class="secondary" download>Baixar modelo em PDF</a><button type="button" id="clear-document" class="plain">Limpar campos e assinaturas</button></div></section>
   <form id="compliance-form" autocomplete="off">
+  <section class="signature-tools" aria-labelledby="signature-tools-title">
+    <div class="signature-tools-heading"><h2 id="signature-tools-title">Como deseja assinar o termo?</h2><p>Escolha separadamente para o aluno e o responsável. Para desenhar, use o dedo, o mouse ou uma caneta na área indicada. Cada pessoa deve fazer a própria assinatura.</p></div>
+    <div class="signature-editors">
+      <fieldset class="signature-card" data-signature="student">
+        <legend>Assinatura do aluno</legend>
+        <div class="signature-options">
+          <label><input type="radio" name="signature_student" value="paper" checked> Assinar no papel</label>
+          <label><input type="radio" name="signature_student" value="draw" disabled> Desenhar assinatura</label>
+        </div>
+        <div class="signature-pad" data-signature-pad="student" hidden>
+          <p class="signature-pad-help" id="student-pad-help">Desenhe a assinatura do aluno dentro da área branca.</p>
+          <canvas width="1000" height="300" data-signature-canvas="student" aria-label="Área de desenho da assinatura do aluno" aria-describedby="student-pad-help">Se o desenho não estiver disponível, escolha assinar no papel.</canvas>
+          <button type="button" class="signature-clear" data-signature-clear="student" disabled>Limpar assinatura do aluno</button>
+        </div>
+        <p class="signature-status" data-signature-status="student" aria-live="polite">A linha do aluno ficará livre para assinar no papel.</p>
+      </fieldset>
+      <fieldset class="signature-card" data-signature="guardian">
+        <legend>Assinatura do responsável</legend>
+        <label class="signature-name-field" for="guardian-name">Nome do responsável<input id="guardian-name" type="text" name="guardian" maxlength="120" autocomplete="off" placeholder="Nome completo"></label>
+        <div class="signature-options">
+          <label><input type="radio" name="signature_guardian" value="paper" checked> Assinar no papel</label>
+          <label><input type="radio" name="signature_guardian" value="draw" disabled> Desenhar assinatura</label>
+        </div>
+        <div class="signature-pad" data-signature-pad="guardian" hidden>
+          <p class="signature-pad-help" id="guardian-pad-help">Desenhe a assinatura do responsável dentro da área branca.</p>
+          <canvas width="1000" height="300" data-signature-canvas="guardian" aria-label="Área de desenho da assinatura do responsável" aria-describedby="guardian-pad-help">Se o desenho não estiver disponível, escolha assinar no papel.</canvas>
+          <button type="button" class="signature-clear" data-signature-clear="guardian" disabled>Limpar assinatura do responsável</button>
+        </div>
+        <p class="signature-status" data-signature-status="guardian" aria-live="polite">A linha do responsável ficará livre para assinar no papel.</p>
+      </fieldset>
+    </div>
+    <noscript><p>Para desenhar uma assinatura nesta página, ative o JavaScript do navegador. Você também pode imprimir o termo e preencher os nomes e assinaturas no papel.</p></noscript>
+  </section>
   <article class="sheet" aria-label="Termo para impressão">
     <div class="document-header"><img src="assets/logo-maximus.png" alt="Escola Máximu’s" width="184" height="54"><p>INIC 2027<br><strong>CIÊNCIA E COMPROMISSO</strong></p></div>
-    <div class="document-title"><p class="kicker">PESQUISA, FORMAÇÃO E RESPONSABILIDADE</p><h2>Termo de ciência e compromisso<br>para participação no INIC 2027</h2><p>Leia com atenção. Preencha os dados, recolha as assinaturas do aluno e do responsável e envie uma cópia no aplicativo ou entregue à coordenação.</p></div>
+    <div class="document-title"><p class="kicker">PESQUISA, FORMAÇÃO E RESPONSABILIDADE</p><h2>Termo de ciência e compromisso<br>para participação no INIC 2027</h2><p>Leia com atenção. Preencha os dados e as assinaturas do aluno e do responsável, desenhadas nesta página ou feitas no papel. Envie uma cópia no aplicativo ou entregue à coordenação.</p></div>
     <div class="identification"><label class="wide">Nome do aluno<input type="text" name="student" maxlength="120" aria-label="Nome completo do aluno"></label><label>Turma / série<input type="text" name="class" maxlength="40" aria-label="Turma e série"></label><label>Professor da disciplina<input type="text" name="teacher" maxlength="120" value="Prof. Esp. Bruno Michel Pera" readonly></label><label class="wide">Nome do grupo / tema da pesquisa<input type="text" name="group" maxlength="180"></label><label class="wide">Orientador(a)<input type="text" name="advisor" maxlength="120"></label></div>
     <section class="clause"><h3><span>01</span> O encontro e sua importância</h3><p>O INIC é o Encontro Latino-Americano de Iniciação Científica da Universidade do Vale do Paraíba (Univap). A modalidade INIC Jr., também chamada INIC Técnico, reúne pesquisas de estudantes do ensino médio e técnico. Participar permite desenvolver investigação, escrita científica, pensamento crítico, comunicação e troca de experiências acadêmicas.</p><p class="location"><strong>Univap - Campus Urbanova:</strong> Av. Shishima Hifumi, 2911, Urbanova, São José dos Campos/SP, CEP 12244-000. O local e a programação da edição de 2027 devem ser confirmados no site oficial.</p></section>
     <section class="clause"><h3><span>02</span> Vínculo com a disciplina</h3><p>Na Escola Máximu’s, a produção integra o <strong>Trabalho de Conclusão de Ano, para os 1ºs e 2ºs anos</strong>, e o <strong>Trabalho de Conclusão de Curso, para os 3ºs anos</strong>, conforme as orientações do professor da disciplina e da coordenação.</p></section>
     <section class="clause"><h3><span>03</span> Compromissos do estudante</h3><ul><li>Comprometer-me com a escrita do artigo para o INIC de 2027, com participação efetiva no trabalho do grupo e acompanhamento do orientador.</li><li>Cumprir o cronograma de pesquisa, escrita, revisão e entrega, acompanhando os comunicados da escola e do evento.</li><li>Produzir texto autoral, identificar as fontes consultadas e respeitar as orientações de formatação do artigo e do banner.</li><li>Revisar o material com os professores, providenciar os ajustes solicitados e preparar a apresentação do trabalho.</li><li>Consultar o orientador ou a coordenação em caso de dúvidas, dificuldades ou necessidade de alteração dos prazos.</li></ul></section>
     <section class="clause financial"><div class="continued-header"><span>ESCOLA MÁXIMU’S · INIC 2027</span><strong>Termo de ciência e compromisso · continuação</strong></div><h3><span>04</span> Inscrição e banner: ciência das responsabilidades</h3><p>Declaro ciência da responsabilidade de realizar a inscrição, acompanhar a emissão do boleto e providenciar seu pagamento, bem como organizar a criação, formatação e confecção do banner, conforme orientação da escola.</p><div class="estimates"><div><strong>Inscrição e pagamento do boleto</strong><span>R$ 45 a R$ 60 · previsão para agosto/2027</span></div><div><strong>Criação, formatação e confecção do banner</strong><span>R$ 50 a R$ 100 · previsão para outubro/2027</span></div></div><p class="estimate-note"><strong>Atenção:</strong> valores e meses são estimativas de planejamento informadas pela escola, sujeitos à confirmação para 2027. Não representam preços nem datas oficiais já confirmados pelo evento. Confira os valores finais, os prazos e as instruções com a coordenação antes de qualquer pagamento ou contratação.</p></section>
     <section class="declaration"><p>O aluno e o responsável declaram que leram e compreenderam as informações e responsabilidades deste termo. As assinaturas dos professores e da coordenação registram a ciência e o acompanhamento escolar.</p><label>São José dos Campos, <input type="text" name="date" maxlength="45" aria-label="Data da assinatura" placeholder="____ de __________________ de 2027">.</label></section>
-    <div class="signatures"><div><span class="signature-line"></span><strong>Aluno</strong><span>Assinatura</span></div><div><span class="signature-line"></span><strong>Responsável</strong><span>Nome e assinatura</span></div><div><span class="signature-line"></span><strong>Professor da disciplina</strong><span class="signature-person">Prof. Esp. Bruno Michel Pera</span><span>Assinatura</span></div><div><span class="signature-line"></span><strong>Professora / Coordenadora</strong><span class="signature-person">Profa. Esp. Mariana Carmona</span><span>Assinatura e carimbo, se aplicável</span></div></div>
+    <div class="signatures"><div class="signature-slot" data-signature-person="student"><span class="signature-line"><img class="signature-image" data-signature-image="student" alt="Assinatura desenhada do aluno" hidden></span><strong>Aluno</strong><span class="signature-name" data-signature-name="student">Assinatura</span></div><div class="signature-slot" data-signature-person="guardian"><span class="signature-line"><img class="signature-image" data-signature-image="guardian" alt="Assinatura desenhada do responsável" hidden></span><strong>Responsável</strong><span class="signature-name" data-signature-name="guardian">Nome e assinatura</span></div><div><span class="signature-line"></span><strong>Professor da disciplina</strong><span class="signature-person">Prof. Esp. Bruno Michel Pera</span><span>Assinatura</span></div><div><span class="signature-line"></span><strong>Professora / Coordenadora</strong><span class="signature-person">Profa. Esp. Mariana Carmona</span><span>Assinatura e carimbo, se aplicável</span></div></div>
     <p class="signature-disclaimer">Os nomes preenchidos identificam os responsáveis da escola e não confirmam assinatura.</p>
     <footer class="document-sources"><strong>ACESSOS PARA CONSULTA</strong><p>Evento oficial: <a href="https://www.univap.br/inic/" target="_blank" rel="noopener noreferrer">www.univap.br/inic/</a></p><p>Artigos do técnico (anais 2025): <a href="https://www.inicepg.univap.br/cd/INIC_2025/anais/trabalhos_tecnico.php" target="_blank" rel="noopener noreferrer">www.inicepg.univap.br/cd/INIC_2025/anais/trabalhos_tecnico.php</a></p><p>Site promocional da escola: <a href="https://perabru.github.io/maximus-inic/" target="_blank" rel="noopener noreferrer">perabru.github.io/maximus-inic/</a></p><small>Documento escolar de planejamento para 2027. Informações do evento e endereço consultados em 05/11/2026.<br>Os anais de 2027 deverão ser consultados quando disponibilizados no portal oficial.</small></footer>
   </article></form>
 </main>
 <footer class="screen-footer"><a href="index.html">Voltar ao site promocional</a><p>Envie o termo assinado no aplicativo. Após o aceite, o orientador do grupo e a coordenação podem registrar suas próprias assinaturas eletrônicas. A versão impressa também pode ser entregue à escola.</p></footer>
-<script>
-document.getElementById('compliance-form').addEventListener('submit', function(event) { event.preventDefault(); });
-document.getElementById('print-document').addEventListener('click', function() { window.print(); });
-document.getElementById('clear-document').addEventListener('click', function() { document.getElementById('compliance-form').reset(); document.querySelector('[name="student"]').focus(); });
-</script>
+<script src="conformidade-signatures.js?v=20261112-signatures-1" defer></script>
 </body>
 </html>
+
