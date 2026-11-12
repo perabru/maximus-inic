@@ -8,3 +8,7 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.hero-visual{transform:none}}
 
 body{overflow-x:clip}.intro-band i{display:inline-block;width:20px;height:20px;font-size:0;background:url("assets/spark.svg") center/contain no-repeat}.photo-topline span:last-child{display:block;width:23px;height:23px;font-size:0;background:url("assets/spark.svg") center/contain no-repeat;filter:brightness(.4)}.family-action>span{display:block;width:85px;height:85px;font-size:0;background:url("assets/spark.svg") center/contain no-repeat}@media(max-width:760px){.family-action>span{display:none}}
+
+/* A capa vertical mantém as seis pessoas visíveis, sem recorte. */
+.hero-visual--portrait{width:min(100%,430px);justify-self:end}
+@media(max-width:760px){.hero-visual--portrait{width:min(calc(100% - 10px),430px);justify-self:center}}

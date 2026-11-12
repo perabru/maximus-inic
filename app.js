@@ -229,7 +229,7 @@ function makeSlide(photo,index,clone=false) {
   }
   return slide;
 }
-fetch('photos.json?v=20261105-5').then(response=>{if(!response.ok)throw new Error('Photos');return response.json();}).then(data=>{
+fetch('photos.json?v=20261112-1').then(response=>{if(!response.ok)throw new Error('Photos');return response.json();}).then(data=>{
   photos=data;if(!photos.length)throw new Error('Empty gallery');
   track.replaceChildren(makeSlide(photos.at(-1),photos.length-1,true),...photos.map((photo,index)=>makeSlide(photo,index)),makeSlide(photos[0],0,true));
   $('#thumbnails').replaceChildren(...photos.map((photo,index)=>{

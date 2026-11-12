@@ -306,5 +306,38 @@
     "detail": "Registro com certificado",
     "focalPoint": "50% 50%",
     "original": "image(20261105-140017).png"
+  },
+  {
+    "src": "assets/photos/photo-29.jpg",
+    "thumb": "assets/photos/photo-29.jpg",
+    "width": 759,
+    "height": 1280,
+    "alt": "Duas participantes registram uma foto no espelho durante o INIC.",
+    "caption": "Um encontro para guardar",
+    "detail": "Participação no INIC",
+    "focalPoint": "50% 50%",
+    "original": "4af4f28c-dc20-4a08-b73d-21223e45000a.jpg"
+  },
+  {
+    "src": "assets/photos/photo-30.jpg",
+    "thumb": "assets/photos/photo-30.jpg",
+    "width": 854,
+    "height": 1280,
+    "alt": "Três participantes ao lado do pôster sobre o ensino de Arte no ensino médio, no INIC.",
+    "caption": "Arte e formação dos estudantes",
+    "detail": "Apresentação de pesquisa no INIC",
+    "focalPoint": "50% 50%",
+    "original": "4d3070a1-e375-4721-a1a7-14727c129f82.jpg"
+  },
+  {
+    "src": "assets/photos/photo-31.jpg",
+    "thumb": "assets/photos/photo-31.jpg",
+    "width": 960,
+    "height": 1280,
+    "alt": "Seis participantes reunidos diante do painel da Univap de Tecnologia da Informação e Comunicação.",
+    "caption": "Juntos na Univap",
+    "detail": "Registro da equipe no INIC",
+    "focalPoint": "50% 50%",
+    "original": "789cb293-e6d0-460b-9199-e55cfc11e229.jpg"
   }
 ]
