@@ -135,6 +135,171 @@ test('available filter excludes occupied students and teachers pending approval'
   q.close();
 });
 
+test('students can see and search students from every school year',()=>{
+  const q=setup({currentRole:'student',currentYear:'2º ano',people:[
+    student('first',{name:'Beatriz do primeiro',year:'1º ano'}),
+    student('second',{name:'Carla do segundo',year:'2º ano'}),
+    student('third',{name:'Débora do terceiro',year:'3º ano'}),advisor()
+  ]});
+  assert.equal(cards(q).length,4);
+  filter(q,'students');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId).sort(),['first','second','third']);
+  search(q,'debora');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId),['third']);
+  assert.match(card(q,'third').textContent,/Outra série/);
+  search(q,'1º ano');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId),['first']);
+  q.close();
+});
+
+test('every school year can invite only its own students while teachers remain available',()=>{
+  const years=['1º ano','2º ano','3º ano'];
+  for(const currentYear of years){
+    const people=years.map((year,index)=>student('year-'+index,{year}));
+    people.push(advisor('teacher',{groups:['group-a','group-b'],groupId:'group-a'}));
+    const q=setup({currentRole:'student',currentYear,people});
+    for(const person of people.filter(person=>person.role==='student')){
+      const button=invitationButton(q,person.id),sameYear=person.year===currentYear;
+      assert.equal(button.disabled,!sameYear);
+      if(!sameYear){
+        assert.match(card(q,person.id).querySelector('.community-availability').textContent,/Outra série/);
+        assert.match(card(q,person.id).querySelector('.community-person-detail').textContent,/apenas.*mesma série/);
+      }
+      button.click();
+    }
+    invitationButton(q,'teacher').click();
+    const sameYearId='year-'+years.indexOf(currentYear);
+    assert.deepEqual(q.invited.map(person=>person.id),[sameYearId,'teacher']);
+    filter(q,'available');
+    assert.deepEqual(cards(q).map(el=>el.dataset.personId).sort(),['teacher',sameYearId].sort());
+    assert.equal(q.document.querySelectorAll('.community-stat strong')[2].textContent,'1');
+    assert.match(q.document.querySelectorAll('.community-stat')[2].textContent,/da sua série/);
+    q.close();
+  }
+});
+
+test('students with missing or unrecognized school years can browse but cannot invite other students',()=>{
+  for(const currentYear of ['',undefined,'2','4º ano']){
+    const q=setup({currentRole:'student',currentYear,people:[student('target'),advisor()]});
+    assert.ok(card(q,'target'));
+    assert.ok(invitationButton(q,'target').disabled);
+    assert.match(card(q,'target').textContent,/Série não informada|Informe sua série/);
+    invitationButton(q,'target').click();
+    assert.equal(q.invited.length,0);
+    assert.equal(invitationButton(q,'advisor').disabled,false);
+    filter(q,'available');
+    assert.deepEqual(cards(q).map(el=>el.dataset.personId),['advisor']);
+    q.close();
+  }
+});
+
+test('students whose target has no recognized school year keep the profile visible without allowing an invitation',()=>{
+  for(const year of ['',undefined,'2','4º ano']){
+    const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('target',{year})]});
+    assert.ok(card(q,'target'));
+    assert.ok(invitationButton(q,'target').disabled);
+    assert.match(card(q,'target').textContent,/Série não informada|informar a série/);
+    invitationButton(q,'target').click();
+    assert.equal(q.invited.length,0);
+    filter(q,'available');
+    assert.equal(cards(q).length,0);
+    q.close();
+  }
+});
+
+test('an enabling callback cannot override the school-year restriction',()=>{
+  const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('other',{year:'3º ano'})],invitationState:()=>({disabled:false,label:'Convidar',detail:'Pode participar.'})});
+  const button=invitationButton(q,'other');
+  assert.ok(button.disabled);
+  assert.match(button.textContent,/Outra série/);
+  assert.match(card(q,'other').querySelector('.community-person-detail').textContent,/mesma série/);
+  assert.doesNotMatch(card(q,'other').querySelector('.community-person-detail').textContent,/Pode participar/);
+  button.click();
+  assert.equal(q.invited.length,0);
+  q.close();
+});
+
+test('available people and student count exclude self, pending invitations, occupied students and other years',()=>{
+  const q=setup({currentRole:'student',currentYear:'2º ano',people:[
+    student('self'),student('free'),student('pending'),student('bound',{groupId:'g'}),
+    student('other',{year:'1º ano'}),advisor('teacher'),advisor('pending-teacher')
+  ],invitationState:person=>({disabled:person.id.startsWith('pending'),label:'Convite enviado'})});
+  assert.equal(q.document.querySelectorAll('.community-stat strong')[0].textContent,'5');
+  assert.equal(q.document.querySelectorAll('.community-stat strong')[1].textContent,'2');
+  assert.equal(q.document.querySelectorAll('.community-stat strong')[2].textContent,'1');
+  assert.match(card(q,'pending-teacher').querySelector('.community-availability').textContent,/Disponível para orientar/);
+  filter(q,'available');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId).sort(),['free','teacher']);
+  filter(q,'all');
+  assert.equal(cards(q).length,7);
+  q.close();
+});
+
+test('occupied students from another year explain both restrictions',()=>{
+  const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('other',{year:'3º ano',groupId:'g'})]});
+  assert.match(card(q,'other').querySelector('.community-availability').textContent,/Outra série/);
+  assert.match(card(q,'other').querySelector('.community-person-detail').textContent,/mesma série/);
+  assert.match(card(q,'other').querySelector('.community-person-detail').textContent,/já aceitou.*apenas um grupo/);
+  assert.ok(invitationButton(q,'other').disabled);
+  q.close();
+});
+
+test('a detached invitation button rechecks the current student school year before sending',()=>{
+  for(const currentYear of ['1º ano','3º ano','']){
+    const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('target')]});
+    const oldButton=invitationButton(q,'target');
+    assert.equal(oldButton.disabled,false);
+    q.view.update({currentYear});
+    assert.ok(invitationButton(q,'target').disabled);
+    oldButton.click();
+    assert.equal(q.invited.length,0);
+    q.close();
+  }
+});
+
+test('a detached invitation button rechecks target school year changes and a new student session',()=>{
+  for(const patch of [
+    {people:[student('target',{year:'3º ano'})]},
+    {people:[student('target',{year:''})]},
+    {currentRole:'student',currentYear:'1º ano',currentUid:'new-student'}
+  ]){
+    const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('target')]});
+    const oldButton=invitationButton(q,'target');
+    q.view.update(patch);
+    assert.ok(invitationButton(q,'target').disabled);
+    oldButton.click();
+    assert.equal(q.invited.length,0);
+    q.close();
+  }
+});
+
+test('live school-year updates refresh the available filter and preserve the search field',()=>{
+  const q=setup({currentRole:'student',currentYear:'2º ano',people:[student('target',{year:'3º ano'})]});
+  const field=search(q,'ana');field.focus();
+  filter(q,'available');
+  assert.equal(cards(q).length,0);
+  q.view.update({people:[student('target',{year:'2º ano'})]});
+  assert.equal(q.document.querySelector('#community-search'),field);
+  assert.equal(field.value,'ana');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId),['target']);
+  invitationButton(q,'target').click();
+  assert.equal(q.invited.length,1);
+  q.close();
+});
+
+test('staff directory does not impose a personal school year and still respects group invitation context',()=>{
+  const q=setup({currentRole:'advisor',currentYear:'',people:[student('first',{year:'1º ano'}),student('third',{year:'3º ano'})]});
+  assert.equal(invitationButton(q,'first').disabled,false);
+  assert.equal(invitationButton(q,'third').disabled,false);
+  q.view.update({currentRole:'coordinator',invitationState:person=>person.year==='1º ano'?{}:{disabled:true,label:'Outra série',detail:'Este grupo reúne alunos do 1º ano.'}});
+  assert.equal(invitationButton(q,'first').disabled,false);
+  assert.ok(invitationButton(q,'third').disabled);
+  assert.match(card(q,'third').textContent,/Este grupo reúne alunos do 1º ano/);
+  filter(q,'available');
+  assert.deepEqual(cards(q).map(el=>el.dataset.personId),['first']);
+  q.close();
+});
+
 test('an occupied student has a visible explanation and cannot be invited',()=>{
   const q=setup({people:[student('bound',{groupId:'g'})]});
   assert.match(card(q,'bound').textContent,/grupo|convite/i);

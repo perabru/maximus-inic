@@ -18,7 +18,7 @@ const stamp=Date.now();
 // Advisor selection is available in every grade; the dedicated choice suite
 // exercises each school year and the legacy automatically assigned groups.
 const person=(name,email)=>({name,email,requestedRole:'student',year:'3º ano',createdAt:stamp});
-const group=(id,student,advisor)=>({name:id,topic:'Tema de pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[student]:true},memberNames:{[student]:'Estudante'},createdBy:student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1'});
+const group=(id,student,advisor)=>({name:id,topic:'Tema de pesquisa',description:'Descrição',year:2027,schoolYear:'3º ano',advisorId:advisor,members:{[student]:true},memberNames:{[student]:'Estudante'},createdBy:student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1'});
 const task={title:'Artigo',dueDate:'2027-07-31',completed:false,completedBy:'',weight:1,createdBy:'a1',createdAt:stamp};
 const termBytes=Buffer.from('%PDF-test fixture');
 const termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp});
@@ -55,7 +55,9 @@ try{
  await no('student cannot alter due date',update(ref(db('s1'),'maximusInic/tasks/g1/t1'),{dueDate:'2027-12-31'}));
  await ok('advisor changes deadline of completed task',update(ref(db('a1'),'maximusInic/tasks/g1/t1'),{dueDate:'2027-08-01'}));
  const invitation={groupId:'g1',groupName:'Grupo1',toEmail:'s3@example.com',toUid:'',type:'member',senderId:'c',senderName:'Coordenação',status:'pending',createdAt:serverTimestamp()};
- await ok('coordinator sends invitation',set(ref(db('c'),'maximusInic/invitations/i1'),invitation));
+ // Historical email invitations remain valid only after current grade checks.
+ await env.withSecurityRulesDisabled(context=>set(ref(context.database(),'maximusInic/invitations/i1'),invitation));
+ const indexedInvite=(id,record,recipient,actor='c')=>update(ref(db(actor),'maximusInic'),{[`invitations/${id}`]:{...record,toEmail:'',toUid:recipient,schoolYear:'3º ano'},[`memberRequests/${record.groupId}/${recipient}`]:id,[`invitationIssuedAt/${id}`]:serverTimestamp()});
  await no('other recipient cannot admit self',set(ref(db('s2'),'maximusInic/admissions/g1/s2'),'i1'));
  await no('unverified email cannot accept invitation',set(ref(db('s3',false),'maximusInic/admissions/g1/s3'),'i1'));
  await ok('verified recipient creates admission',set(ref(db('s3'),'maximusInic/admissions/g1/s3'),'i1'));
@@ -90,7 +92,7 @@ try{
  await ok('atomic group plus private index creation',update(ref(db('s5'),'maximusInic'),{'groups/atomicGroup':{...group('Atômico','s5',''),proposalRequired:true},'userGroups/s5/atomicGroup':true,'peopleDirectory/s5/groupId':'atomicGroup'}));
  await ok('approved teacher can create group assigned to self',update(ref(db('a3'),'maximusInic'),{'groups/teacherGroup':group('Orientado','a3','a3'),'userGroups/a3/teacherGroup':true}));
  const cancelInvite={...invitation,toEmail:'s6@example.com'};
- await ok('new invitation for cancellation test',set(ref(db('c'),'maximusInic/invitations/i3'),cancelInvite));
+ await ok('new invitation for cancellation test',indexedInvite('i3',cancelInvite,'s6'));
  await ok('recipient admission before cancellation',set(ref(db('s6'),'maximusInic/admissions/g1/s6'),'i3'));
  await ok('sender cancels pending invitation',set(ref(db('c'),'maximusInic/invitations/i3/status'),'cancelled'));
  await no('cancelled invitation blocks entire atomic acceptance',update(ref(db('s6'),'maximusInic'),{'groups/g1/members/s6':true,'groups/g1/memberNames/s6':'Aluno 6','userGroups/s6/g1':true,'peopleDirectory/s6/groupId':'g1','invitations/i3/status':'accepted'}));
@@ -131,7 +133,8 @@ try{
  await no('other advisor cannot delete foreign group',set(ref(db('a2'),'maximusInic/groups/g1'),null));
  await no('advisor cannot bypass deletion cascade lock',set(ref(db('a3'),'maximusInic/groups/g1'),null));
  const staleInvite={...invitation,toEmail:'s1@example.com'};
- await ok('member receives pending invite before removal',set(ref(db('c'),'maximusInic/invitations/staleMember'),staleInvite));
+ // This pending email predates the single-group and same-year policy.
+ await env.withSecurityRulesDisabled(context=>set(ref(context.database(),'maximusInic/invitations/staleMember'),staleInvite));
  await ok('member admission can exist before removal',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'staleMember'));
  await no('raw member removal cannot skip grades indices and revocation',set(ref(db('a3'),'maximusInic/groups/g1/members/s1'),null));
  await no('coordinator cannot bypass member cleanup with parent set',set(ref(db('c'),'maximusInic/groups/g1'),{...group('Forged','s3','a3')}));
@@ -139,8 +142,8 @@ try{
  await no('removed creator loses group grade access',get(ref(db('s1'),'maximusInic/evaluations/g1/group')));
  await no('removed creator loses own grade access',get(ref(db('s1'),'maximusInic/evaluations/g1/members/s1')));
  await no('old pending email invite cannot recreate admission after removal',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'staleMember'));
- await no('future invitation timestamp cannot bypass revocation',set(ref(db('c'),'maximusInic/invitations/futureForged'),{...staleInvite,createdAt:Date.now()+60000}));
- await ok('new invitation after removal is allowed',set(ref(db('c'),'maximusInic/invitations/newMember'),staleInvite));
+ await no('future invitation timestamp cannot bypass revocation',indexedInvite('futureForged',{...staleInvite,createdAt:Date.now()+60000},'s1'));
+ await ok('new invitation after removal is allowed',indexedInvite('newMember',staleInvite,'s1'));
  await ok('new invitation after removal creates fresh admission',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'newMember'));
  await ok('new invitation after removal allows fresh membership',update(ref(db('s1'),'maximusInic'),{'groups/g1/members/s1':true,'groups/g1/memberNames/s1':'Aluno 1','userGroups/s1/g1':true,'peopleDirectory/s1/groupId':'g1','invitations/newMember/status':'accepted'}));
  if((await get(ref(db('s1'),'maximusInic/evaluations/g1/members/s1'))).exists())throw new Error('Removed grade reappeared on reentry');
@@ -155,15 +158,15 @@ try{
  await no('task completion frozen during deletion',update(ref(db('a3'),'maximusInic/tasks/g1/t1'),{completed:false,completedBy:''}));
  await no('new task frozen during deletion',set(ref(db('a3'),'maximusInic/tasks/g1/newTask'),{...task,createdBy:'a3'}));
  await no('new message frozen during deletion',set(ref(db('a3'),'maximusInic/messages/g1/newMessage'),{text:'Frozen',senderId:'a3',senderName:'Orientador 3',createdAt:stamp}));
- await no('new invitation frozen during deletion',set(ref(db('a3'),'maximusInic/invitations/frozen'),{...invitation,senderId:'a3'}));
+ await no('new invitation frozen during deletion',indexedInvite('frozen',{...invitation,senderId:'a3'},'s6','a3'));
  await no('membership frozen during deletion',set(ref(db('a3'),'maximusInic/groups/g1/members/s1'),true));
  await no('advisor link frozen during deletion',set(ref(db('c'),'maximusInic/groups/g1/advisorId'),'c'));
  await no('cascade resource cannot be deleted alone',set(ref(db('a3'),'maximusInic/messages/g1'),null));
  await ok('advisor queries all group invitations for cleanup',get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g1'))));
  await no('advisor cannot query foreign group invitations',get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g2'))));
  const invitationsToDelete=(await get(query(ref(db('a3'),'maximusInic/invitations'),orderByChild('groupId'),equalTo('g1')))).val()||{};
- const cascade={'groups/g1':null,'tasks/g1':null,'messages/g1':null,'evaluations/g1':null,'admissions/g1':null,'memberRevocations/g1':null,'advisorRequests/g1':null,'advisorRequestSlots/g1':null,'advisorConfirmations/g1':null,'orientationTransitions/g1':null,'userGroups/s1/g1':null,'userGroups/a3/g1':null};
- for(const id of Object.keys(invitationsToDelete))cascade[`invitations/${id}`]=null;
+ const cascade={'groups/g1':null,'tasks/g1':null,'messages/g1':null,'evaluations/g1':null,'admissions/g1':null,'memberRevocations/g1':null,'memberRequests/g1':null,'advisorRequests/g1':null,'advisorRequestSlots/g1':null,'advisorConfirmations/g1':null,'orientationTransitions/g1':null,'userGroups/s1/g1':null,'userGroups/a3/g1':null};
+ for(const id of Object.keys(invitationsToDelete)){cascade[`invitations/${id}`]=null;cascade[`invitationIssuedAt/${id}`]=null;}
  await ok('advisor atomically deletes locked group and all resources',update(ref(db('a3'),'maximusInic'),cascade));
  await env.withSecurityRulesDisabled(async context=>{for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/g1`))).exists())throw new Error(`Cascade left ${resource}`);});
  for(const id of Object.keys(invitationsToDelete))if((await get(ref(db('c'),`maximusInic/invitations/${id}`))).exists())throw new Error('Cascade left invitation');

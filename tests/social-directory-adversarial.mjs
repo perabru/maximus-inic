@@ -20,7 +20,7 @@ const bytes=Buffer.from('%PDF-1.7\nSynthetic test document\n%%EOF');
 const users={coord:person('coord',{requestedRole:'advisor',year:''}),teacher:person('teacher',{requestedRole:'advisor',year:''}),google:person('google',{year:'',onboardingRequired:true}),registered:person('registered'),student:person('student'),peer:person('peer')};
 const term=uid=>({uid,year:2027,filename:'term.pdf',ownerName:uid,size:bytes.length,contentType:'application/pdf',uploadedAt:stamp});
 const seed={users,roles:{coord:'coordinator',teacher:'advisor'},advisorDirectory:{teacher:{uid:'teacher',name:'teacher'}},agreements:{2027:Object.fromEntries(['registered','student','peer'].map(uid=>[uid,term(uid)]))},agreementFiles:{2027:Object.fromEntries(['registered','student','peer'].map(uid=>[uid,{base64:bytes.toString('base64'),size:bytes.length,contentType:'application/pdf',uploadedAt:stamp}]))}};
-const options=name=>({name,topic:'Pesquisa científica'});
+const options=name=>({name,topic:'Pesquisa científica',schoolYear:'2º ano'});
 
 try {
   await admin(database=>set(ref(database,root),seed));
@@ -53,7 +53,8 @@ try {
     (await value('roles/teacher'))==='advisor'&&Object.keys(await value('userGroups/teacher')).length===2);
 
   const owned=await client('student')('createGroup',options('Grupo do aluno'));
-  const incoming=await teacher('invite',{groupId:first,toEmail:'student@example.com',type:'member'});
+  const incoming='historical-bound-student';
+  await admin(database=>set(ref(database,`${root}/invitations/${incoming}`),{groupId:first,groupName:'Orientação primeira',toEmail:'student@example.com',toUid:'',type:'member',senderId:'teacher',senderName:'teacher',status:'pending',createdAt:Date.now()}));
   await set(ref(db('student'),`${root}/admissions/${first}/student`),incoming);
   await deny('raw legacy email acceptance cannot switch group by hiding the original index',update(ref(db('student'),root),{
     [`userGroups/student/${owned}`]:null,
@@ -85,7 +86,7 @@ try {
     (await value(`memberRequests/${second}`))===null&&
     (await value(`invitations/${memberInvite}`))===null);
 
-  await coord('updateUser','teacher',{role:'student'});
+  await coord('updateUser','teacher',{role:'student',year:'2º ano'});
   check('supported teacher demotion releases prior orientation before enabling student status',
     (await value('roles/teacher'))==='student'&&
     (await value('peopleDirectory/teacher/role'))==='student'&&

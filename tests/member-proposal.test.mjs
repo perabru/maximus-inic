@@ -12,8 +12,9 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
  const metadata=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp});
  const file={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
  const changes={};
- for(const uid of ['mpauthor','mppeer','mpstranger','mpmissing','mpteacher','mpcoord','mpauthorlimit','mpauthorrejected','mpauthoralone']){
+ for(const uid of ['mpauthor','mppeer','mppeer2','mpfree','mpstranger','mpmissing','mpteacher','mpcoord','mpauthorlimit','mpauthorrejected','mpauthoralone']){
   changes[`users/${uid}`]=person(uid);
+  changes[`peopleDirectory/${uid}`]={uid,name:uid,year:'3º ano',role:uid==='mpteacher'?'advisor':uid==='mpcoord'?'coordinator':'student',requestedRole:'student',listedAdvisor:false,groupId:''};
   if(uid!=='mpmissing'){changes[`agreements/2027/${uid}`]=metadata(uid);changes[`agreementFiles/2027/${uid}`]=file;}
  }
  for(const uid of ['mpadvisor1','mpadvisor2','mpadvisor3']){
@@ -21,27 +22,32 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
   changes[`roles/${uid}`]='advisor';changes[`advisorDirectory/${uid}`]={uid,name:uid};
  }
  changes['roles/mpteacher']='advisor';changes['roles/mpcoord']='coordinator';
+ const normalizedLimit=Array.from({length:20},(_,index)=>`mp-limit-peer-${index}`);
+ for(const uid of normalizedLimit){changes[`users/${uid}`]=person(uid);changes[`peopleDirectory/${uid}`]={uid,name:uid,year:'3º ano',role:'student',requestedRole:'student',listedAdvisor:false,groupId:''};}
  await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),changes));
  const value=async path=>{let result;await env.withSecurityRulesDisabled(async context=>{result=(await get(ref(context.database(),`${root}/${path}`))).val();});return result;};
  const check=(name,condition)=>{assert.ok(condition,name);count(name);};
  const rejects=async(name,fn)=>{let rejected=false;try{await fn();}catch{rejected=true;}check(name,rejected);};
  let authorUpdates=0,capturedChanges;
  const author=loadService(db('mpauthor'),'mpauthor',{beforeUpdate:async(target,patch)=>{authorUpdates++;capturedChanges=structuredClone(patch);}});
- const proposalId=await author('createGroup',{name:'Grupo com colegas',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['mpadvisor1','mpadvisor2','mpadvisor3'],memberEmails:[' MPPEER@example.com ','mppeer@example.com',' MPAUTHOR@example.com ','newstudent@example.com']});
+ const proposalId=await author('createGroup',{name:'Grupo com colegas',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['mpadvisor1','mpadvisor2','mpadvisor3'],memberUids:['mppeer','mppeer','mpauthor','mppeer2']});
  check('member proposal: one atomic update creates proposal schedule and every invitation',authorUpdates===1);
  const proposal=await value(`groups/${proposalId}`),tasks=await value(`tasks/${proposalId}`),all=await value('invitations');
  const invites=Object.entries(all).filter(([,invitation])=>invitation.groupId===proposalId).map(([id,invitation])=>({id,...invitation}));
  const memberInvites=invites.filter(invitation=>invitation.type==='member'),advisorInvites=invites.filter(invitation=>invitation.type==='advisor');
- check('member proposal: normalization deduplication and self exclusion leave exactly two peer invitations',memberInvites.length===2&&memberInvites.some(invitation=>invitation.toEmail==='mppeer@example.com')&&memberInvites.some(invitation=>invitation.toEmail==='newstudent@example.com'));
+ check('member proposal: UID deduplication and self exclusion leave exactly two peer invitations',memberInvites.length===2&&memberInvites.some(invitation=>invitation.toUid==='mppeer')&&memberInvites.some(invitation=>invitation.toUid==='mppeer2'));
  check('member proposal: three advisors and eight schedule milestones commit with peer invitations',advisorInvites.length===3&&Object.keys(tasks).length===8);
- check('member proposal: peers are pending invitations and never automatic group members',Object.keys(proposal.members).length===1&&proposal.members.mpauthor===true&&!proposal.members.mppeer&&memberInvites.every(invitation=>invitation.status==='pending'&&invitation.toUid===''));
+ check('member proposal: peers are pending invitations and never automatic group members',Object.keys(proposal.members).length===1&&proposal.members.mpauthor===true&&!proposal.members.mppeer&&memberInvites.every(invitation=>invitation.status==='pending'&&invitation.toEmail===''&&invitation.schoolYear==='3º ano'));
  check('member proposal: invited peer gets no private group index before accepting',!(await value(`userGroups/mppeer/${proposalId}`)));
- check('member proposal: unknown email does not create an account or grant a role',!(await value('users/newstudent'))&&!(await value('roles/newstudent')));
+ check('member proposal: peer invitations contain only registered UIDs and no email',memberInvites.every(invitation=>['mppeer','mppeer2'].includes(invitation.toUid)&&invitation.toEmail===''));
  check('member proposal: all invitation records preserve sender group and server timestamp',invites.every(invitation=>invitation.senderId==='mpauthor'&&invitation.groupName===proposal.name&&typeof invitation.createdAt==='number'&&invitation.createdAt>=stamp));
  check('member proposal: captured update contains group tasks private index and both invite types',Boolean(capturedChanges[`groups/${proposalId}`])&&capturedChanges[`userGroups/mpauthor/${proposalId}`]===true&&Object.keys(capturedChanges).filter(path=>path.startsWith(`tasks/${proposalId}/`)).length===8&&Object.keys(capturedChanges).filter(path=>path.startsWith('invitations/')).length===5);
- const peerInvite=memberInvites.find(invitation=>invitation.toEmail==='mppeer@example.com');
- await ok('member proposal: verified invited email can query its newly created invitation',get(query(ref(db('mppeer'),`${root}/invitations`),orderByChild('toEmail'),equalTo('mppeer@example.com'))));
- await no('member proposal: unverified invited email cannot read a known invitation',get(ref(db('mppeer',false),`${root}/invitations/${peerInvite.id}`)));
+ const peerInvite=memberInvites.find(invitation=>invitation.toUid==='mppeer');
+ // Existing email invitations remain test fixtures; new invitations use a UID.
+ const legacyEmail={groupId:proposalId,groupName:'Grupo com colegas',toEmail:'mppeer@example.com',toUid:'',type:'member',senderId:'mpauthor',senderName:'mpauthor',status:'pending',createdAt:stamp};
+ await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),{'invitations/mp-historical-email':legacyEmail,'invitations/mp-future-email':{...legacyEmail,toEmail:'newstudent@example.com'}}));
+ await ok('member proposal: registered recipient can query its new UID invitation',get(query(ref(db('mppeer'),`${root}/invitations`),orderByChild('toUid'),equalTo('mppeer'))));
+ await no('member proposal: unverified invited email cannot read a known invitation',get(ref(db('mppeer',false),`${root}/invitations/mp-historical-email`)));
  await no('member proposal: unverified email cannot query its incoming invitations',get(query(ref(db('mppeer',false),`${root}/invitations`),orderByChild('toEmail'),equalTo('mppeer@example.com'))));
  await no('member proposal: another student cannot read an invitation addressed to a peer',get(ref(db('mpstranger'),`${root}/invitations/${peerInvite.id}`)));
  await no('member proposal: invited peer cannot read the group before acceptance',get(ref(db('mppeer'),`${root}/groups/${proposalId}`)));
@@ -51,24 +57,23 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
  check('member proposal: peer acceptance leaves all advisor requests pending',advisorInvites.length===3&&await Promise.all(advisorInvites.map(invitation=>value(`invitations/${invitation.id}/status`))).then(statuses=>statuses.every(status=>status==='pending'))&&(await value(`groups/${proposalId}/advisorId`))==='');
  await rejects('member proposal: consumed peer invitation cannot be accepted twice',()=>peer('respondInvitation',peerInvite.id,true));
  await ok('member proposal: matching verified email can find an invitation before account profile registration',get(query(ref(db('newstudent'),`${root}/invitations`),orderByChild('toEmail'),equalTo('newstudent@example.com'))));
- const futureInvite=memberInvites.find(invitation=>invitation.toEmail==='newstudent@example.com');
+ const futureInvite={id:'mp-future-email'};
  const future=loadService(db('newstudent'),'newstudent');
  await rejects('member proposal: future student cannot accept until profile and term exist',()=>future('respondInvitation',futureInvite.id,true));
  await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),{'users/newstudent':person('newstudent'),'agreements/2027/newstudent':metadata('newstudent'),'agreementFiles/2027/newstudent':file}));
  await ok('member proposal: later registered student with term can accept the existing email invitation',future('respondInvitation',futureInvite.id,true));
 
- const normalizedLimit=Array.from({length:20},(_,index)=>`peer${index}@example.com`);
- const limitId=await loadService(db('mpauthorlimit'),'mpauthorlimit')('createGroup',{name:'Vinte convites',topic:'Pesquisa de TCC',memberEmails:[...normalizedLimit,...normalizedLimit,'MPAUTHORLIMIT@example.com']});
+ const limitId=await loadService(db('mpauthorlimit'),'mpauthorlimit')('createGroup',{name:'Vinte convites',topic:'Pesquisa de TCC',memberUids:normalizedLimit});
  const twenty=Object.values(await value('invitations')).filter(invitation=>invitation.groupId===limitId&&invitation.type==='member');
- check('member proposal: twenty distinct peers are accepted after duplicates and own email are removed',twenty.length===20);
+ check('member proposal: twenty distinct registered peers can receive pending invitations',twenty.length===20);
  let invalidWrites=0;
- const invalid=loadService(db('mpauthor'),'mpauthor',{beforeUpdate:async()=>{invalidWrites++;}});
- for(const [name,memberEmails] of [['non-array','mppeer@example.com'],['null',null],['object',{}],['number entry',[42]],['blank entry',['']],['malformed email',['invalid-address']],['whitespace inside email',['a b@example.com']],['excessive email length',[`${'a'.repeat(246)}@example.com`]],['more than twenty peers',[...normalizedLimit,'extra@example.com']]]){
-  await rejects(`member proposal: rejects ${name} before writing`,()=>invalid('createGroup',{name:'Inválido',topic:'Pesquisa de TCC',memberEmails}));
+ const invalid=loadService(db('mpauthorrejected'),'mpauthorrejected',{beforeUpdate:async()=>{invalidWrites++;}});
+ for(const [name,memberUids] of [['non-array','mpfree'],['null',null],['object',{}],['number entry',[42]],['blank entry',['']],['invalid identifier',['invalid/id']],['unknown account',['missing-registered-uid']],['excessive identifier length',['a'.repeat(1500)]],['more than twenty peers',[...normalizedLimit,'mpfree']]]){
+  await rejects(`member proposal: rejects ${name} before writing`,()=>invalid('createGroup',{name:'Inválido',topic:'Pesquisa de TCC',memberUids}));
  }
  check('member proposal: invalid peer input never reaches the database update',invalidWrites===0);
  const missing=loadService(db('mpmissing'),'mpmissing');
- await rejects('member proposal: peer invitation options cannot bypass mandatory term requirement',()=>missing('createGroup',{name:'Sem termo',topic:'Pesquisa',memberEmails:['mppeer@example.com']}));
+ await rejects('member proposal: peer invitation options cannot bypass mandatory term requirement',()=>missing('createGroup',{name:'Sem termo',topic:'Pesquisa',memberUids:['mpfree']}));
 
  let failedGroupId,failedInviteIds=[];
  const rejectedBatch=loadService(db('mpauthorrejected'),'mpauthorrejected',{beforeUpdate:async(target,patch)=>{
@@ -77,17 +82,17 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
   failedInviteIds=Object.keys(patch).filter(path=>path.startsWith('invitations/')).map(path=>path.split('/')[1]);
   patch[invitePath].senderId='mpstranger';
  }});
- await rejects('member proposal: rejection of one peer invitation rejects the entire proposal batch',()=>rejectedBatch('createGroup',{name:'Deve falhar inteira',topic:'Pesquisa',proposal:textProposal,advisorIds:['mpadvisor1'],memberEmails:['mppeer@example.com']}));
+ await rejects('member proposal: rejection of one peer invitation rejects the entire proposal batch',()=>rejectedBatch('createGroup',{name:'Deve falhar inteira',topic:'Pesquisa',proposal:textProposal,advisorIds:['mpadvisor1'],memberUids:['mpfree']}));
  check('member proposal: rejected batch leaves no partial group schedule or private index',!(await value(`groups/${failedGroupId}`))&&!(await value(`tasks/${failedGroupId}`))&&!(await value(`userGroups/mpauthorrejected/${failedGroupId}`)));
  check('member proposal: rejected batch leaves no peer advisor or request-index residue',await Promise.all(failedInviteIds.map(id=>value(`invitations/${id}`))).then(values=>values.every(result=>result===null))&&!(await value(`advisorRequests/${failedGroupId}`))&&!(await value(`advisorRequestSlots/${failedGroupId}`)));
- const noPeersId=await loadService(db('mpauthoralone'),'mpauthoralone')('createGroup',{name:'Sem colegas por enquanto',topic:'Pesquisa',memberEmails:[]});
+ const noPeersId=await loadService(db('mpauthoralone'),'mpauthoralone')('createGroup',{name:'Sem colegas por enquanto',topic:'Pesquisa',memberUids:[]});
  check('member proposal: optional empty list creates no unsolicited member invitation',!Object.values(await value('invitations')).some(invitation=>invitation.groupId===noPeersId&&invitation.type==='member'));
  const coord=loadService(db('mpcoord'),'mpcoord');
- const coordId=await coord('createGroup',{name:'Grupo da coordenação',topic:'Pesquisa',memberEmails:['mppeer@example.com']});
- check('member proposal: coordinator can atomically create group and invite a peer',Object.values(await value('invitations')).some(invitation=>invitation.groupId===coordId&&invitation.type==='member'&&invitation.toEmail==='mppeer@example.com'));
+ const coordId=await coord('createGroup',{name:'Grupo da coordenação',topic:'Pesquisa',schoolYear:'3º ano',memberEmails:['mpfree@example.com']});
+ check('member proposal: coordinator can atomically create group and invite a peer',Object.values(await value('invitations')).some(invitation=>invitation.groupId===coordId&&invitation.type==='member'&&invitation.toUid==='mpfree'&&invitation.toEmail===''));
  const teacher=loadService(db('mpteacher'),'mpteacher');
- const teacherId=await teacher('createGroup',{name:'Grupo do professor',topic:'Pesquisa',memberEmails:['mppeer@example.com']});
- check('member proposal: approved teacher can atomically create self-advised group and peer invitation',(await value(`groups/${teacherId}/advisorId`))==='mpteacher'&&Object.values(await value('invitations')).some(invitation=>invitation.groupId===teacherId&&invitation.type==='member'&&invitation.toEmail==='mppeer@example.com'));
+ const teacherId=await teacher('createGroup',{name:'Grupo do professor',topic:'Pesquisa',schoolYear:'3º ano',memberUids:['mpfree']});
+ check('member proposal: approved teacher can atomically create self-advised group and peer invitation',(await value(`groups/${teacherId}/advisorId`))==='mpteacher'&&Object.values(await value('invitations')).some(invitation=>invitation.groupId===teacherId&&invitation.type==='member'&&invitation.toUid==='mpfree'&&invitation.toEmail===''));
  for(const [label,mutate] of [
   ['foreign creator',group=>{group.createdBy='mpstranger';}],
   ['foreign advisor',group=>{group.advisorId='mpadvisor1';}],
@@ -95,7 +100,7 @@ export async function runMemberProposalTests({env,db,ok,no,count}) {
  ]){
   let rejectedGroup;
   const forged=loadService(db('mpteacher'),'mpteacher',{beforeUpdate:async(target,patch)=>{const key=Object.keys(patch).find(path=>path.startsWith('groups/'));rejectedGroup=key.split('/')[1];mutate(patch[key]);}});
-  await rejects(`member proposal: post-update advisor check cannot admit ${label}`,()=>forged('createGroup',{name:'Grupo forjado',topic:'Pesquisa',memberEmails:['mppeer@example.com']}));
+  await rejects(`member proposal: post-update advisor check cannot admit ${label}`,()=>forged('createGroup',{name:'Grupo forjado',topic:'Pesquisa',schoolYear:'3º ano',memberUids:['mpfree']}));
   check(`member proposal: rejected ${label} leaves no group or invitation`,!(await value(`groups/${rejectedGroup}`))&&!Object.values(await value('invitations')).some(invitation=>invitation.groupId===rejectedGroup));
  }
 }

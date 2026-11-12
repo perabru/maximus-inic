@@ -14,7 +14,7 @@ const people=['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','teacher','coor
 const seed={users:{},roles:{teacher:'advisor',coord:'coordinator'},advisorDirectory:{teacher:{uid:'teacher',name:'Professor'}},agreements:{2027:{}},agreementFiles:{2027:{}},notificationWorkers:{worker:true}};
 for(const uid of people){seed.users[uid]={name:uid==='teacher'?'Professor':uid,email:`${uid}@example.com`,requestedRole:['teacher','pending','coord'].includes(uid)?'advisor':'student',year:uid.startsWith('s')?'2º ano':'',createdAt:stamp};if(uid.startsWith('s')){seed.agreements[2027][uid]={uid,year:2027,filename:'termo.pdf',ownerName:uid,size:term.length,contentType:'application/pdf',uploadedAt:stamp};seed.agreementFiles[2027][uid]={base64:term.toString('base64'),size:term.length,contentType:'application/pdf',uploadedAt:stamp};}}
 seed.users.google={name:'Conta Google',email:'google@example.com',requestedRole:'student',year:'',createdAt:stamp,onboardingRequired:true};
-const options=(name,patch={})=>({name,topic:'Tema de pesquisa',...patch});
+const options=(name,patch={})=>({name,topic:'Tema de pesquisa',schoolYear:'2º ano',...patch});
 try{
  await admin(d=>set(ref(d,root),seed));
  await client('coord')('syncPeopleDirectory');
@@ -73,7 +73,7 @@ try{
  await client('coord')('updateUser','s6',{role:'advisor'});check('approval updates directory role',(await value('peopleDirectory/s6/role'))==='advisor'&&(await value('peopleDirectory/s6/listedAdvisor'))===true);
  const g7=await client('s7')('createGroup',options('Grupo com pessoas',{memberUids:['s8','s9']}));
  const invs=Object.values(await value('invitations')).filter(i=>i.groupId===g7);check('creation sends registered-member invitations atomically',invs.length===2&&invs.every(i=>['s8','s9'].includes(i.toUid)&&i.toEmail===''));
- const legacy=await t('invite',{groupId:tg1,toEmail:'s10@example.com',type:'member'});await client('s10')('respondInvitation',legacy,true);check('legacy email invitation preserves one-group claim',(await value('peopleDirectory/s10/groupId'))===tg1);
+ const legacy='historical-email-s10';await admin(d=>set(ref(d,`${root}/invitations/${legacy}`),{groupId:tg1,groupName:'Orientação A',toEmail:'s10@example.com',toUid:'',type:'member',senderId:'teacher',senderName:'Professor',status:'pending',createdAt:Date.now()}));await client('s10')('respondInvitation',legacy,true);check('legacy email invitation preserves one-group claim',(await value('peopleDirectory/s10/groupId'))===tg1);
  await client('coord')('archiveUser','s8');check('blocking removes directory atomically',(await value('peopleDirectory/s8'))===null&&(await value('inactiveUsers/s8'))===true);
  await deny('blocked account loses directory read',get(ref(db('s8'),`${root}/peopleDirectory`)));
  await client('coord')('restoreUser','s8');check('restored profile starts available',(await value('peopleDirectory/s8/name'))==='s8'&&(await value('peopleDirectory/s8/groupId'))==='');

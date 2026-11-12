@@ -21,7 +21,7 @@ const rejects=async(name,promise)=>{await assert.rejects(promise);pass(name);};
 const bytes=Buffer.from('%PDF-1.7\nSynthetic deletion fixture\n%%EOF');
 const people=['delcoord','delcoord2','dels','delpeer','delteacher','delteacher2','delworker','delretry','delarchived','delarchiving','dellast','delorphan'];
 const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:['delteacher','delteacher2'].includes(uid)?'advisor':'student',year:'3º ano',createdAt:stamp});
-const group=(name,members,advisorId='delteacher')=>({name,topic:'Pesquisa sintética',description:'',year,advisorId,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:members[0],createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:1});
+const group=(name,members,advisorId='delteacher')=>({name,topic:'Pesquisa sintética',description:'',year,schoolYear:'3º ano',advisorId,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:members[0],createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:1});
 const invitation=(groupId,senderId,toEmail='',toUid='',status='pending')=>({groupId,groupName:groupId,toEmail,toUid,type:toUid?'advisor':'member',senderId,senderName:senderId,status,createdAt:stamp-5000});
 const term=(uid,edition=year)=>({uid,year:edition,filename:'termo.pdf',ownerName:uid,size:bytes.length,contentType:'application/pdf',uploadedAt:stamp});
 const file={base64:bytes.toString('base64'),size:bytes.length,contentType:'application/pdf',uploadedAt:stamp};

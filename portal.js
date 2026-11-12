@@ -5,10 +5,11 @@ import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20
 import { createCalendarView } from './calendar.js?v=20261112-7';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
 import { createArticleEditor } from './article-editor.js?v=20261112-4';
-import { createCommunityView, participantStatus } from './community.js?v=20261112-8';
+import { createCommunityView, participantStatus } from './community.js?v=20261112-9';
 
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
+const SCHOOL_YEARS = ['1º ano','2º ano','3º ano'];
 const hashes = {dashboard:'inicio',people:'pessoas',groups:'grupos',invitations:'convites',calendar:'calendario',agreements:'termo',admin:'coordenacao',indicators:'indicadores'};
 const state = {user:null,profile:null,role:'student',users:[],usersReady:false,usersError:null,people:[],peopleReady:false,peopleError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null};
 const groupData = new Map();
@@ -16,6 +17,7 @@ const groupListeners = new Map();
 const groupAccess = new Map();
 const articleEditors = new Map();
 const seenAdvisorConfirmations = new Set();
+const invitationSchoolYears = new Map();
 let sessionVersion = 0;
 let service;
 let sessionUnsubscribe = () => {};
@@ -138,10 +140,12 @@ function canAccessAcademic() {
   if(!state.user || !state.ready || !state.profile || state.profile.onboardingRequired === true || isPendingAdvisor())return false;
   return state.role === 'advisor' || state.role === 'coordinator' || (requiresAgreement() && agreementSatisfied());
 }
+function canBrowseCommunity() { return Boolean(!state.archived&&state.user&&state.ready&&state.profile&&state.profile.onboardingRequired!==true&&!isPendingAdvisor()); }
+function isSchoolYear(value) { return SCHOOL_YEARS.includes(value); }
 function studentGroupId() {return state.role==='student'?(state.people.find(person=>person.id===state.user?.uid)?.groupId||state.groups.find(group=>group.members?.[state.user?.uid]===true)?.id||''):'';}
-function canCreateGroup() { return canAccessAcademic()&&(state.role!=='student'||state.peopleReady&&!state.peopleError&&!studentGroupId()); }
-function canPrepareProposal() { return Boolean(!state.archived && state.user && state.ready && state.profile && state.role === 'student' && state.profile.onboardingRequired !== true && !isPendingAdvisor() && state.peopleReady && !state.peopleError && !studentGroupId()); }
-function canInviteToGroup(group) {return Boolean(group&&!state.archived&&group.status!=='deleting'&&group.status!=='archived'&&group.archived!==true&&(isGroupManager(group)||state.role==='student'&&group.members?.[state.user?.uid]===true));}
+function canCreateGroup() { return canAccessAcademic()&&(state.role!=='student'||isSchoolYear(state.profile?.year)&&state.peopleReady&&!state.peopleError&&!studentGroupId()); }
+function canPrepareProposal() { return Boolean(canBrowseCommunity() && state.role === 'student' && isSchoolYear(state.profile?.year) && state.peopleReady && !state.peopleError && !studentGroupId()); }
+function canInviteToGroup(group) {return Boolean(canAccessAcademic()&&group&&group.status!=='deleting'&&group.status!=='archived'&&group.archived!==true&&(isGroupManager(group)||state.role==='student'&&group.members?.[state.user?.uid]===true));}
 function canUseAgreements() { return !state.archived && (state.role === 'coordinator' || state.role === 'advisor' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor')); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
@@ -365,7 +369,7 @@ $('#profile-button').addEventListener('click',showProfileForm);
 function showProfileForm() {
   if(state.archived){render();return;}
   const name = makeField('Nome completo','name',{value:myName(),required:true,minLength:2,maxLength:100,autocomplete:'name'});
-  const year = makeField('Série escolar','year',{value:state.profile?.year || '',options:[{value:'',label:'Não se aplica'},'1º ano','2º ano','3º ano']});
+  const year = makeField('Série escolar','year',{value:state.profile?.year || '',options:[{value:'',label:'Não se aplica'},...SCHOOL_YEARS],help:state.role==='student'?'Sua série define quais colegas podem participar do seu grupo. Ela não pode mudar enquanto você estiver em um grupo.':''});
   const fields = [node('p','dialog-note',`Sua conta: ${state.user.email || 'Google'}. O e-mail de acesso é gerenciado pelo serviço de autenticação.`),name.label,year.label];
   if (state.role === 'student') fields.push(makeField('Perfil solicitado','requestedRole',{value:state.profile?.requestedRole || 'student',options:[{value:'student',label:'Estudante'},{value:'advisor',label:'Solicitar acesso de orientador(a)'}],help:'A coordenação precisa aprovar o acesso de orientador.'}).label);
   openForm({title:'Meu perfil',access:'profile',fields,handler:async data => {
@@ -437,7 +441,7 @@ function verificationNotice() {
 function sessionChanged(user) {
   for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();
   destroyIndicators();destroyCommunity();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
-  const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';userPage=1;
+  const sessionId=++sessionVersion;invitationSchoolYears.clear();seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';userPage=1;
   proposalDraft=null;
   cleanupDialog();$('#dialog-fields').replaceChildren();
   dialogVersion++;dialogHandler=null;dialogGuard=null;$('#form-dialog').close();
@@ -486,7 +490,7 @@ function sessionChanged(user) {
     }else if(!state.usersReady||state.usersError){paintManagedUsers();paintPendingAdvisors();}
     if(coordinationDashboard&&(state.role!=='coordinator'||!canAccessAcademic())){destroyIndicators();$('#view-content').replaceChildren(loadingPanel('Atualizando acesso…'));}
     else coordinationDashboard?.updateState(state);
-    if(communityView&&(state.archived||!canAccessAcademic()))destroyCommunity();
+    if(communityView&&!canBrowseCommunity())destroyCommunity();
     else communityView?.update(communityOptions());
     if(data.orientationNoticesError)orientationNoticeBaselineReady=false;
     else if(!state.archived&&data.orientationNoticesReady===true){const fresh=[];state.orientationNotices.forEach(item=>{const key=`${item.id}/${item.createdAt}`;if(!seenOrientationNotices.has(key)){seenOrientationNotices.add(key);if(!item.read)fresh.push(item);}});if(orientationNoticeBaselineReady&&fresh.length){const newest=fresh.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];notice(orientationNoticeCopy(newest),'info',true,{title:'Aviso de orientação',href:'#convites',label:'Ver aviso'});}orientationNoticeBaselineReady=true;}
@@ -535,7 +539,7 @@ function updateShell() {
   $('#pending-advisor-note').hidden = !isPendingAdvisor();
   const academic=canAccessAcademic();
   document.querySelectorAll('[data-route]').forEach(a => {
-    const permitted=!state.archived&&(a.dataset.route==='agreements'?canUseAgreements()&&state.profile?.onboardingRequired!==true:['admin','indicators'].includes(a.dataset.route)?state.role==='coordinator':academic);
+    const permitted=!state.archived&&(a.dataset.route==='people'?canBrowseCommunity():a.dataset.route==='agreements'?canUseAgreements()&&state.profile?.onboardingRequired!==true:['admin','indicators'].includes(a.dataset.route)?state.role==='coordinator':academic);
     a.hidden=!permitted;
     if(a.dataset.route===route)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
   });
@@ -554,6 +558,7 @@ function render() {
   if (state.profile?.onboardingRequired === true) {renderGoogleOnboarding();return;}
   if(!state.profile){$('#view-content').replaceChildren(loadingPanel('Carregando seu cadastro…'));return;}
   if(isPendingAdvisor()){renderAdvisorPending();return;}
+  if(currentRoute.view==='people'&&canBrowseCommunity()){renderPeople();return;}
   if(requiresAgreement()&&!agreementSatisfied()){
     if(currentRoute.view!=='agreements'){
       currentRoute={view:'agreements',groupId:'',tab:'overview'};
@@ -996,7 +1001,7 @@ function progressBlock(tasks, label = 'Entregas concluídas') {
 function groupCard(group) {
   const tasks=groupData.get(group.id)?.tasks || [];
   const card=node('article','group-card');const top=node('div','card-top');top.append(node('span','badge',`INIC ${group.year || 2027}`),node('span','count-label',`${Object.values(group.members || {}).filter(Boolean).length} integrante(s)`));
-  card.append(top,node('h3','',group.name),node('p','group-topic',group.topic || 'Tema em definição'),node('p','advisor-line',`Orientação: ${advisorName(group)}`));
+  card.append(top,node('h3','',group.name),node('p','group-topic',group.topic || 'Tema em definição'),node('p','advisor-line',`Série: ${isSchoolYear(group.schoolYear)?group.schoolYear:'aguardando atualização'}`),node('p','advisor-line',`Orientação: ${advisorName(group)}`));
   if(group.status==='deleting')card.append(node('p','deletion-warning','Exclusão em andamento'));
   else if(groupData.has(group.id))card.append(progressBlock(tasks));else card.append(node('p','loading-task','Carregando entregas…'));
   const footer=node('div','card-footer');footer.append(node('span','',tasks.length ? `${tasks.filter(t=>t.completed).length} de ${tasks.length} etapas` : 'Organize as próximas etapas'),link('Abrir grupo',routeHref('group',group.id)));card.append(footer);
@@ -1111,24 +1116,33 @@ function openProposalForm(draftOnly,{invitedPerson=null}={}) {
   const name=makeField('Nome do grupo','name',{value:saved.name||'',required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
   const topic=makeField(student?'Tema da proposta':'Tema da pesquisa','topic',{value:saved.topic||'',required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
   const year=makeField('Edição do INIC','year',{type:'number',value:saved.year||2027,required:true,min:2027,max:2100});
+  const schoolYear=makeField('Série dos alunos','schoolYear',student?{value:state.profile.year,help:'Seu grupo terá apenas alunos da sua série. A série é definida pelo seu cadastro.'}:{required:true,value:invitedPerson&&participantStatus(invitedPerson).type==='member'&&isSchoolYear(invitedPerson.year)?invitedPerson.year:'',options:[{value:'',label:'Selecione a série do grupo'},...SCHOOL_YEARS],help:'Todos os alunos do grupo devem ser desta série. Professores podem orientar grupos de diferentes séries.'});
+  if(student)schoolYear.field.readOnly=true;
+  const selectedSchoolYear=()=>student?state.profile?.year:schoolYear.field.value;
   const proposalEditor=student?createProposalEditor({value:saved.proposal||null,proposalFile:saved.proposalFile||null}):null;
   const picker=student?buildAdvisorPicker(invitedPerson&&participantStatus(invitedPerson).type==='advisor'?[invitedPerson.id]:(saved.advisorIds||[])):null;
-  const members=buildStudentPicker({multiple:true,selectedIds:invitedPerson&&participantStatus(invitedPerson).type==='member'?[invitedPerson.id]:(saved.memberUids||[])});
+  const members=buildStudentPicker({multiple:true,selectedIds:invitedPerson&&participantStatus(invitedPerson).type==='member'?[invitedPerson.id]:(saved.memberUids||[]),schoolYear:selectedSchoolYear});
+  schoolYear.field.addEventListener('change',()=>members.update());
   const advisor=student?null:makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))],help:state.role==='coordinator'&&isListedAdvisor()?'Escolha seu nome para orientar este novo grupo. Outros orientadores receberão um convite e precisam aceitar.':'O orientador receberá um convite e será vinculado após aceitar.'});
-  const fields=[name.label,topic.label,year.label,...(proposalEditor?[proposalEditor.element]:[]),members.field,picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'O anexo, o grupo e os convites são salvos juntos. Cada aluno pode participar de apenas um grupo. O professor será vinculado após aceitar.':'O professor pode orientar vários grupos. Os alunos convidados só entram após aceitar.')];
-  openForm({title:draftOnly?'Preparar meu grupo':student?'Meu grupo e proposta':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,onUpdate:()=>{members.update();picker?.update();},cleanup:()=>{proposalEditor?.destroy();members.destroy();picker?.destroy();},submit:draftOnly?'Salvar rascunho':student?'Criar grupo e enviar convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando grupo e enviando convites…':'Criando grupo…',handler:async data=>{
+  const fields=[name.label,topic.label,year.label,schoolYear.label,...(proposalEditor?[proposalEditor.element]:[]),members.field,picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'O anexo, o grupo e os convites são salvos juntos. Cada aluno pode participar de apenas um grupo, sempre da sua série. O professor será vinculado após aceitar.':'O professor pode orientar vários grupos. Os alunos convidados só entram após aceitar e devem ser da série escolhida.')];
+  openForm({title:draftOnly?'Preparar meu grupo':student?'Meu grupo e proposta':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,onUpdate:()=>{if(student)schoolYear.field.value=state.profile?.year||'';members.update();picker?.update();},cleanup:()=>{proposalEditor?.destroy();members.destroy();picker?.destroy();},submit:draftOnly?'Salvar rascunho':student?'Criar grupo e enviar convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando grupo e enviando convites…':'Criando grupo…',handler:async data=>{
     if(state.user?.uid!==uid||sessionVersion!==session)return;
     if(student&&(state.role!=='student'||isPendingAdvisor()))throw new Error('Seu perfil mudou. Abra a proposta novamente para conferir a orientação.');
     if(draftOnly&&!canPrepareProposal())throw new Error('Seu perfil mudou. Confira seu cadastro antes de continuar.');
     if(student&&studentGroupId())throw new Error('Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.');
     if(!draftOnly&&!canCreateGroup())throw new Error('Confira seu termo e aguarde o carregamento das pessoas antes de criar o grupo.');
+    const schoolYear=selectedSchoolYear();
+    if(!isSchoolYear(schoolYear))throw new Error(student?'Informe sua série no cadastro antes de criar o grupo.':'Escolha a série dos alunos deste grupo.');
     const advisorIds=picker?.selectedIds()||[];
     if(advisorIds.length>3)throw new Error('Selecione no máximo 3 orientadores.');
     if(student&&advisorIds.some(id=>!state.advisors.some(person=>person.id===id)))throw new Error('A lista de orientadores mudou. Revise os nomes antes de enviar.');
     const memberUids=members.selectedIds();
     if(!state.peopleReady||state.peopleError)throw new Error('Aguarde o carregamento das pessoas antes de enviar os convites.');
-    if(memberUids.some(id=>!state.people.some(person=>person.id===id&&participantStatus(person).type==='member'&&participantStatus(person).available)))throw new Error('Um dos alunos selecionados já entrou em um grupo. Confira a lista antes de continuar.');
-    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:'',year:Number(data.get('year')),memberUids,...(student?{advisorIds,...proposalEditor.read()}:{advisorId:String(data.get('advisorId')||'')})};
+    const selectedPeople=memberUids.map(id=>state.people.find(person=>person.id===id));
+    if(selectedPeople.some(person=>person?.groupId))throw new Error('Um dos alunos selecionados já entrou em um grupo. Confira a lista antes de continuar.');
+    if(selectedPeople.some(person=>!person||participantStatus(person).type!=='member'||!participantStatus(person).available))throw new Error('Um dos cadastros selecionados não está mais disponível. Confira a lista antes de continuar.');
+    if(selectedPeople.some(person=>person.year!==schoolYear))throw new Error(`O grupo só pode ter alunos do ${schoolYear}. Um dos alunos selecionados é de outra série; confira a lista antes de continuar.`);
+    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:'',year:Number(data.get('year')),schoolYear,memberUids,...(student?{advisorIds,...proposalEditor.read()}:{advisorId:String(data.get('advisorId')||'')})};
     if(student)proposalDraft={uid,...payload};
     if(draftOnly){paintProposalCallout();notice('Rascunho preparado. Envie o termo assinado para concluir a proposta.');return;}
     const id=await service.createGroup(payload);
@@ -1406,13 +1420,21 @@ function renderGroupEvaluations(group,data) {
 function pendingAdvisorInvitations(groupId) {
   return state.invitations.filter(invite=>invite.groupId===groupId&&invite.type==='advisor'&&invite.status==='pending');
 }
+function studentYearAvailability(person,schoolYear,existingGroup=false) {
+  if(!isSchoolYear(person?.year))return {available:false,label:'Série não informada',detail:'O aluno precisa ter uma série válida no cadastro antes de entrar em um grupo.'};
+  if(!isSchoolYear(schoolYear))return {available:false,label:existingGroup?'Série do grupo pendente':state.role==='student'?'Confira sua série':'Escolha a série',detail:existingGroup?'A série deste grupo ainda precisa ser confirmada pela coordenação antes de convidar alunos.':state.role==='student'?'Informe sua série no cadastro antes de convidar colegas.':'Escolha a série do grupo para ver quais alunos podem ser convidados.'};
+  if(person.year!==schoolYear)return {available:false,label:'Outra série',detail:`Este aluno é do ${person.year}. O grupo só pode ter alunos do ${schoolYear}, sem misturar séries.`};
+  return {available:true};
+}
 function personInviteAvailability(person,group) {
   if(!state.peopleReady||state.peopleError)return {available:false,label:'Consultando disponibilidade',detail:'Aguarde o carregamento das pessoas para enviar o convite.'};
   if(!person)return {available:false,label:'Cadastro indisponível',detail:'O cadastro não está mais disponível. Atualize a lista de pessoas.'};
   const status=participantStatus(person);
   if(person.id===state.user?.uid)return {available:false,label:'Seu perfil',detail:'Você não precisa enviar um convite para si.'};
+  if(status.type==='member'&&state.role==='student'){const yearStatus=studentYearAvailability(person,state.profile?.year);if(!yearStatus.available)return yearStatus;}
   if(!status.available)return status;
   if(!group||!canInviteToGroup(group))return {available:false,label:'Escolha seu grupo',detail:'Escolha um grupo em que você pode enviar convites.'};
+  if(status.type==='member'){const yearStatus=studentYearAvailability(person,group.schoolYear,true);if(!yearStatus.available)return yearStatus;}
   if(status.type==='member'&&group.members?.[person.id])return {available:false,label:'Já está no grupo',detail:'Este aluno já participa do grupo. Cada aluno pode participar de apenas um grupo.'};
   if(status.type==='advisor'&&group.advisorId)return {available:false,label:group.advisorId===person.id?'Já orienta este grupo':'Grupo já tem orientador',detail:group.advisorId===person.id?'Este professor já aceitou orientar este grupo. Ele pode orientar outros grupos também.':'Este grupo já tem um orientador confirmado. Não é necessário enviar outro convite.'};
   if(state.invitations.some(invite=>invite.groupId===group.id&&invite.type===status.type&&invite.toUid===person.id&&invite.status==='pending'))return {available:false,label:'Convite enviado',detail:'Já existe um convite para este grupo aguardando a resposta desta pessoa.'};
@@ -1420,6 +1442,11 @@ function personInviteAvailability(person,group) {
   return {available:true,label:status.type==='advisor'?'Convidar para orientar':'Convidar para meu grupo',detail:status.detail};
 }
 function communityInvitationState(person) {
+  if(participantStatus(person).type==='member'){
+    if(!isSchoolYear(person?.year))return {disabled:true,label:'Série não informada',detail:'O aluno precisa informar a série no cadastro antes de receber um convite.'};
+    if(state.role==='student'){const yearStatus=studentYearAvailability(person,state.profile?.year);if(!yearStatus.available)return {disabled:true,label:yearStatus.label,detail:yearStatus.detail};}
+  }
+  if(!canAccessAcademic())return {disabled:true,label:'Envie seu termo',detail:'Você pode conhecer as pessoas agora. Envie seu termo assinado para criar o grupo e enviar convites.'};
   const manageable=state.groups.filter(canInviteToGroup);
   if(!manageable.length)return {disabled:!canCreateGroup(),label:canCreateGroup()?'Criar grupo e convidar':'Sem grupo para convidar',detail:canCreateGroup()?'Crie seu grupo para enviar o convite.':'Os convites são enviados por participantes de um grupo.'};
   const options=manageable.map(group=>personInviteAvailability(person,group));
@@ -1427,9 +1454,10 @@ function communityInvitationState(person) {
   return available?{disabled:false,label:available.label,detail:available.detail}:{disabled:true,label:options[0].label,detail:options[0].detail};
 }
 function communityOptions() {
-  return {people:state.people,ready:state.peopleReady,error:state.peopleError,currentUid:state.user?.uid||'',invitationState:communityInvitationState,onRetry:()=>{if(state.user)sessionChanged(state.user);},onInvite:person=>{
+  return {people:state.people,ready:state.peopleReady,error:state.peopleError,currentUid:state.user?.uid||'',currentRole:state.role,currentYear:state.profile?.year||'',invitationState:communityInvitationState,onRetry:()=>{if(state.user)sessionChanged(state.user);},onInvite:person=>{
     if(!state.peopleReady||state.peopleError)return;
     const latest=state.people.find(item=>item.id===person.id);if(!latest||!participantStatus(latest).available)return;
+    const permission=communityInvitationState(latest);if(permission.disabled){notice(permission.detail,'info');return;}
     const manageable=state.groups.filter(canInviteToGroup),group=manageable.find(item=>personInviteAvailability(latest,item).available);
     if(!manageable.length&&canCreateGroup()){showCreateGroup(latest);return;}
     if(!group){notice(communityInvitationState(latest).detail,'info');return;}
@@ -1438,15 +1466,21 @@ function communityOptions() {
 }
 function destroyCommunity(){communityView?.destroy();communityView=null;}
 function renderPeople(){
+  if(!canBrowseCommunity())return;
   if(!communityView){communityView=createCommunityView(communityOptions());$('#view-content').replaceChildren(communityView.element);}else communityView.update(communityOptions());
+  let note=$('#community-access-note');
+  if(!canAccessAcademic()){
+    if(!note){note=node('section','panel');note.id='community-access-note';communityView.element.before(note);}
+    note.replaceChildren(node('h3','','Conheça seus colegas'),node('p','muted','Você pode ver os alunos e professores cadastrados. Para criar seu grupo e enviar convites, primeiro envie o termo assinado.'),link('Enviar meu termo','#termo','button secondary'));
+  }else note?.remove();
   renderedKey='people';
 }
-function buildStudentPicker({multiple=false,selectedIds=[],onChange=()=>{},group=()=>null}={}) {
+function buildStudentPicker({multiple=false,selectedIds=[],onChange=()=>{},group=()=>null,schoolYear=()=>state.profile?.year}={}) {
   const field=node('fieldset','advisor-picker member-picker');field.append(node('legend','',multiple?'Convidar colegas (opcional)':'Escolha o aluno'));
   const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Buscar aluno pelo nome ou série';search.setAttribute('aria-label',multiple?'Buscar colegas para o grupo':'Buscar aluno para convidar');search.autocomplete='off';
   const list=node('div','advisor-picker-list'),status=node('p','member-picker-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const selected=new Set(selectedIds);let active=true,disposed=false;
-  function available(person){return group()?personInviteAvailability(person,group()):{...participantStatus(person),available:participantStatus(person).available&&person.id!==state.user?.uid};}
+  function available(person){const current=group();if(current)return personInviteAvailability(person,current);const status=participantStatus(person),yearStatus=studentYearAvailability(person,schoolYear());return !yearStatus.available?yearStatus:{...status,available:status.available&&person.id!==state.user?.uid};}
   function paint(){
     if(disposed)return;
     const focusUid=list.contains(document.activeElement)?document.activeElement?.value:null;
@@ -1462,13 +1496,13 @@ function buildStudentPicker({multiple=false,selectedIds=[],onChange=()=>{},group
       const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');
       copy.append(node('strong','',person.name),node('small','',[person.year,option.available?'Disponível para convite':option.label].filter(Boolean).join(' · ')));
       if(!option.available)copy.append(node('small','',option.detail));
-      input.addEventListener('change',()=>{if(disposed||input.disabled)return;if(input.checked){if(multiple&&selected.size>=20&&!selected.has(person.id)){input.checked=false;status.textContent='Selecione no máximo 20 colegas.';return;}if(!multiple){selected.clear();list.querySelectorAll('input').forEach(other=>{if(other!==input)other.checked=false;});}selected.add(person.id);}else selected.delete(person.id);paintStatus();onChange();});
+      input.addEventListener('change',()=>{if(disposed||input.disabled)return;const latest=state.people.find(item=>item.id===person.id);if(!state.peopleReady||state.peopleError||!latest||!available(latest).available){input.checked=false;selected.delete(person.id);paint();onChange();return;}if(input.checked){if(multiple&&selected.size>=20&&!selected.has(person.id)){input.checked=false;status.textContent='Selecione no máximo 20 colegas.';return;}if(!multiple){selected.clear();list.querySelectorAll('input').forEach(other=>{if(other!==input)other.checked=false;});}selected.add(person.id);}else selected.delete(person.id);paintStatus();onChange();});
       label.append(input,avatar,copy);list.append(label);
     }
     if(!matches.length)list.append(node('p','empty-small',students.length?'Nenhum aluno com esse nome ou série.':'Ainda não há outros alunos cadastrados. Os colegas aparecerão após criar a conta.'));
     paintStatus();if(focusUid)[...list.querySelectorAll('input')].find(input=>input.value===focusUid&&!input.disabled)?.focus({preventScroll:true});
   }
-  function paintStatus(){status.textContent=multiple?`${selected.size} de 20 colegas selecionados. Cada pessoa só entra no grupo após aceitar.`:'Alunos que já participam de um grupo aparecem como indisponíveis.';}
+  function paintStatus(){const selectedYear=group()?.schoolYear||schoolYear();status.textContent=(multiple?`${selected.size} de 20 colegas selecionados. `:'')+(isSchoolYear(selectedYear)?`Somente alunos do ${selectedYear} podem entrar neste grupo. `:'Escolha a série antes de convidar alunos. ')+'Quem já participa de um grupo aparece como indisponível.';}
   search.addEventListener('input',paint);field.append(search,list,status);paint();
   return {field,selectedIds:()=>[...selected],update(){paint();},setActive(value){active=value;field.hidden=!value;paint();},destroy(){disposed=true;selected.clear();list.replaceChildren();}};
 }
@@ -1481,12 +1515,12 @@ function showInviteForm(initialGroupId = '', initialType = 'member', initialUid 
     return;
   }
   const initialGroup=manageable.find(item=>item.id===initialGroupId)||manageable[0];
-  const group=makeField('Grupo do convite','groupId',manageable.length===1?{type:'hidden',value:initialGroup.id}:{required:true,value:initialGroup.id,options:manageable.map(g=>({value:g.id,label:g.name}))});
+  const group=makeField('Grupo do convite','groupId',manageable.length===1?{type:'hidden',value:initialGroup.id}:{required:true,value:initialGroup.id,options:manageable.map(g=>({value:g.id,label:`${g.name} · ${isSchoolYear(g.schoolYear)?g.schoolYear:'Série pendente'}`}))});
   const currentGroup=()=>state.groups.find(item=>item.id===group.field.value);
-  const groupContext=node('div','invite-group-context');groupContext.append(node('small','','CONVITE PARA O GRUPO'),node('strong','',initialGroup.name));groupContext.hidden=manageable.length!==1;
+  const groupContext=node('div','invite-group-context');groupContext.append(node('small','','CONVITE PARA O GRUPO'),node('strong','',initialGroup.name),node('span','',isSchoolYear(initialGroup.schoolYear)?`Alunos do ${initialGroup.schoolYear}`:'Série aguardando confirmação da coordenação'));groupContext.hidden=manageable.length!==1;
   const type=node('fieldset','invite-type-picker');type.append(node('legend','','Quem você quer convidar?'));
   const typeChoices=[];
-  for(const [value,title,help]of [['member','Aluno ou colega','Escolha uma pessoa cadastrada.'],['advisor','Professor(a)','Pode orientar vários grupos.']]){
+  for(const [value,title,help]of [['member','Aluno ou colega','Somente alunos da série do grupo.'],['advisor','Professor(a)','Pode orientar vários grupos.']]){
     const choice=node('label','invite-type-choice'),input=node('input'),copy=node('span','invite-type-copy');input.type='radio';input.name='type';input.value=value;input.checked=value===(initialType==='advisor'?'advisor':'member');copy.append(node('strong','',title),node('small','',help));choice.append(input,copy);type.append(choice);typeChoices.push(input);input.addEventListener('change',toggle);
   }
   const inviteType=()=>typeChoices.find(input=>input.checked)?.value||'member';
@@ -1717,6 +1751,37 @@ function paintMessages(messages) {
   if(wasNearEnd)list.scrollTop=list.scrollHeight;
 }
 
+function invitationYear(invite) {
+  const group=state.groups.find(item=>item.id===invite.groupId);
+  if(group)return {ready:true,year:group.schoolYear||''};
+  if(isSchoolYear(invite.schoolYear))return {ready:true,year:invite.schoolYear};
+  const stored=invitationSchoolYears.get(invite.groupId);if(stored)return stored;
+  if(typeof service.getGroupSchoolYear!=='function')return {ready:true,year:'',error:true};
+  const actor=state.user?.uid,session=sessionVersion,entry={ready:false,year:''};
+  invitationSchoolYears.set(invite.groupId,entry);
+  Promise.resolve().then(()=>service.getGroupSchoolYear(invite.groupId)).then(year=>{
+    if(state.user?.uid!==actor||sessionVersion!==session)return;
+    invitationSchoolYears.set(invite.groupId,{ready:true,year:isSchoolYear(year)?year:''});
+    if(currentRoute.view==='invitations')render();
+  }).catch(()=>{
+    if(state.user?.uid!==actor||sessionVersion!==session)return;
+    invitationSchoolYears.set(invite.groupId,{ready:true,year:'',error:true});
+    if(currentRoute.view==='invitations')render();
+  });
+  return entry;
+}
+function memberInvitationAvailability(invite) {
+  if(invite.type!=='member'||state.role!=='student')return {available:true};
+  if(studentGroupId())return {available:false,detail:'Você já aceitou um convite ou criou seu grupo. Cada aluno pode participar de apenas um grupo; este convite não pode ser aceito.'};
+  if(!state.peopleReady||state.peopleError)return {available:false,detail:state.peopleError?'Não foi possível consultar sua disponibilidade. Tente novamente em Pessoas.':'Consultando sua participação nos grupos…'};
+  if(!isSchoolYear(state.profile?.year))return {available:false,detail:'Informe sua série no cadastro antes de aceitar um convite.'};
+  const result=invitationYear(invite);
+  if(!result.ready)return {available:false,detail:'Conferindo a série do grupo…'};
+  if(result.error)return {available:false,detail:'Não foi possível conferir a série deste grupo. Tente novamente antes de aceitar.',retry:true};
+  if(!isSchoolYear(result.year))return {available:false,detail:'A série deste grupo precisa ser confirmada pela coordenação antes de aceitar novos alunos.'};
+  if(result.year!==state.profile.year)return {available:false,detail:`Este grupo é do ${result.year}. Você é do ${state.profile.year} e só pode participar de um grupo da sua própria série.`};
+  return {available:true};
+}
 function renderInvitations() {
   const fragment=document.createDocumentFragment();const orientationPanel=orientationNoticesPanel();if(orientationPanel)fragment.append(orientationPanel);fragment.append(heading('Convites',state.role==='advisor'?'Você pode orientar vários grupos. Convide alunos disponíveis e acompanhe as respostas.':'Conecte-se com a comunidade e acompanhe seus convites. Cada aluno participa de um grupo.',[link('Encontrar pessoas','#pessoas','button secondary'),button('Enviar convite +','button primary',()=>showInviteForm())]));
   const filters=node('div','filter-pills invite-tabs');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar convites');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=filterButton(label,value,value===invitationFilter,()=>{invitationFilter=value;render();document.querySelector(`[data-invitation-filter="${value}"]`)?.focus({preventScroll:true});},'invitation-results');b.dataset.invitationFilter=value;filters.append(b);});const results=node('div');results.id='invitation-results';fragment.append(filters,results);
@@ -1734,21 +1799,22 @@ function renderInvitations() {
     if(invite.status==='pending'&&isRecipient(invite)) {
       if(invite.type==='advisor'&&['advisor','coordinator'].includes(state.role)){const read=button('Ler proposta de TCC','button secondary',()=>showInvitationProposal(invite));read.dataset.invitationProposal=invite.id;card.append(read);}
       const actions=node('div','invitation-card__actions');
-      const occupied=invite.type==='member'&&state.role==='student'&&Boolean(studentGroupId());
-      const checking=invite.type==='member'&&state.role==='student'&&(!state.peopleReady||Boolean(state.peopleError));
+      const membership=memberInvitationAvailability(invite);
       const accept=button('Aceitar convite','button primary',event=>{
-        if(invite.type==='member'&&state.role==='student'&&studentGroupId()){notice('Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.','info');return;}
+        const current=state.invitations.find(item=>item.id===invite.id);
+        if(!current||current.status!=='pending'||!isRecipient(current)||!canAccessAcademic()){notice('Este convite não está mais disponível. Atualize a lista.','info');return;}
+        const availability=memberInvitationAvailability(current);if(!availability.available){notice(availability.detail,'info');return;}
         action(event.currentTarget,()=>service.respondInvitation(invite.id,true),invite.type==='advisor'?'Orientação confirmada. Você pode orientar outros grupos também.':'Convite aceito. Seu grupo está disponível em Meus grupos.',invite.type==='advisor'?'Confirmando orientação…':'Entrando no grupo…');
       });
       const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified),requiresApproval=invite.type==='advisor'&&!['advisor','coordinator'].includes(state.role);
-      if(requiresVerification||requiresApproval||occupied||checking){accept.disabled=true;accept.title=occupied?'Você já participa de um grupo.':checking?'Consultando sua participação nos grupos…':requiresApproval?'Aguarde a aprovação da coordenação para orientar.':'Confirme seu e-mail primeiro';}
-      if(occupied)card.append(node('p','invitation-card__notice','Você já aceitou um convite ou criou seu grupo. Cada aluno pode participar de apenas um grupo; este convite não pode ser aceito.'));
-      else if(checking)card.append(node('p','invitation-card__notice',state.peopleError?'Não foi possível consultar sua disponibilidade. Tente novamente em Pessoas.':'Consultando sua participação nos grupos…'));
+      if(requiresVerification||requiresApproval||!membership.available){accept.disabled=true;accept.title=!membership.available?membership.detail:requiresApproval?'Aguarde a aprovação da coordenação para orientar.':'Confirme seu e-mail primeiro';}
+      if(!membership.available)card.append(node('p','invitation-card__notice',membership.detail));
+      if(membership.retry)card.append(button('Conferir série novamente','text-button',()=>{invitationSchoolYears.delete(invite.groupId);render();}));
 
       actions.append(accept,button('Recusar','button secondary',()=>confirmAction('Recusar convite?',`O convite para “${invite.groupName||'este grupo'}” será recusado. Um novo convite poderá ser enviado depois.`,async()=>{await service.respondInvitation(invite.id,false);notice('Convite recusado.');},'Recusar convite')));card.append(actions);
       if(requiresVerification)card.append(node('p','invitation-card__notice','Confirme seu e-mail para aceitar. Use “Enviar confirmação” no aviso acima.'));
       if(requiresApproval)card.append(node('p','invitation-card__notice','A coordenação precisa aprovar seu perfil de professor(a) antes do aceite.'));
-    } else if(invite.status==='pending'){const target=state.people.find(person=>person.id===invite.toUid);card.append(node('p','invitation-card__notice',invite.type==='member'&&target?.groupId?'Este aluno já participa de um grupo e não pode aceitar outro convite.':'Aguardando o aceite do destinatário.'));}
+    } else if(invite.status==='pending'){const target=state.people.find(person=>person.id===invite.toUid),group=state.groups.find(item=>item.id===invite.groupId),schoolYear=group?.schoolYear||invite.schoolYear;card.append(node('p','invitation-card__notice',invite.type==='member'&&target?.groupId?'Este aluno já participa de um grupo e não pode aceitar outro convite.':invite.type==='member'&&target&&isSchoolYear(schoolYear)&&target.year!==schoolYear?'Este aluno é de outra série e não pode aceitar o convite para este grupo.':'Aguardando o aceite do destinatário.'));}
     grid.append(card);
   });results.append(grid);return fragment;
 }
@@ -1824,7 +1890,7 @@ function showEditUser(person) {
   const student=(person.role||'student')==='student'&&person.requestedRole!=='advisor';
   const name=makeField(student?'Nome completo do aluno':'Nome completo','name',{value:person.name||'',required:true,minLength:2,maxLength:100,autocomplete:'name'});
   const email=makeField('E-mail de acesso','email',{value:person.email||'',help:'O e-mail de acesso permanece o mesmo.'});email.field.readOnly=true;
-  const year=makeField('Série escolar','year',{value:person.year||'',options:[{value:'',label:'Não se aplica'},'1º ano','2º ano','3º ano']});
+  const year=makeField('Série escolar','year',{value:person.year||'',options:[{value:'',label:'Não se aplica'},...SCHOOL_YEARS],help:student?'A série de um aluno vinculado a um grupo só pode ser alterada após remover esse vínculo, para evitar grupos com séries diferentes.':''});
   if(person.year&&![...year.field.options].some(option=>option.value===person.year)){const option=node('option','',person.year);option.value=person.year;year.field.append(option);year.field.value=person.year;}
   const role=!isProtectedPerson(person)?makeField('Acesso à plataforma','role',{value:person.role||'student',options:[{value:'student',label:'Estudante'},{value:'advisor',label:'Professor(a) orientador(a)'}]}):null;
   const fields=[name.label,email.label,year.label];if(role)fields.push(role.label);else fields.push(node('p','dialog-note','O acesso desta conta está protegido. Você pode corrigir o nome e a série.'));
@@ -1961,7 +2027,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261112-8');
+  service = await import('./firebase-service.js?v=20261112-9');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

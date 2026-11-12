@@ -12,7 +12,7 @@ const waitFor=async(check)=>{for(let i=0;i<150;i++){if(check())return;await new 
 const stamp=Date.now(),bytes=Buffer.from('%PDF-test fixture');
 const people=['s1','s2','s3','a1','a2','c','worker','noTerm','pending'];
 const person=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:uid==='pending'?'advisor':'student',year:'3º ano',createdAt:stamp});
-const group=(name,members,advisorId,status='active')=>({name,topic:'Estufa',description:'Pesquisa de teste',year:2027,advisorId,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:members[0],createdAt:stamp,status});
+const group=(name,members,advisorId,status='active')=>({name,topic:'Estufa',description:'Pesquisa de teste',year:2027,schoolYear:'3º ano',advisorId,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:members[0],createdAt:stamp,status});
 const metadata=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:bytes.length,contentType:'application/pdf',uploadedAt:stamp});
 const file={base64:bytes.toString('base64'),size:bytes.length,contentType:'application/pdf',uploadedAt:stamp};
 const write=(text,revision,updatedBy='s1')=>({text,revision,updatedBy,authorName:updatedBy,updatedAt:serverTimestamp()});

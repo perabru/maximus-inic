@@ -11,7 +11,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  const pdf=Buffer.from('%PDF-1.7\nSynthetic signed-term test fixture\n%%EOF');
  const bytesFile={name:'Termo assinado.pdf',type:'application/pdf',size:pdf.length,arrayBuffer:async()=>pdf.buffer.slice(pdf.byteOffset,pdf.byteOffset+pdf.byteLength)};
  const person=(uid,requestedRole='student')=>({name:uid,email:`${uid.toLowerCase()}@example.com`,requestedRole,year:requestedRole==='student'?'3º ano':'',createdAt:stamp});
- const group=(uid,advisorId='')=>({name:`Grupo ${uid}`,topic:'Pesquisa de teste',description:'',year:2027,advisorId,members:{[uid]:true},memberNames:{[uid]:uid},createdBy:uid,createdAt:stamp,status:'active'});
+ const group=(uid,advisorId='')=>({name:`Grupo ${uid}`,topic:'Pesquisa de teste',description:'',year:2027,schoolYear:'3º ano',advisorId,members:{[uid]:true},memberNames:{[uid]:uid},createdBy:uid,createdAt:stamp,status:'active'});
  const metadata=(uid,year=2027)=>({uid,year,filename:'Termo assinado.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp});
  const document=()=>({base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp});
  const term=(uid,year=2027)=>({[`agreements/${year}/${uid}`]:metadata(uid,year),[`agreementFiles/${year}/${uid}`]:document()});

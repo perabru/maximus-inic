@@ -4,7 +4,7 @@ import {ref,set,get,update,serverTimestamp} from 'firebase/database';
 export async function runInicResultsTests({env,db,ok,no,count}) {
 const stamp=Date.now(),person=(name)=>({name,email:name+'@example.com',requestedRole:'student',year:'1º ano',createdAt:stamp});
 const termBytes=Buffer.from('%PDF-test fixture'),termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp}),termFile={base64:termBytes.toString('base64'),size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp};
-const group=(uid,advisor)=>({name:'TCC',topic:'Pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[uid]:true,irs3:true},memberNames:{[uid]:uid,irs3:'irs3'},createdBy:uid,createdAt:stamp,status:'active'});
+const group=(uid,advisor)=>({name:'TCC',topic:'Pesquisa',description:'Descrição',year:2027,schoolYear:'1º ano',advisorId:advisor,members:{[uid]:true,irs3:true},memberNames:{[uid]:uid,irs3:'irs3'},createdBy:uid,createdAt:stamp,status:'active'});
 const seed={roles:{irc:'coordinator',ira1:'advisor',ira2:'advisor'},users:Object.fromEntries(['irc','ira1','ira2','irs1','irs2','irs3','irpending'].map(uid=>[uid,{...person(uid),...(uid==='irpending'?{requestedRole:'advisor'}:{})}])),groups:{irg1:group('irs1','ira1'),irg2:group('irs2','ira2')},agreements:{2027:Object.fromEntries(['irs1','irs2','irs3'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['irs1','irs2','irs3'].map(uid=>[uid,termFile]))}};
 const changes={};
 function flatten(prefix,value){if(value!==null&&typeof value==='object')for(const [key,child] of Object.entries(value))flatten(prefix?`${prefix}/${key}`:key,child);else changes[prefix]=value;}

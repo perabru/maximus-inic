@@ -90,6 +90,7 @@ async function writeProfile(user, supplied = {}) {
     });
   } else if (supplied.name) {
     const changes={name:clean(supplied.name,100),requestedRole:supplied.requestedRole==='advisor'?'advisor':'student',year:clean(supplied.year,30),onboardingRequired:false};
+    await requireSchoolYearChange(user.uid,record.val().year,changes.year);
     const patchSet=Object.fromEntries(Object.entries(changes).map(([key,value])=>[`users/${user.uid}/${key}`,value]));
     patchSet[`peopleDirectory/${user.uid}`]=await ownPersonRecord(user,{profile:{...record.val(),...changes}});
     await update(path(),patchSet);
@@ -137,15 +138,52 @@ export async function syncPeopleDirectory() {
   return Object.keys(people).filter(uid=>!blocked[uid]&&people[uid].onboardingRequired!==true).length;
 }
 function studentGroupError(){return Object.assign(new Error('Este aluno já aceitou um convite ou já participa de um grupo. Alunos só podem participar de um grupo.'),{code:'group/student-unavailable'});}
+const SCHOOL_YEARS=Object.freeze(['1º ano','2º ano','3º ano']);
+function validSchoolYear(value){return SCHOOL_YEARS.includes(value);}
+function schoolYearError(){return Object.assign(new Error('Escolha a série escolar: 1º ano, 2º ano ou 3º ano.'),{code:'group/school-year-required'});}
+function unclassifiedSchoolYearError(){return Object.assign(new Error('Este grupo antigo precisa ter a série atualizada pela administração antes de receber alunos. Os integrantes atuais foram preservados.'),{code:'group/school-year-unclassified'});}
+function requireSameSchoolYear(groupYear,studentYear){
+  if(!validSchoolYear(groupYear))throw unclassifiedSchoolYearError();
+  if(!validSchoolYear(studentYear))throw schoolYearError();
+  if(groupYear!==studentYear)throw Object.assign(new Error(`Alunos só podem participar de grupos da própria série. Este grupo é do ${groupYear}.`),{code:'group/school-year-mismatch'});
+}
+// The edition (group.year) and the student's school year are different fields.
+// Reading this one public academic label never exposes a group's members,
+// proposal, signed terms or other private data to a pending invitation recipient.
+export async function getGroupSchoolYear(groupId){
+  await requireActiveUser();checkIdentifier(groupId);
+  const year=(await get(path(`groups/${groupId}/schoolYear`))).val();
+  return validSchoolYear(year)?year:'';
+}
+async function requireSchoolYearChange(uid,previousYear,nextYear,role){
+  if(previousYear===nextYear)return;
+  const access=role===undefined?(await get(path(`roles/${uid}`))).val():role;
+  if(access==='advisor'||access==='coordinator')return;
+  if((await get(path(`userGroups/${uid}`))).exists())throw Object.assign(new Error('Não é possível alterar a série de um aluno que já participa de um grupo. Remova o vínculo antes de mudar a série.'),{code:'profile/school-year-in-use'});
+}
 async function requireFreeStudent(user,groupId='') {
   const index=(await get(path(`userGroups/${user.uid}`))).val()||{};
   if(Object.keys(index).some(gid=>gid!==groupId))throw studentGroupError();
 }
-async function availableMemberIds(ids,selfUid) {
+async function availableMemberIds(ids,selfUid,schoolYear) {
   if(!Array.isArray(ids)||ids.length>20)throw new Error('Convide até 20 colegas ao criar o grupo.');
   const unique=[...new Set(ids.map(checkIdentifier))].filter(uid=>uid!==selfUid);
-  for(const uid of unique){const person=(await get(path(`peopleDirectory/${uid}`))).val();if(!person||person.role!=='student'||person.requestedRole==='advisor')throw new Error('Escolha um aluno cadastrado e disponível.');if(person.groupId)throw studentGroupError();}
+  if(!validSchoolYear(schoolYear))throw unclassifiedSchoolYearError();
+  for(const uid of unique){const person=(await get(path(`peopleDirectory/${uid}`))).val();if(!person||person.role!=='student'||person.requestedRole==='advisor')throw new Error('Escolha um aluno cadastrado e disponível.');if(person.groupId)throw studentGroupError();requireSameSchoolYear(schoolYear,person.year);}
   return unique;
+}
+async function resolveMemberEmails(emails,user,role){
+  const normalized=proposalMemberEmails(emails,user.email);
+  if(!normalized.length)return [];
+  if(role!=='coordinator')throw Object.assign(new Error('Escolha os colegas cadastrados em Pessoas para conferir a série e enviar o convite.'),{code:'group/member-registration-required'});
+  // Only coordination already has permission to consult private registrations.
+  // Public student and teacher directories deliberately never contain emails.
+  const users=(await get(path('users'))).val()||{};
+  return normalized.map(email=>{
+    const matches=Object.keys(users).filter(uid=>String(users[uid].email||'').toLowerCase()===email);
+    if(matches.length!==1)throw new Error('Não foi possível identificar um aluno cadastrado pelo e-mail. Selecione o perfil em Pessoas.');
+    return matches[0];
+  });
 }
 export function onSession(callback) {
   sessionObservers.add(callback);let active=true,version=0;
@@ -408,6 +446,7 @@ export async function saveProfile(patch) {
   if(patch.requestedRole!==undefined)changes.requestedRole=patch.requestedRole==='advisor'?'advisor':'student';
   const [profileSnapshot,roleSnapshot,directorySnapshot]=await Promise.all([get(path(`users/${user.uid}`)),get(path(`roles/${user.uid}`)),get(path(`advisorDirectory/${user.uid}`))]);
   const profile={...profileSnapshot.val(),...changes},role=roleSnapshot.val(),listedAdvisor=role==='advisor'||role==='coordinator'&&directorySnapshot.exists();
+  await requireSchoolYearChange(user.uid,profileSnapshot.val()?.year,profile.year,role);
   const patchSet=Object.fromEntries(Object.entries(changes).map(([key,value])=>[`users/${user.uid}/${key}`,value]));
   patchSet[`peopleDirectory/${user.uid}`]=await ownPersonRecord(user,{profile,role,listedAdvisor});
   if(changes.name&&listedAdvisor)patchSet[`advisorDirectory/${user.uid}`]={uid:user.uid,name:changes.name};
@@ -421,7 +460,7 @@ function releaseAdvisorChanges(group,uid,changes){
   changes[`groups/${group.id}/advisorId`]='';changes[`groups/${group.id}/advisorAssignment`]=null;changes[`groups/${group.id}/orientationRevision`]=(group.orientationRevision||0)+1;
   changes[`groups/${group.id}/advisorRequestVersion`]=(group.advisorRequestVersion||0)+1;
   for(const resource of ['advisorConfirmations','advisorRequests','advisorRequestSlots'])changes[`${resource}/${group.id}`]=null;
-  changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;if(!Object.prototype.hasOwnProperty.call(changes,`userGroups/${uid}`))changes[`userGroups/${uid}/${group.id}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;
+  changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;changes[`userGroups/${uid}/${group.id}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;
   changes[`admissions/${group.id}/${uid}`]=null;
   changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
 }
@@ -436,6 +475,7 @@ export async function updateUser(uid,{name,year,role}={},{approveCoordinatorAsAd
   if((uid===actor.uid||previousRole==='coordinator')&&nextRole!==previousRole)throw new Error('O acesso da coordenação está protegido.');
   const nextName=name===undefined?person.name:clean(name,100),nextYear=year===undefined?person.year:clean(year,30);
   if(!nextName)throw new Error('Informe o nome do cadastro.');
+  if(nextRole==='student')await requireSchoolYearChange(uid,person.year,nextYear,previousRole);
   const changes={[`users/${uid}/name`]:nextName,[`users/${uid}/year`]:nextYear,[`roles/${uid}`]:nextRole};
   if(nextRole==='advisor'||nextRole==='coordinator'&&(directorySnapshot.exists()||approveCoordinatorAsAdvisor===true))changes[`advisorDirectory/${uid}`]={uid,name:nextName};
   else if(nextRole!=='coordinator')changes[`advisorDirectory/${uid}`]=null;
@@ -510,12 +550,13 @@ export async function archiveUser(uid) {
     const audit={uid,role,status:'archiving',archivedAt:serverTimestamp(),archivedBy:actor.uid,archivedByName:clean(actorSnapshot.val()?.name||'Coordenação',100),inviteCutoff:serverTimestamp()};
     await update(path(),{[`inactiveUsers/${uid}`]:true,[`userArchives/${uid}`]:audit,[`pushSubscriptions/${uid}`]:null,[`advisorDirectory/${uid}`]:null,[`peopleDirectory/${uid}`]:null});
   }
-  const [groupsSnapshot,invitationsSnapshot]=await Promise.all([get(path('groups')),get(path('invitations'))]);
-  const changes={[`roles/${uid}`]:null,[`advisorDirectory/${uid}`]:null,[`userGroups/${uid}`]:null,[`userArchives/${uid}/status`]:'archived'};
+  const [groupsSnapshot,invitationsSnapshot,indexSnapshot]=await Promise.all([get(path('groups')),get(path('invitations')),get(path(`userGroups/${uid}`))]);
+  const changes={[`roles/${uid}`]:null,[`advisorDirectory/${uid}`]:null,[`userArchives/${uid}/status`]:'archived'};
+  for(const groupId of Object.keys(indexSnapshot.val()||{}))changes[`userGroups/${uid}/${groupId}`]=null;
   for(const group of collection(groupsSnapshot)){
     if(group.status==='deleting'){if(group.members?.[uid]||group.advisorId===uid)throw new Error('Conclua a exclusão do grupo '+group.name+' e depois conclua a exclusão deste cadastro.');continue;}
     if(group.members?.[uid]){
-      changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;changes[`admissions/${group.id}/${uid}`]=null;changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
+      changes[`groups/${group.id}/members/${uid}`]=null;changes[`groups/${group.id}/memberNames/${uid}`]=null;changes[`userGroups/${uid}/${group.id}`]=null;changes[`evaluations/${group.id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${group.id}/${uid}`]=null;changes[`admissions/${group.id}/${uid}`]=null;changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
     }
     if(group.advisorId===uid)releaseAdvisorChanges(group,uid,changes);
   }
@@ -551,10 +592,11 @@ export async function deleteUserPermanently(uid) {
     // Only metadata and indexes are loaded. Personal document bytes are removed
     // by their known paths, without downloading every student's signed files.
     const resources=['groups','invitations','admissions','memberRevocations','evaluations','inicResults','advisorRequests','advisorRequestSlots','advisorConfirmations','agreementAdvisorAccess','memberRequests'];
-    const snapshots=await Promise.all(resources.map(resource=>get(path(resource))));
+    const [snapshots,indexSnapshot]=await Promise.all([Promise.all(resources.map(resource=>get(path(resource)))),get(path(`userGroups/${uid}`))]);
     const records=Object.fromEntries(resources.map((resource,index)=>[resource,snapshots[index].val()||{}]));
     const changes={};
-    for(const resource of ['users','roles','advisorDirectory','peopleDirectory','userGroups','userArchives','pushSubscriptions','orientationNotices'])changes[`${resource}/${uid}`]=null;
+    for(const resource of ['users','roles','advisorDirectory','peopleDirectory','userArchives','pushSubscriptions','orientationNotices'])changes[`${resource}/${uid}`]=null;
+    for(const groupId of Object.keys(indexSnapshot.val()||{}))changes[`userGroups/${uid}/${groupId}`]=null;
     // Every year accepted by agreementYear is covered, including a file or
     // signature left without its metadata after a prior interrupted operation.
     for(let year=2027;year<=2100;year++)for(const resource of ['agreements','agreementFiles','agreementReviews','agreementSignatures','agreementAdvisorAccess'])changes[`${resource}/${year}/${uid}`]=null;
@@ -567,7 +609,7 @@ export async function deleteUserPermanently(uid) {
     for(const [id,group]of Object.entries(records.groups)){
       if(group.status==='deleting'&&(group.members?.[uid]||group.memberNames?.[uid]||group.advisorId===uid))throw new Error('Conclua a exclusão do grupo '+group.name+' e tente excluir este cadastro novamente.');
       if(group.members?.[uid]||group.memberNames?.[uid]){
-        changes[`groups/${id}/members/${uid}`]=null;changes[`groups/${id}/memberNames/${uid}`]=null;
+        changes[`groups/${id}/members/${uid}`]=null;changes[`groups/${id}/memberNames/${uid}`]=null;changes[`userGroups/${uid}/${id}`]=null;
         // Include empty individual paths too: a staff update racing the cleanup
         // snapshot must not leave a grade, result or admission behind.
         changes[`evaluations/${id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${id}/${uid}`]=null;
@@ -623,8 +665,8 @@ async function approvedAdvisorIds(ids) {
   for(const uid of unique)if(!(await get(path(`advisorDirectory/${uid}`))).exists())throw new Error('Selecione apenas orientadores aprovados pela coordenação.');
   return unique;
 }
-function invitationRecord(user,groupId,groupName,toUid='',toEmail='',type='advisor') {
-  return {groupId,groupName,toEmail:clean(toEmail,254).toLowerCase(),toUid,type,senderId:user.uid,senderName:profileCache?.name||user.displayName||'Participante',status:'pending',createdAt:serverTimestamp()};
+function invitationRecord(user,groupId,groupName,toUid='',toEmail='',type='advisor',schoolYear='') {
+  return {groupId,groupName,toEmail:clean(toEmail,254).toLowerCase(),toUid,type,senderId:user.uid,senderName:profileCache?.name||user.displayName||'Participante',status:'pending',createdAt:serverTimestamp(),...(validSchoolYear(schoolYear)?{schoolYear}:{})};
 }
 function proposalMemberEmails(emails,selfEmail) {
   if(!Array.isArray(emails))throw new Error('Informe os e-mails dos colegas em uma lista.');
@@ -638,39 +680,42 @@ function proposalMemberEmails(emails,selfEmail) {
   }
   return [...unique];
 }
-export async function createGroup({name,topic,description='',year=2027,advisorId='',advisorIds=[],memberEmails=[],memberUids=[],proposal=null,proposalFile=null}) {
+export async function createGroup({name,topic,description='',year=2027,schoolYear='',advisorId='',advisorIds=[],memberEmails=[],memberUids=[],proposal=null,proposalFile=null}) {
   const user=needUser(),role=await requireAcademicAccess();
   const edition=Number(year);
   if(!Number.isInteger(edition)||edition<2025||edition>2100)throw new Error('Informe uma edição válida, por exemplo 2027.');
   const groupName=clean(name,100),groupTopic=clean(topic,240);
   if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
-  const colleagues=proposalMemberEmails(memberEmails,user.email),colleagueUids=await availableMemberIds(memberUids,user.uid);
-  if(colleagues.length+colleagueUids.length>20)throw new Error('Convide até 20 colegas ao criar o grupo.');
+  const groupSchoolYear=role==='student'?(await get(path(`users/${user.uid}/year`))).val():schoolYear;
+  if(!validSchoolYear(groupSchoolYear))throw schoolYearError();
+  if(!Array.isArray(memberUids))throw new Error('Escolha os colegas cadastrados em Pessoas.');
+  const emailUids=await resolveMemberEmails(memberEmails,user,role);
+  const colleagueUids=await availableMemberIds([...new Set([...memberUids,...emailUids])],user.uid,groupSchoolYear);
   const candidates=await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
   const directAdvisor=(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
   const groupId=push(path('groups')).key;
   const preparedProposal=proposal?await prepareProposal(groupId,{proposal,proposalFile,user}):null;
   if(role==='student'&&candidates.length&&!preparedProposal)throw new Error('Anexe a proposta antes de convidar os orientadores.');
   if(role==='student')await requireFreeStudent(user);
-  const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
+  const group={name:groupName,topic:groupTopic,description:clean(description,3000),year:edition,schoolYear:groupSchoolYear,advisorId:directAdvisor,members:{[user.uid]:true},memberNames:{[user.uid]:profileCache?.name||user.displayName||'Participante'},createdBy:user.uid,createdAt:Date.now(),status:'active',advisorRequestVersion:candidates.length?1:0};
   if(role==='student'){group.advisorRequestPolicy='first-accept-v1';group.proposalRequired=true;}
   if(preparedProposal)group.proposal=preparedProposal.metadata;
   const changes={[`groups/${groupId}`]:group,[`userGroups/${user.uid}/${groupId}`]:true};
   changes[`peopleDirectory/${user.uid}`]=await ownPersonRecord(user,{role,groupId});
   if(preparedProposal?.payload)changes[`proposalFiles/${groupId}`]=preparedProposal.payload;
   for(const task of defaultSchedule(edition))changes[`tasks/${groupId}/${task.id}`]={title:task.title,dueDate:task.dueDate,completed:false,weight:1,createdBy:user.uid,createdAt:Date.now(),completedBy:''};
-  for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid);changes[`invitationIssuedAt/${id}`]=serverTimestamp();changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
-  for(const uid of colleagueUids){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid,'','member');changes[`invitationIssuedAt/${id}`]=serverTimestamp();changes[`memberRequests/${groupId}/${uid}`]=id;}
-  for(const email of colleagues){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,'',email,'member');changes[`invitationIssuedAt/${id}`]=serverTimestamp();}
+  for(const [slot,uid] of candidates.entries()){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid,'','advisor',groupSchoolYear);changes[`invitationIssuedAt/${id}`]=serverTimestamp();changes[`advisorRequests/${groupId}/${uid}`]=id;changes[`advisorRequestSlots/${groupId}/${slot}`]=uid;}
+  for(const uid of colleagueUids){const id=push(path('invitations')).key;changes[`invitations/${id}`]=invitationRecord(user,groupId,groupName,uid,'','member',groupSchoolYear);changes[`invitationIssuedAt/${id}`]=serverTimestamp();changes[`memberRequests/${groupId}/${uid}`]=id;}
   // Proposal, first schedule and all selected invitations either all commit or
   // all fail. Retrying a failed form cannot leave a second partial proposal.
   if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
-  try{await update(path(),changes);}catch(error){if(role==='student')await requireFreeStudent(user);throw error;}
+  try{await update(path(),changes);}catch(error){if(role==='student'){await requireFreeStudent(user);requireSameSchoolYear(groupSchoolYear,(await get(path(`users/${user.uid}/year`))).val());}await availableMemberIds(colleagueUids,user.uid,groupSchoolYear);throw error;}
   return groupId;
 }
 export async function updateGroup(groupId,patch) {
   needUser();
   await requireAcademicAccess();
+  if(Object.prototype.hasOwnProperty.call(patch,'schoolYear'))throw new Error('A série é definida na criação e não pode ser alterada. Crie um grupo da série correta.');
   const allowed={};
   for(const [key,value] of Object.entries(patch)) {
     if(['name','topic','description','status'].includes(key))allowed[key]=clean(value,key==='description'?3000:key==='topic'?240:100);
@@ -758,7 +803,13 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
   if(!(role==='coordinator'||(role==='advisor'&&group.advisorId===user.uid)||(role!=='advisor'&&group.members?.[user.uid])))throw new Error('Você não pode enviar convites para este grupo.');
   if(!['member','advisor'].includes(type))throw new Error('Tipo de convite inválido.');
   if(type==='member'&&!toUid&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Escolha um aluno cadastrado ou informe um e-mail válido.');
-  if(type==='member'&&toUid){checkIdentifier(toUid);if(toUid===user.uid||group.members?.[toUid])throw new Error('Este aluno já participa deste grupo.');await availableMemberIds([toUid],user.uid);toEmail='';}
+  if(type==='member'){
+    if(!validSchoolYear(group.schoolYear))throw unclassifiedSchoolYearError();
+    if(role==='student')requireSameSchoolYear(group.schoolYear,(await get(path(`users/${user.uid}/year`))).val());
+    if(!toUid)toUid=(await resolveMemberEmails([toEmail],user,role))[0]||'';
+    checkIdentifier(toUid);if(toUid===user.uid||group.members?.[toUid])throw new Error('Este aluno já participa deste grupo.');
+    await availableMemberIds([toUid],user.uid,group.schoolYear);toEmail='';
+  }
   if(type==='advisor'&&role==='student'){
     const payload=group.proposal?.mode==='file'?(await get(path(`proposalFiles/${groupId}`))).val():null;
     if(!proposalMetadataValid(group.proposal,payload))throw new Error('Anexe a proposta antes de convidar os orientadores.');
@@ -783,8 +834,8 @@ export async function invite({groupId,toEmail='',toUid='',type='member'}) {
     changes[`groups/${groupId}/advisorRequestVersion`]=(group.advisorRequestVersion||0)+1;
   }
   if(type==='member'&&toUid){const previous=(await get(path(`memberRequests/${groupId}/${toUid}`))).val();if(previous&&(await get(path(`invitations/${previous}/status`))).val()==='pending')throw new Error('Já existe um convite pendente para este aluno.');changes[`memberRequests/${groupId}/${toUid}`]=id;}
-  changes[`invitations/${id}`]=invitationRecord(user,groupId,group.name,toUid,toEmail,type);changes[`invitationIssuedAt/${id}`]=serverTimestamp();
-  try{await update(path(),changes);}catch(error){if(type==='member'&&toUid){await availableMemberIds([toUid],user.uid);const pending=(await get(path(`memberRequests/${groupId}/${toUid}`))).val();if(pending&&(await get(path(`invitations/${pending}/status`))).val()==='pending')throw new Error('Já existe um convite pendente para este aluno.');}throw error;}return id;
+  changes[`invitations/${id}`]=invitationRecord(user,groupId,group.name,toUid,toEmail,type,group.schoolYear);changes[`invitationIssuedAt/${id}`]=serverTimestamp();
+  try{await update(path(),changes);}catch(error){if(type==='member'&&toUid){await availableMemberIds([toUid],user.uid,group.schoolYear);const pending=(await get(path(`memberRequests/${groupId}/${toUid}`))).val();if(pending&&(await get(path(`invitations/${pending}/status`))).val()==='pending')throw new Error('Já existe um convite pendente para este aluno.');}throw error;}return id;
 }
 export async function respondInvitation(invitationId,accept) {
   await requireActiveUser();
@@ -797,7 +848,11 @@ export async function respondInvitation(invitationId,accept) {
   if(invitation.toUid!==user.uid&&invitation.toEmail!==user.email?.toLowerCase())throw new Error('Este convite pertence a outra conta.');
   if(!accept){await update(path(`invitations/${invitationId}`),{status:'declined'});return;}
   const role=await requireAcademicAccess();
-  if(invitation.type==='member'&&role==='student')await requireFreeStudent(user,invitation.groupId);
+  if(invitation.type==='member'){
+    if(role!=='student')throw new Error('Este convite é para um aluno. Professores devem receber um convite de orientação.');
+    await requireFreeStudent(user,invitation.groupId);
+    requireSameSchoolYear(await getGroupSchoolYear(invitation.groupId),(await get(path(`users/${user.uid}/year`))).val());
+  }
   await set(path(`admissions/${invitation.groupId}/${user.uid}`),invitationId);
   const changes={[`invitations/${invitationId}/status`]:'accepted'};
   if(invitation.type==='advisor') {
@@ -810,7 +865,7 @@ export async function respondInvitation(invitationId,accept) {
   }
   // A validated pending advisor admission allows inspection of this proposal.
   // Membership, acceptance and the directory claim commit together.
-  try{await update(path(),changes);}catch(error){if(invitation.type==='member'&&role==='student')await requireFreeStudent(user,invitation.groupId);throw error;}
+  try{await update(path(),changes);}catch(error){if(invitation.type==='member'&&role==='student'){await requireFreeStudent(user,invitation.groupId);requireSameSchoolYear(await getGroupSchoolYear(invitation.groupId),(await get(path(`users/${user.uid}/year`))).val());}throw error;}
 }
 
 export async function addEvent({groupId,title,date,description=''}={}) {

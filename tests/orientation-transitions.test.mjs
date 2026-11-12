@@ -6,7 +6,7 @@ import {loadService} from './service-runtime.mjs';
 export async function runOrientationTransitionTests({env,db,ok,no,count}) {
  const root='maximusInic',stamp=Date.now(),ids={coord:'otcoord',dual:'otdual',student:'otstudent',peer:'otpeer',old:'otold',next:'otnext',loser:'otloser',outsider:'otoutsider',inactive:'otinactive'};
  const profile=uid=>({name:uid,email:`${uid}@example.com`,requestedRole:[ids.coord,ids.dual,ids.old,ids.next,ids.loser,ids.inactive].includes(uid)?'advisor':'student',year:'3º ano',createdAt:stamp});
- const group=(name,advisor=ids.old)=>({name,topic:'Tema preservado',description:'Pesquisa do grupo',year:2027,advisorId:advisor,members:{[ids.student]:true,[ids.peer]:true,[advisor]:true},memberNames:{[ids.student]:ids.student,[ids.peer]:ids.peer,[advisor]:advisor},createdBy:ids.student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:4,orientationRevision:2});
+ const group=(name,advisor=ids.old)=>({name,topic:'Tema preservado',description:'Pesquisa do grupo',year:2027,schoolYear:'3º ano',advisorId:advisor,members:{[ids.student]:true,[ids.peer]:true,[advisor]:true},memberNames:{[ids.student]:ids.student,[ids.peer]:ids.peer,[advisor]:advisor},createdBy:ids.student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:4,orientationRevision:2});
  const changes={};
  for(const uid of Object.values(ids))changes[`users/${uid}`]=profile(uid);
  for(const uid of [ids.coord,ids.dual]){changes[`roles/${uid}`]='coordinator';changes[`advisorDirectory/${uid}`]={uid,name:uid};}

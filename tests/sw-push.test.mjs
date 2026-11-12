@@ -4,12 +4,12 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const scope='https://perabru.github.io/maximus-inic/';
-function worker(clients=[]) {
+function worker(clients=[],globals={}) {
   const handlers=new Map(),shown=[],opened=[],navigated=[];
   const self={location:new URL(scope+'sw.js'),registration:{scope,showNotification:async(...args)=>shown.push(args)},
-    clients:{matchAll:async()=>clients,openWindow:async url=>opened.push(url)},
+    clients:{matchAll:async()=>clients,openWindow:async url=>opened.push(url),claim:async()=>{}},
     addEventListener:(name,handler)=>handlers.set(name,handler)};
-  vm.runInNewContext(readFileSync(new URL('../sw.js',import.meta.url),'utf8'),{self,URL,Response});
+  vm.runInNewContext(readFileSync(new URL('../sw.js',import.meta.url),'utf8'),{self,URL,Response,...globals});
   return {handlers,shown,opened,navigated};
 }
 async function fire(handler,data) {
@@ -48,4 +48,10 @@ test('private Firebase and authenticated requests bypass the public cache',()=>{
   w.handlers.get('fetch')({request:new Request('https://fir-ionic-a5e90.firebaseio.com/maximusInic/agreementFiles/2027/student.json'),respondWith});
   w.handlers.get('fetch')({request:new Request(scope+'portal.html',{headers:{Authorization:'Bearer test-only'}}),respondWith});
   assert.equal(intercepted,false);
+});
+test('activation removes outdated community assets and preserves the current and unrelated caches',async()=>{
+  const removed=[];
+  const w=worker([],{caches:{keys:async()=>['maximus-inic-public-20261112-7','maximus-inic-community-20261112-8','maximus-inic-community-20261112-9','another-site-cache'],delete:async key=>{removed.push(key);return true;}}});
+  await fire(w.handlers.get('activate'),{});
+  assert.deepEqual(removed.sort(),['maximus-inic-community-20261112-8','maximus-inic-public-20261112-7']);
 });

@@ -18,7 +18,7 @@ function make(){
  const location={hash:'#inicio',href:'https://qa.invalid/portal.html'};
  const mock={
   friendlyError:error=>error.message,
-  subscribeApp:(_,fn)=>{mock.appCallback=data=>fn({people:directoryFixtures(),peopleReady:true,peopleError:null,...data});return()=>{mock.appUnsubscribed=(mock.appUnsubscribed||0)+1;};},
+  subscribeApp:(_,fn)=>{mock.appCallback=data=>fn({people:directoryFixtures(data.profile?.year||'3º ano'),peopleReady:true,peopleError:null,...data});return()=>{mock.appUnsubscribed=(mock.appUnsubscribed||0)+1;};},
   subscribeAgreements:(year,fn)=>{mock.agreementYear=year;mock.agreementCallback=fn;(mock.agreementCallbacks||=[]).push(fn);return()=>{mock.agreementUnsubscribed=(mock.agreementUnsubscribed||0)+1;};},
   subscribeAdvisorAgreements:(groupId,year,fn)=>{mock.advisorAgreementGroup=groupId;mock.agreementYear=year;mock.agreementCallback=fn;(mock.agreementCallbacks||=[]).push(fn);return()=>{mock.agreementUnsubscribed=(mock.agreementUnsubscribed||0)+1;};},
   subscribeGroup:(id,fn)=>{mock.groupSubscriptions=(mock.groupSubscriptions||0)+1;mock.groupCallback=fn;(mock.groupCallbacks||=new Map()).set(id,fn);return()=>{mock.groupUnsubscribed=(mock.groupUnsubscribed||0)+1;};},
@@ -33,6 +33,7 @@ function make(){
   downloadSigningAgreement:async(uid,year)=>{mock.signingDownload={uid,year};const record=metadata(uid,{uploadVersion:'upload-1'});return {blob:new Blob(['%PDF-1.4\nFictitious test'],{type:'application/pdf'}),metadata:record,review:reviewedTerm().review,signatures:[],documentSha256:'a'.repeat(64)};},
   getProposal:async(...args)=>{(mock.proposalReads||=[]).push(args);return mock.proposalRecord||null;},saveProposal:async(...args)=>{mock.proposalSavePayload=args;},getProposalFile:async(...args)=>{mock.proposalFilePayload=args;return {blob:new Blob(['Fictitious proposal PDF'],{type:'application/pdf'}),filename:'proposta-teste.pdf'};},
   createGroup:async payload=>{mock.createPayload=payload;return 'g-new';},invite:async payload=>{mock.invitePayload=payload;},sendMessage:async(...args)=>{(mock.sentMessages||=[]).push(args);},
+  getGroupSchoolYear:async groupId=>{(mock.groupSchoolYearReads||=[]).push(groupId);return mock.groupSchoolYears?.[groupId]||'';},
   subscribeArticle:()=>()=>{},saveArticleSection:async(...args)=>{mock.articleSavePayload=args;},
   respondInvitation:async(...args)=>{mock.respondPayload=args;},saveProfile:async payload=>{mock.profilePayload=payload;},logout:async()=>{mock.logout=true;},
   addEvent:async payload=>{mock.eventPayload=payload;},updateEvent:async(...args)=>{mock.eventUpdate=args;},deleteEvent:async()=>{}
@@ -54,7 +55,7 @@ function make(){
   satisfied:()=>typeof agreementSatisfied==='function'&&agreementSatisfied(),
   get route(){return currentRoute},get agreements(){return agreements},get busy(){return agreementUploadBusy},get groupListeners(){return groupListeners.size},get groupData(){return groupData.size},
   setRoute(view,groupId='',tab='overview'){currentRoute={view,groupId,tab};location.hash=routeHref(view,groupId,tab);renderedKey='';},
-  setUser(uid='student-a',role='student',profile={name:'Joana Teste',requestedRole:'student',year:'3º ano'}){Object.assign(state,{user:{uid,email:uid+'@example.invalid',displayName:profile.name,emailVerified:true},profile,role,users:[],usersReady:true,usersError:null,people:qaPeople(),peopleReady:true,peopleError:null,advisors:[],groups:[],invitations:[],ready:true,error:null});},resetRender(){renderedKey='';}}
+  setUser(uid='student-a',role='student',profile={name:'Joana Teste',requestedRole:'student',year:'3º ano'}){Object.assign(state,{user:{uid,email:uid+'@example.invalid',displayName:profile.name,emailVerified:true},profile,role,users:[],usersReady:true,usersError:null,people:qaPeople(profile.year||'3º ano'),peopleReady:true,peopleError:null,advisors:[],groups:[],invitations:[],ready:true,error:null});},resetRender(){renderedKey='';}}
  `,ctx);
  const q={ui:ctx.ui,window,document,location,mock,urls,close(){for(const timer of timers)clearTimeout(timer);}};
  q.route=(view='dashboard',id='',tab='overview')=>{q.ui.setRoute(view,id,tab);q.ui.render();q.window.dispatchEvent(new window.Event('hashchange'));q.ui.render();};
@@ -65,17 +66,22 @@ function make(){
 function body(q){return q.document.querySelector('#view-content').textContent;}
 function fileForm(q,file={name:'signed.pdf',size:123,type:'application/pdf'}){const form=q.document.querySelector('#agreement-upload-form');assert.ok(form,'signed term form');const input=form.querySelector('input[type=file]');Object.defineProperty(input,'files',{value:[file],configurable:true});return {form,input,file};}
 const advisorFixtures=[{id:'prof-1',name:'Ângelo Silva'},{id:'prof-2',name:'Mariana Carmona'},{id:'prof-3',name:'Bruno Michel Pera'},{id:'prof-4',name:'Taynara Alves'}];
-function directoryFixtures(){return [...Array.from({length:24},(_,index)=>({id:'peer-'+(index+1),uid:'peer-'+(index+1),name:index===2?'Miguel Teste':'Colega '+(index+1),role:'student',requestedRole:'student',year:index%2?'1º ano':'2º ano',groupId:''})),...advisorFixtures.map(person=>({...person,uid:person.id,role:'advisor',requestedRole:'advisor',listedAdvisor:true,groupId:''}))];}
+function directoryFixtures(year='3º ano'){return [...Array.from({length:24},(_,index)=>({id:'peer-'+(index+1),uid:'peer-'+(index+1),name:index===2?'Miguel Teste':'Colega '+(index+1),role:'student',requestedRole:'student',year,groupId:''})),...advisorFixtures.map(person=>({...person,uid:person.id,role:'advisor',requestedRole:'advisor',listedAdvisor:true,groupId:''}))];}
+function mixedYearPeople(){return [...['1º ano','2º ano','3º ano'].map((year,index)=>({id:'year-'+(index+1),uid:'year-'+(index+1),name:'Colega do '+year,role:'student',requestedRole:'student',year,groupId:''})),...directoryFixtures().filter(person=>person.role==='advisor')];}
+function memberChoice(q,id,multiple=true){return q.document.querySelector('[name='+(multiple?'memberUids':'memberUid')+'][value="'+id+'"]');}
+function acceptInvitation(q){return [...q.document.querySelectorAll('#invitation-results button')].find(button=>button.textContent==='Aceitar convite');}
+function incomingMember(patch={}){return {id:'same-year-invite',groupId:'invited-group',groupName:'Grupo da mesma série',type:'member',status:'pending',toUid:'student-a',senderId:'prof-1',schoolYear:'3º ano',...patch};}
 function selectMember(q,uid,multiple=true){const input=[...q.document.querySelectorAll('input[name='+ (multiple?'memberUids':'memberUid') +']')].find(e=>e.value===uid);assert.ok(input,'registered student '+uid);assert.equal(input.disabled,false);input.checked=true;input.dispatchEvent(new q.window.Event('change',{bubbles:true}));return input;}
 function selectedMembers(q){return [...q.document.querySelectorAll('input[name=memberUids]')].filter(input=>input.checked).map(input=>input.value);}
-function openProposal(q){q.ui.state.advisors=advisorFixtures.map(p=>({...p}));q.ui.showCreateGroup();for(const [name,value] of Object.entries({name:'Equipe Científica',topic:'Tecnologia na escola',year:'2027'}))q.document.querySelector('#dialog-form [name='+name+']').value=value;return q.document.querySelector('#dialog-form');}
+function chooseSchoolYear(q,year){const field=q.document.querySelector('#dialog-form [name=schoolYear]');assert.ok(field,'group school-year selector');field.value=year;field.dispatchEvent(new q.window.Event('change',{bubbles:true}));return field;}
+function openProposal(q){q.ui.state.advisors=advisorFixtures.map(p=>({...p}));q.ui.showCreateGroup();for(const [name,value] of Object.entries({name:'Equipe Científica',topic:'Tecnologia na escola',year:'2027'}))q.document.querySelector('#dialog-form [name='+name+']').value=value;if(q.ui.state.role!=='student')chooseSchoolYear(q,'3º ano');return q.document.querySelector('#dialog-form');}
 function fillGroup(q,values={},members=[]){const form=q.document.querySelector('#dialog-form');for(const [key,value]of Object.entries({name:'Meu grupo',topic:'Minha pesquisa',year:'2027',...values}))form.querySelector('[name='+key+']').value=value;for(const uid of members)selectMember(q,uid);return form;}
 function communityStudent(patch={}){const q=make();q.ui.sessionChanged({uid:'student-a',email:'student-a@example.invalid',displayName:'Joana Teste',emailVerified:true});q.mock.appCallback({profile:{name:'Joana Teste',requestedRole:'student',year:'2º ano'},role:'student',groups:[],advisors:advisorFixtures,invitations:[],...patch});q.term(valid);return q;}
 function communityStudentData(q,patch={}){return {profile:{...q.ui.state.profile},role:'student',groups:q.ui.state.groups,advisors:q.ui.state.advisors,invitations:q.ui.state.invitations,people:q.ui.state.people,peopleReady:true,peopleError:null,...patch};}
 function selectAdvisor(q,id,checked=true){const input=[...q.document.querySelectorAll('input[name=advisorIds]')].find(e=>e.value===id);assert.ok(input,'advisor checkbox '+id);input.checked=checked;input.dispatchEvent(new q.window.Event('change'));return input;}
 function chooseInviteType(q,value){const inputs=[...q.document.querySelectorAll('input[name=type]')],chosen=inputs.find(input=>input.value===value);assert.ok(chosen,'invitation type '+value);inputs.forEach(input=>{input.checked=input===chosen;input.toggleAttribute('checked',input===chosen);});chosen.dispatchEvent(new q.window.Event('change',{bubbles:true}));return chosen;}
 function chooseInviteAdvisor(q,uid){const inputs=[...q.document.querySelectorAll('input[name=toUid]')],chosen=inputs.find(input=>input.value===uid);assert.ok(chosen,'invitation advisor '+uid);assert.equal(chosen.disabled,false);inputs.forEach(input=>{input.checked=input===chosen;input.toggleAttribute('checked',input===chosen);});chosen.dispatchEvent(new q.window.Event('change',{bubbles:true}));return chosen;}
-function joinedGroup(q,patch={}){q.ui.state.groups=[{id:'g',name:'Projeto de pesquisa',topic:'Ciência aplicada',year:2027,advisorId:'',createdBy:'student-a',members:{'student-a':true},memberNames:{'student-a':'Joana Teste'},status:'active',...patch}];q.ui.syncGroupListeners();return q.mock.groupCallback;}
+function joinedGroup(q,patch={}){q.ui.state.groups=[{id:'g',name:'Projeto de pesquisa',topic:'Ciência aplicada',year:2027,schoolYear:q.ui.state.role==='student'?q.ui.state.profile.year:'3º ano',advisorId:'',createdBy:'student-a',members:{'student-a':true},memberNames:{'student-a':'Joana Teste'},status:'active',...patch}];q.ui.syncGroupListeners();return q.mock.groupCallback;}
 function staffGroup(role='coordinator',assigned=true){const q=make();q.ui.setUser(role==='advisor'?'prof-1':'coord',role,{name:role==='advisor'?'Ângelo Silva':'Coordenação',requestedRole:role==='advisor'?'advisor':'student'});q.ui.state.advisors=advisorFixtures.map(p=>({...p}));joinedGroup(q,{advisorId:assigned?'prof-1':''});return q;}
 const receipt={studentUid:'student-a',advisorUid:'prof-1',advisorName:'Ângelo Silva',invitationId:'invite-1',createdAt:1793880000000};
 const valid={agreements:[metadata()],requirement:{ready:true,fulfilled:true}};
@@ -421,20 +427,21 @@ function invitedProfessor(patch={}){const q=make();q.ui.sessionChanged({uid:'pro
  await test('coordination dashboard is private and is destroyed when leaving the route',async()=>{const q=await unassignedCoord();q.route('indicators');assert.ok(q.document.querySelector('#qa-private-dashboard'));assert.equal(q.mock.dashboardCreated,1);assert.equal(q.mock.dashboardOptions.year,2027);q.ui.resetRender();q.ui.render();assert.ok(q.mock.dashboardUpdated>=1);q.route('groups');assert.equal(q.mock.dashboardDestroyed,1);q.route('indicators');assert.equal(q.mock.dashboardCreated,2);q.close();for(const role of ['student','advisor']){const other=role==='student'?make().student(valid):staffGroup('advisor');other.route('indicators');assert.equal(other.mock.dashboardCreated,undefined);assert.equal(other.document.querySelector('#qa-private-dashboard'),null);other.close();}});
  await test('coordinator role loss archive and logout immediately remove dashboard data',async()=>{for(const change of ['role','archive','logout']){const q=await unassignedCoord();q.route('indicators');if(change==='logout')q.ui.sessionChanged(null);else q.mock.appCallback(assignmentAppData(undefined,change==='role'?{role:'advisor'}:{archived:true,profile:null}));assert.equal(q.mock.dashboardDestroyed,1,change);if(change!=='logout')assert.equal(Boolean(q.document.querySelector('#qa-private-dashboard')),false,change);assert.doesNotMatch(body(q),/Indicadores privados da coordenação/,change);q.close();}});
  await test('students in every year choose advisors and send their proposal with invitations',async()=>{
-  for(const year of ['1º ano','2º ano','3º ano','1ª série','2 EM']){
-   const q=make().student(valid);q.ui.state.profile.year=year;const form=openProposal(q);
+  for(const year of ['1º ano','2º ano','3º ano']){
+   const q=make().student(valid);q.ui.state.profile.year=year;q.ui.state.people=directoryFixtures(year);const form=openProposal(q);
    assert.equal(q.document.querySelector('[data-automatic-advisor]'),null);
    selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');selectAdvisor(q,'prof-3');
    assert.equal([...q.document.querySelectorAll('[name=advisorIds]')].find(input=>input.value==='prof-4').disabled,true);
    selectMember(q,'peer-1');dispatchForm(q);await flush();
    assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-1','prof-2','prof-3']);
    assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['peer-1']);
+   assert.equal(q.mock.createPayload.schoolYear,year);
    assert.equal(q.mock.invitePayload,undefined);assert.match(q.document.querySelector('#app-notice').textContent,/4 convite/);q.close();
   }
  });
  await test('first and second year drafts retain chosen advisors and colleagues until the term is ready',async()=>{
   for(const year of ['1º ano','2º ano']){
-   const q=make().student();q.ui.state.profile.year=year;q.ui.state.advisors=advisorFixtures.map(person=>({...person}));q.ui.showProposalDraft();
+   const q=make().student();q.ui.state.profile.year=year;q.ui.state.people=directoryFixtures(year);q.ui.state.advisors=advisorFixtures.map(person=>({...person}));q.ui.showProposalDraft();
    assert.equal(q.document.querySelector('[data-automatic-advisor]'),null);selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');
    const form=fillGroup(q,{},['peer-1']);
    dispatchForm(q);await flush();assert.equal(q.mock.createPayload,undefined);q.term(valid);openProposal(q);
@@ -505,5 +512,195 @@ function invitedProfessor(patch={}){const q=make();q.ui.sessionChanged({uid:'pro
  await test('an open member picker drops a colleague who accepts another group and keeps send disabled',()=>{const q=communityStudent();joinedGroup(q);q.ui.showInviteForm('g','member','peer-1');assert.equal(q.document.querySelector('#dialog-submit').disabled,false);const people=q.ui.state.people.map(person=>person.id==='peer-1'?{...person,groupId:'other-group'}:person);q.mock.appCallback(communityStudentData(q,{people}));const option=q.document.querySelector('[name=memberUid][value=peer-1]');assert.ok(option.disabled);assert.equal(option.checked,false);assert.equal(q.document.querySelector('#dialog-submit').disabled,true);assert.match(option.parentElement.textContent,/já aceitou|já participa/);q.close();});
  await test('a failed invitation cannot reenable send after its target joins another group',async()=>{const q=communityStudent();joinedGroup(q);q.ui.showInviteForm('g','member','peer-1');let reject;q.mock.invite=()=>new Promise((_resolve,fail)=>reject=fail);dispatchForm(q);const people=q.ui.state.people.map(person=>person.id==='peer-1'?{...person,groupId:'other-group'}:person);q.mock.appCallback(communityStudentData(q,{people}));reject(Error('Este aluno já participa de um grupo.'));await flush();assert.equal(q.document.querySelector('#form-dialog').open,true);assert.equal(q.document.querySelector('#dialog-submit').disabled,true);assert.match(q.document.querySelector('#dialog-status').textContent,/já participa/);q.close();});
  await test('live advisor approval changes refresh the create picker without losing the group draft',async()=>{const q=communityStudent();openProposal(q);selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');const search=q.document.querySelector('[aria-label="Buscar orientadores aprovados"]');search.value='mariana';search.dispatchEvent(new q.window.Event('input'));const newAdvisor={id:'prof-5',name:'Professora nova'};q.mock.appCallback(communityStudentData(q,{advisors:[...advisorFixtures.filter(person=>person.id!=='prof-1'),newAdvisor]}));assert.equal(q.document.querySelector('[name=advisorIds][value=prof-1]'),null);assert.ok(q.document.querySelector('[name=advisorIds][value=prof-5]'));assert.equal(q.document.querySelector('[name=advisorIds][value=prof-2]').checked,true);assert.equal(search.value,'mariana');assert.equal(q.document.querySelector('#dialog-form [name=name]').value,'Equipe Científica');dispatchForm(q);await flush();assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-2']);q.close();});
+ await test('students can browse every school year before the signed term while creation and invitations stay blocked',async()=>{
+  const q=make().student();q.ui.state.people=mixedYearPeople();q.route('people');
+  assert.ok(q.document.querySelector('.community'));
+  assert.equal(q.document.querySelectorAll('[data-person-id]').length,7);
+  assert.ok([...q.document.querySelectorAll('[data-route=people]')].every(link=>!link.hidden));
+  assert.match(q.document.querySelector('#community-access-note').textContent,/termo assinado/);
+  const search=q.document.querySelector('#community-search');search.value='1º ano';search.dispatchEvent(new q.window.Event('input'));
+  assert.ok(q.document.querySelector('[data-person-id=year-1]'));
+  assert.ok(q.document.querySelector('[data-person-invite=year-1]').disabled);
+  search.value='';search.dispatchEvent(new q.window.Event('input'));
+  assert.ok(q.document.querySelector('[data-person-invite=year-3]').disabled);
+  assert.ok(q.document.querySelector('[data-person-invite=prof-1]').disabled);
+  q.document.querySelector('[data-person-invite=year-3]').click();q.ui.showCreateGroup();
+  assert.notEqual(q.document.querySelector('#form-dialog').open,true);
+  joinedGroup(q);q.ui.showInviteForm('g','member','year-3');await flush();
+  assert.notEqual(q.document.querySelector('#form-dialog').open,true);
+  assert.equal(q.mock.createPayload,undefined);assert.equal(q.mock.invitePayload,undefined);q.close();
+ });
+ await test('term revocation keeps people visible but revokes old social invitation controls',()=>{
+  const q=communityStudent();q.route('people');const old=q.document.querySelector('[data-person-invite=peer-1]');
+  assert.equal(old.disabled,false);q.term();
+  assert.ok(q.document.querySelector('.community'));
+  assert.ok(q.document.querySelector('[data-person-id=peer-1]'));
+  assert.ok(q.document.querySelector('[data-person-invite=peer-1]').disabled);
+  old.click();assert.notEqual(q.document.querySelector('#form-dialog').open,true);
+  assert.equal(q.mock.createPayload,undefined);assert.equal(q.mock.invitePayload,undefined);q.close();
+ });
+ await test('onboarding pending-teacher and blocked accounts cannot browse the community',()=>{
+  for(const patch of [
+   {profile:{name:'Novo aluno',requestedRole:'student',year:'2º ano',onboardingRequired:true}},
+   {profile:{name:'Professor pendente',requestedRole:'advisor'}},
+   {archived:true,profile:null}
+  ]){
+   const q=communityStudent();q.route('people');assert.ok(q.document.querySelector('.community'));
+   q.mock.appCallback(communityStudentData(q,patch));q.route('people');
+   assert.equal(q.document.querySelector('[data-person-id]'),null);
+   assert.ok([...q.document.querySelectorAll('[data-route=people]')].every(link=>link.hidden));q.close();
+  }
+ });
+ await test('the portal community shows every year but opens invitations only for classmates',()=>{
+  for(const [index,year]of ['1º ano','2º ano','3º ano'].entries()){
+   const q=make().student(valid);q.ui.state.profile.year=year;q.ui.state.people=mixedYearPeople();q.ui.state.advisors=advisorFixtures;q.route('people');
+   for(let i=1;i<=3;i++){
+    const card=q.document.querySelector('[data-person-id=year-'+i+']'),control=card.querySelector('[data-person-invite]');
+    assert.ok(card);assert.equal(control.disabled,i!==index+1);
+    if(i!==index+1){assert.match(card.textContent,/Outra série/);control.click();assert.notEqual(q.document.querySelector('#form-dialog').open,true);}
+   }
+   assert.equal(q.document.querySelector('[data-person-invite=prof-1]').disabled,false);
+   q.document.querySelector('[data-people-filter=available]').click();
+   assert.deepEqual([...q.document.querySelectorAll('[data-person-id^=year-]')].map(card=>card.dataset.personId),['year-'+(index+1)]);
+   q.document.querySelector('[data-person-invite=year-'+(index+1)+']').click();
+   assert.equal(q.document.querySelector('#form-dialog').open,true);
+   assert.deepEqual(selectedMembers(q),['year-'+(index+1)]);q.close();
+  }
+ });
+ await test('student creation derives its immutable school year from the profile and ignores a forged form value',async()=>{
+  const q=make().student(valid);q.ui.state.people=mixedYearPeople();openProposal(q);
+  const schoolYear=q.document.querySelector('[name=schoolYear]');assert.ok(schoolYear.readOnly);assert.equal(schoolYear.value,'3º ano');
+  schoolYear.value='1º ano';selectMember(q,'year-3');dispatchForm(q);await flush();
+  assert.equal(q.mock.createPayload.schoolYear,'3º ano');assert.equal(q.mock.createPayload.year,2027);
+  assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['year-3']);q.close();
+ });
+ await test('students without a canonical school year can browse but cannot start a group',()=>{
+  for(const year of ['',undefined,'1ª série','2 EM','2027']){
+   const q=make().student(valid);q.ui.state.profile.year=year;q.ui.state.people=mixedYearPeople();q.route('people');
+   assert.ok(q.document.querySelector('[data-person-id=year-1]'));
+   assert.ok(q.document.querySelector('[data-person-invite=year-1]').disabled);
+   q.ui.showCreateGroup();assert.notEqual(q.document.querySelector('#form-dialog').open,true);
+   assert.equal(q.mock.createPayload,undefined);q.close();
+  }
+ });
+ await test('the creation picker keeps other years visible and rejects forged selection changes',async()=>{
+  const q=make().student(valid);q.ui.state.people=mixedYearPeople();openProposal(q);
+  for(const id of ['year-1','year-2']){
+   const option=memberChoice(q,id);assert.ok(option);assert.ok(option.disabled);assert.match(option.parentElement.textContent,/Outra série/);
+   option.disabled=false;option.checked=true;option.dispatchEvent(new q.window.Event('change',{bubbles:true}));assert.equal(memberChoice(q,id).checked,false);assert.ok(memberChoice(q,id).disabled);
+  }
+  selectMember(q,'year-3');dispatchForm(q);await flush();
+  assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['year-3']);assert.equal(q.mock.createPayload.schoolYear,'3º ano');q.close();
+ });
+ await test('staff must choose a school year before creating a group',async()=>{
+  for(const role of ['advisor','coordinator']){
+   const q=make();q.ui.setUser(role==='advisor'?'prof-1':'coord',role,{name:'Equipe escolar',requestedRole:'advisor'});q.ui.state.people=mixedYearPeople();q.ui.showCreateGroup();fillGroup(q);
+   assert.equal(q.document.querySelector('[name=schoolYear]').value,'');
+   assert.ok(memberChoice(q,'year-1').disabled);dispatchForm(q);await flush();
+   assert.equal(q.mock.createPayload,undefined);assert.match(q.document.querySelector('#dialog-status').textContent,/Escolha a série/);
+   chooseSchoolYear(q,'2º ano');selectMember(q,'year-2');dispatchForm(q);await flush();
+   assert.equal(q.mock.createPayload.schoolYear,'2º ano');assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['year-2']);q.close();
+  }
+ });
+ await test('changing a staff group school year removes incompatible selected students',async()=>{
+  const q=make();q.ui.setUser('coord','coordinator',{name:'Coordenação',requestedRole:'advisor'});q.ui.state.people=mixedYearPeople();q.ui.showCreateGroup();fillGroup(q);
+  chooseSchoolYear(q,'1º ano');selectMember(q,'year-1');assert.deepEqual(selectedMembers(q),['year-1']);
+  chooseSchoolYear(q,'2º ano');assert.deepEqual(selectedMembers(q),[]);assert.ok(memberChoice(q,'year-1').disabled);
+  assert.equal(memberChoice(q,'year-2').disabled,false);selectMember(q,'year-2');dispatchForm(q);await flush();
+  assert.equal(q.mock.createPayload.schoolYear,'2º ano');assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['year-2']);q.close();
+ });
+ await test('staff creating from a social student profile starts with that school year and that student',()=>{
+  const q=make();q.ui.setUser('prof-1','advisor',{name:'Professor',requestedRole:'advisor'});q.ui.state.people=mixedYearPeople();q.route('people');
+  q.document.querySelector('[data-person-invite=year-2]').click();
+  assert.equal(q.document.querySelector('#form-dialog').open,true);assert.equal(q.document.querySelector('[name=schoolYear]').value,'2º ano');
+  assert.deepEqual(selectedMembers(q),['year-2']);assert.ok(memberChoice(q,'year-1').disabled);q.close();
+ });
+ await test('existing groups accept invitations only for their fixed school year even when the sender is staff',async()=>{
+  const q=staffGroup('coordinator',false);q.ui.state.groups[0].schoolYear='2º ano';q.ui.state.people=mixedYearPeople();q.ui.showInviteForm('g','member');
+  assert.ok(memberChoice(q,'year-1',false).disabled);assert.equal(memberChoice(q,'year-2',false).disabled,false);assert.ok(memberChoice(q,'year-3',false).disabled);
+  selectMember(q,'year-2',false);dispatchForm(q);await flush();assert.equal(q.mock.invitePayload.toUid,'year-2');assert.equal(q.mock.invitePayload.groupId,'g');q.close();
+ });
+ await test('switching staff invitation groups prunes a recipient from the previous school year',async()=>{
+  const q=staffGroup('coordinator',false);q.ui.state.groups[0].schoolYear='1º ano';q.ui.state.groups.push({...q.ui.state.groups[0],id:'second-year',schoolYear:'2º ano'});q.ui.state.people=mixedYearPeople();q.ui.showInviteForm('g','member');selectMember(q,'year-1',false);
+  const group=q.document.querySelector('[name=groupId]');group.value='second-year';group.dispatchEvent(new q.window.Event('change',{bubbles:true}));
+  assert.equal(memberChoice(q,'year-1',false).checked,false);assert.ok(memberChoice(q,'year-1',false).disabled);assert.ok(q.document.querySelector('#dialog-submit').disabled);
+  selectMember(q,'year-2',false);dispatchForm(q);await flush();assert.equal(q.mock.invitePayload.toUid,'year-2');assert.equal(q.mock.invitePayload.groupId,'second-year');q.close();
+ });
+ await test('a student cannot invite a different year through an inconsistent legacy group',async()=>{
+  const q=make().student(valid);q.ui.state.profile.year='2º ano';q.ui.state.people=mixedYearPeople();joinedGroup(q,{schoolYear:'3º ano'});q.ui.showInviteForm('g','member');
+  assert.ok(memberChoice(q,'year-2',false).disabled);assert.ok(memberChoice(q,'year-3',false).disabled);
+  dispatchForm(q);await flush();assert.equal(q.mock.invitePayload,undefined);q.close();
+ });
+ await test('groups with an unclassified school year remain visible but cannot add students',async()=>{
+  for(const schoolYear of ['',undefined,'2 EM']){
+   const q=make().student(valid);joinedGroup(q,{schoolYear});q.route('groups');await flush();assert.match(body(q),/Projeto de pesquisa/);
+   q.ui.showInviteForm('g','member','peer-1');assert.ok(memberChoice(q,'peer-1',false).disabled);assert.equal(memberChoice(q,'peer-1',false).checked,false);
+   assert.match(memberChoice(q,'peer-1',false).parentElement.textContent,/série.*confirmada|Série do grupo pendente/i);
+   dispatchForm(q);await flush();assert.equal(q.mock.invitePayload,undefined);assert.equal(q.ui.state.groups[0].members['student-a'],true);q.close();
+  }
+ });
+ await test('invitation submit rechecks school years after an old student choice was selected',async()=>{
+  for(const change of ['target','profile','group']){
+   const q=make().student(valid);joinedGroup(q);q.ui.showInviteForm('g','member','peer-1');const form=q.document.querySelector('#dialog-form');
+   if(change==='target')q.ui.state.people.find(person=>person.id==='peer-1').year='1º ano';
+   else if(change==='profile')q.ui.state.profile.year='2º ano';
+   else q.ui.state.groups[0].schoolYear='2º ano';
+   dispatchForm(q,form);await flush();assert.equal(q.mock.invitePayload,undefined,change);assert.equal(q.document.querySelector('#form-dialog').open,true);
+   assert.match(q.document.querySelector('#dialog-status').textContent,/série|misturar/i);q.close();
+  }
+ });
+ await test('live changes of a selected student school year remove that student from a group draft',async()=>{
+  const q=communityStudent();openProposal(q);selectMember(q,'peer-1');selectAdvisor(q,'prof-1');
+  const people=q.ui.state.people.map(person=>person.id==='peer-1'?{...person,year:'3º ano'}:person);q.mock.appCallback(communityStudentData(q,{people}));
+  assert.equal(memberChoice(q,'peer-1').checked,false);assert.ok(memberChoice(q,'peer-1').disabled);
+  assert.equal(q.document.querySelector('#dialog-form [name=name]').value,'Equipe Científica');assert.equal(q.document.querySelector('[name=advisorIds][value=prof-1]').checked,true);
+  dispatchForm(q);await flush();assert.deepEqual(Array.from(q.mock.createPayload.memberUids),[]);assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-1']);q.close();
+ });
+ await test('changing student school year refreshes the draft students while retaining teachers and its text',async()=>{
+  const q=communityStudent({people:mixedYearPeople()});openProposal(q);selectMember(q,'year-2');selectAdvisor(q,'prof-1');
+  q.mock.appCallback(communityStudentData(q,{profile:{...q.ui.state.profile,year:'3º ano'}}));
+  assert.equal(q.document.querySelector('[name=schoolYear]').value,'3º ano');assert.deepEqual(selectedMembers(q),[]);assert.ok(memberChoice(q,'year-2').disabled);
+  assert.equal(memberChoice(q,'year-3').disabled,false);assert.equal(q.document.querySelector('[name=advisorIds][value=prof-1]').checked,true);
+  selectMember(q,'year-3');dispatchForm(q);await flush();assert.equal(q.mock.createPayload.schoolYear,'3º ano');assert.deepEqual(Array.from(q.mock.createPayload.memberUids),['year-3']);q.close();
+ });
+ await test('students in each canonical school year can accept invitations for exactly that year',async()=>{
+  for(const schoolYear of ['1º ano','2º ano','3º ano']){
+   const q=make().student(valid);q.ui.state.profile.year=schoolYear;q.ui.state.invitations=[incomingMember({schoolYear})];q.route('invitations');
+   assert.equal(acceptInvitation(q).disabled,false);acceptInvitation(q).click();await flush();assert.deepEqual(Array.from(q.mock.respondPayload),['same-year-invite',true]);q.close();
+  }
+ });
+ await test('incoming invitations from another year explain the mismatch and leave refusal available',()=>{
+  const q=make().student(valid);q.ui.state.invitations=[incomingMember({schoolYear:'2º ano'})];q.route('invitations');
+  assert.ok(acceptInvitation(q).disabled);assert.match(q.document.querySelector('.invitation-card__notice').textContent,/2º ano.*3º ano.*própria série/);
+  assert.ok([...q.document.querySelectorAll('#invitation-results button')].some(button=>button.textContent==='Recusar'&&!button.disabled));
+  acceptInvitation(q).click();assert.equal(q.mock.respondPayload,undefined);q.close();
+ });
+ await test('legacy member invitations wait for the authoritative group school year before allowing acceptance',async()=>{
+  const q=make().student(valid);q.ui.state.invitations=[incomingMember({schoolYear:undefined})];let resolve;q.mock.getGroupSchoolYear=()=>new Promise(done=>resolve=done);q.route('invitations');
+  assert.ok(acceptInvitation(q).disabled);assert.match(q.document.querySelector('.invitation-card__notice').textContent,/Conferindo a série/);
+  await flush();resolve('3º ano');await flush();assert.equal(acceptInvitation(q).disabled,false);
+  acceptInvitation(q).click();await flush();assert.deepEqual(Array.from(q.mock.respondPayload),['same-year-invite',true]);q.close();
+ });
+ await test('legacy invitation lookups fail closed for unknown or different years and can recover from a read error',async()=>{
+  for(const year of ['',undefined,'2º ano','2 EM']){
+   const q=make().student(valid);q.ui.state.invitations=[incomingMember({schoolYear:undefined})];q.mock.getGroupSchoolYear=async()=>year;q.route('invitations');await flush();
+   assert.ok(acceptInvitation(q).disabled);acceptInvitation(q).click();assert.equal(q.mock.respondPayload,undefined);q.close();
+  }
+  const q=make().student(valid);q.ui.state.invitations=[incomingMember({schoolYear:undefined})];q.mock.getGroupSchoolYear=async()=>{throw Error('Leitura negada')};q.route('invitations');await flush();
+  assert.ok(acceptInvitation(q).disabled);assert.match(q.document.querySelector('.invitation-card__notice').textContent,/Não foi possível conferir/);
+  q.mock.getGroupSchoolYear=async()=>'3º ano';clickLabel(q,'Conferir série novamente','#invitation-results');await flush();assert.equal(acceptInvitation(q).disabled,false);q.close();
+ });
+ await test('late legacy school-year lookups cannot reveal invitations or enable actions after logout',async()=>{
+  const q=make().student(valid);q.ui.state.invitations=[incomingMember({schoolYear:undefined})];let resolve;q.mock.getGroupSchoolYear=()=>new Promise(done=>resolve=done);q.route('invitations');await flush();
+  const old=acceptInvitation(q);q.ui.sessionChanged(null);resolve('3º ano');await flush();old.click();
+  assert.equal(q.document.querySelector('#invitation-results'),null);assert.equal(q.mock.respondPayload,undefined);q.close();
+ });
+ await test('an old acceptance button rechecks both the profile and invitation school year',()=>{
+  for(const change of ['profile','invite']){
+   const q=make().student(valid);q.ui.state.invitations=[incomingMember()];q.route('invitations');const old=acceptInvitation(q);assert.equal(old.disabled,false);
+   if(change==='profile')q.ui.state.profile.year='1º ano';else q.ui.state.invitations[0].schoolYear='2º ano';
+   old.click();assert.equal(q.mock.respondPayload,undefined);assert.match(q.document.querySelector('#app-notice').textContent,/própria série/);q.close();
+  }
+ });
  console.log('TOTAL '+count+' mandatory-term DOM/VM scenarios passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

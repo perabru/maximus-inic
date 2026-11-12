@@ -44,7 +44,7 @@ function runtime(data,uid='coord',{beforeUpdate}={}){
 }
 function fixture(){
   const profile=uid=>({name:uid,email:`${uid}@example.com`,year:'2º ano',requestedRole:uid==='teacher'?'advisor':'student',createdAt:1});
-  const group=(members,advisorId='teacher')=>({name:'Pesquisa conjunta',topic:'Tema',year:2027,status:'active',createdBy:'student',createdAt:1,advisorId,advisorRequestVersion:1,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid]))});
+  const group=(members,advisorId='teacher')=>({name:'Pesquisa conjunta',topic:'Tema',year:2027,schoolYear:'2º ano',status:'active',createdBy:'student',createdAt:1,advisorId,advisorRequestVersion:1,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid]))});
   const invitation=(senderId,toEmail='',toUid='',status='pending')=>({groupId:'group',groupName:'Pesquisa conjunta',senderId,senderName:senderId,toEmail,toUid,status,type:toUid?'advisor':'member',createdAt:1});
   return {maximusInic:{
     users:{coord:profile('coord'),otherCoord:profile('otherCoord'),student:profile('student'),peer:profile('peer'),teacher:profile('teacher'),otherTeacher:profile('otherTeacher')},
@@ -81,7 +81,7 @@ const value=(data,path)=>read(data,`maximusInic/${path}`);
 
 await test('coordination name correction reaches every current group, including old aliases',async()=>{
   const data=fixture();data.maximusInic.groups.group.memberNames.student='Apelido antigo';
-  await runtime(data).call('updateUser','student',{name:'Nome corrigido',year:'3º ano'});
+  await runtime(data).call('updateUser','student',{name:'Nome corrigido',year:'2º ano'});
   assert.equal(value(data,'users/student/name'),'Nome corrigido');assert.equal(value(data,'groups/group/memberNames/student'),'Nome corrigido');
   assert.equal(value(data,'groups/solo/memberNames/student'),'Nome corrigido');assert.equal(value(data,'messages/group/message/senderName'),'student');
   assert.equal(value(data,'users/student/email'),'student@example.com');assert.equal(value(data,'users/student/createdAt'),1);

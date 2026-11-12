@@ -13,7 +13,7 @@ export async function runUserManagementTests({env,db,ok,no,count}) {
  const digest=createHash('sha256').update(pdf).digest('hex');
  const term=uid=>({uid,year,filename:'termo.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp,documentSha256:digest});
  const file={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp,documentSha256:digest};
- const group=(name,advisor,members,creator=members[0])=>({name,topic:'Pesquisa de TCC',description:'',year,advisorId:advisor,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:creator,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:1});
+ const group=(name,advisor,members,creator=members[0])=>({name,topic:'Pesquisa de TCC',description:'',year,schoolYear:'2º ano',advisorId:advisor,members:Object.fromEntries(members.map(uid=>[uid,true])),memberNames:Object.fromEntries(members.map(uid=>[uid,uid])),createdBy:creator,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:1});
  const invite=(groupId,senderId,toEmail,toUid='',type='member',status='pending')=>({groupId,groupName:groupId,toEmail,toUid,type,senderId,senderName:senderId,status,createdAt:stamp-5000});
  const changes={};
  for(const uid of Object.values(ids))changes[`users/${uid}`]=person(uid);
@@ -95,9 +95,10 @@ export async function runUserManagementTests({env,db,ok,no,count}) {
  await no('user management: raw student writes to archive audit denied',set(at(ids.student,`userArchives/${ids.peer}`),{uid:ids.peer,role:'student',status:'archived',archivedAt:stamp,archivedBy:ids.student,archivedByName:ids.student,inviteCutoff:stamp}));
  await rejects('empty global name rejected',()=>coordinator('updateUser',ids.student,{name:'   ',year:'2º ano'}));
  await rejects('profile editor cannot create coordinator access',()=>coordinator('updateUser',ids.student,{name:ids.student,year:'2º ano',role:'coordinator'}));
- await ok('user management: coordination edits student name and school year',coordinator('updateUser',ids.student,{name:'Estudante atualizado',year:'3º ano',role:'student'}));
+ await rejects('coordination cannot change the year of an enrolled student',()=>coordinator('updateUser',ids.student,{name:'Estudante atualizado',year:'3º ano',role:'student'}));
+ await ok('user management: coordination edits student name while preserving group year',coordinator('updateUser',ids.student,{name:'Estudante atualizado',year:'2º ano',role:'student'}));
  const updatedStudent=await value(`users/${ids.student}`);
- check('profile editing preserves Auth email and immutable creation timestamp',updatedStudent.name==='Estudante atualizado'&&updatedStudent.year==='3º ano'&&updatedStudent.email===`${ids.student}@example.com`&&updatedStudent.createdAt===stamp);
+ check('profile editing preserves Auth email and immutable creation timestamp',updatedStudent.name==='Estudante atualizado'&&updatedStudent.year==='2º ano'&&updatedStudent.email===`${ids.student}@example.com`&&updatedStudent.createdAt===stamp);
  await no('user management: raw profile edit cannot replace Auth email',update(at(ids.coord,`users/${ids.student}`),{email:'another-account@example.com'}));
  await no('user management: raw profile edit cannot rewrite creation audit',update(at(ids.coord,`users/${ids.student}`),{createdAt:stamp+1}));
  await ok('user management: coordination edits professor registration and directory label',coordinator('updateUser',ids.teacher,{name:'Professor atualizado',year:'',role:'advisor'}));

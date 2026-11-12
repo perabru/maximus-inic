@@ -184,3 +184,26 @@ node user-deletion-runtime.test.mjs
 ```
 
 SHA-256 das regras validadas: `64068dc99ee04a2e66f245085ff8abc2480201d14828c632b1f36a52c8b0d4c7`. Essas regras precisam ser publicadas antes do novo cliente. Os testes não consultam nem modificam o projeto Firebase de produção.
+
+## Grupos da mesma série e comunidade visível — 12/11/2026
+
+Os novos grupos usam `schoolYear` canônico (`1º ano`, `2º ano` ou `3º ano`), independente da edição numérica em `year`. A criação por aluno deriva a série do perfil autenticado. Professores e coordenação precisam escolher a série. Convites novos para alunos exigem UID cadastrado e série igual; aceites revalidam a série atual, incluindo convites históricos por e-mail. Professores continuam podendo orientar vários grupos de séries distintas.
+
+`same-year-security.mjs` exercita o serviço real e as regras no emulador. `same-year-adversarial.mjs` usa operações diretas e corridas controladas para tentar contornar a restrição: criação forjada, aceite após troca de série, cadastro completo/onboarding, remoção do campo, troca de papel, remoção de índices, membros legados com valor falso e arquivamento parcial seguido de restauração. Bloquear o cadastro não permite apagar um índice mantendo a participação real. A exclusão e o arquivamento normais removem cada vínculo junto com a participação correspondente.
+
+Grupos antigos sem série permanecem editáveis com os integrantes preservados, mas não admitem novos alunos antes da classificação segura. `school-year-migration.test.mjs` verifica a simulação, aplicação, repetição e recálculo transacional com alterações concorrentes; grupos mistos e dados inconsistentes permanecem intactos. Os testes da migração usam exclusivamente uma referência em memória e não invocam credenciais administrativas.
+
+Na interface, a comunidade pode ser consultada antes do termo, mas ações acadêmicas continuam bloqueadas. Todos os alunos permanecem visíveis; o selo **Outra série** e a seleção desabilitada explicam a restrição. A suíte cobre mudança de série/perfil/grupo durante o formulário, campo adulterado no DOM, seleção obrigatória por professores/coordenação, convites legados em carregamento/falha, nova tentativa e respostas atrasadas após sair da conta.
+
+```sh
+npx firebase emulators:exec --project demo-maximus-inic --only database "node same-year-security.mjs"
+npx firebase emulators:exec --project demo-maximus-inic --only database "node same-year-adversarial.mjs"
+node portal-ui.test.cjs
+node --test social-directory-ui.test.mjs school-year-migration.test.mjs sw-push.test.mjs
+```
+
+As fixtures de regressão usam alunos distintos da mesma série nos fluxos positivos. Séries diferentes, convites antigos e grupos legados são construídos explicitamente nos testes negativos, sem relaxar as regras para acomodar dados de teste.
+
+Validação final desta versão: **33** verificações do serviço de série, **70** adversariais de série, **888** da suíte principal, **44** do diretório, **12** adversariais do diretório, **87** de exclusão, **43** do artigo e **16** de gestão em memória. Todas terminaram com código 0 sobre os mesmos arquivos antes/depois da execução. Na interface, passaram **265** cenários do portal e **38** da comunidade; a migração passou **20** testes em memória; calendário, indicadores e service worker passaram **41** testes, incluindo a remoção do cache antigo.
+
+SHA-256 final de `database.rules.json`: `98a5251a5ca709ecebfec0fc826f6d7c37fbf9d55b486e36d8ae7288b6d95e64`. SHA-256 final de `firebase-service.js`: `4d3c6de0232b6819ca228013f1fdb6ea3661f178ee1b7b3cbdb88a0c993ace3c`. Os testes não acessaram o banco de produção nem enviaram convites reais.

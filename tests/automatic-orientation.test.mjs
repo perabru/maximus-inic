@@ -6,9 +6,9 @@ import {loadService} from './service-runtime.mjs';
 // replacement of the former automatic first/second-year assignment policy.
 export async function runAdvisorChoiceTests({env,db,ok,no,count}) {
  const root='maximusInic',stamp=Date.now(),bruno='GZv2JuQ7JJg2G4ErhdOEKQOzM3z2';
- const ids={first:'aufirst',second:'ausecond',third:'authird',peer:'aupeer',other:'auother',another:'auanother',fourth:'aufourth',coord:'aucoord',unapproved:'auunapproved',missing:'aumissing',legacy:'aulegacy',noBruno:'aunobruno',inactiveBruno:'auinactivebruno',inactiveCandidate:'auinactivecandidate'};
+ const ids={first:'aufirst',second:'ausecond',third:'authird',peer:'aupeer',peerSecond:'aupeersecond',peerThird:'aupeerthird',other:'auother',another:'auanother',fourth:'aufourth',coord:'aucoord',unapproved:'auunapproved',missing:'aumissing',legacy:'aulegacy',noBruno:'aunobruno',inactiveBruno:'auinactivebruno',inactiveCandidate:'auinactivecandidate'};
  const pdf=Buffer.from('%PDF-1.7\nAdvisor choice synthetic term\n%%EOF');
- const years={[ids.first]:'1º ano',[ids.second]:'2º ano',[ids.third]:'3º ano',[ids.peer]:'1º ano',[ids.missing]:'2º ano',[ids.legacy]:'1º ano',[ids.noBruno]:'1º ano',[ids.inactiveBruno]:'2º ano',[ids.inactiveCandidate]:'2º ano'};
+ const years={[ids.first]:'1º ano',[ids.second]:'2º ano',[ids.third]:'3º ano',[ids.peer]:'1º ano',[ids.peerSecond]:'2º ano',[ids.peerThird]:'3º ano',[ids.missing]:'2º ano',[ids.legacy]:'1º ano',[ids.noBruno]:'1º ano',[ids.inactiveBruno]:'2º ano',[ids.inactiveCandidate]:'2º ano'};
  const staff=[ids.other,ids.another,ids.fourth,ids.coord,bruno],changes={};
  for(const uid of [...Object.values(ids),bruno])changes[`users/${uid}`]={name:uid===bruno?'Bruno Michel Pera':uid,email:`${uid}@example.com`,requestedRole:[...staff,ids.unapproved].includes(uid)?'advisor':'student',year:years[uid]||'',createdAt:stamp};
  for(const uid of staff){changes[`roles/${uid}`]=[ids.coord,bruno].includes(uid)?'coordinator':'advisor';if(uid!==ids.coord)changes[`advisorDirectory/${uid}`]={uid,name:uid===bruno?'Bruno Michel Pera':uid};}
@@ -16,8 +16,9 @@ export async function runAdvisorChoiceTests({env,db,ok,no,count}) {
   changes[`agreements/2027/${uid}`]={uid,year:2027,filename:'termo.pdf',ownerName:uid,size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
   changes[`agreementFiles/2027/${uid}`]={base64:pdf.toString('base64'),size:pdf.length,contentType:'application/pdf',uploadedAt:stamp};
  }
- const rawGroup=uid=>({name:'Proposta sintética',topic:'Pesquisa escolar',description:'',year:2027,advisorId:'',members:{[uid]:true},memberNames:{[uid]:uid},createdBy:uid,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:0,proposalRequired:true});
- const legacy={...rawGroup(ids.legacy),advisorId:bruno};changes['groups/au-legacy-bruno']=legacy;changes[`userGroups/${ids.legacy}/au-legacy-bruno`]=true;
+ const rawGroup=uid=>({name:'Proposta sintética',topic:'Pesquisa escolar',description:'',year:2027,schoolYear:years[uid],advisorId:'',members:{[uid]:true},memberNames:{[uid]:uid},createdBy:uid,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:0,proposalRequired:true});
+ const legacy={...rawGroup(ids.legacy),advisorId:bruno};delete legacy.schoolYear;changes['groups/au-legacy-bruno']=legacy;changes[`userGroups/${ids.legacy}/au-legacy-bruno`]=true;
+ for(const uid of [ids.peer,ids.peerSecond,ids.peerThird])changes[`peopleDirectory/${uid}`]={uid,name:uid,year:years[uid],role:'student',requestedRole:'student',listedAdvisor:false,groupId:''};
  await env.withSecurityRulesDisabled(context=>update(ref(context.database(),root),changes));
  const admin=operation=>env.withSecurityRulesDisabled(context=>operation(context.database()));
  const value=async path=>{let result;await admin(async database=>{result=(await get(ref(database,`${root}/${path}`))).val();});return result;};
@@ -34,10 +35,11 @@ export async function runAdvisorChoiceTests({env,db,ok,no,count}) {
   await rejects(`${years[uid]} rejects more than three candidates`,()=>client('createGroup',options(uid,{advisorIds:[...candidates,ids.fourth]})),/até 3/);
   await rejects(`${years[uid]} rejects unapproved candidates`,()=>client('createGroup',options(uid,{advisorIds:[ids.unapproved]})),/aprovados/);
   check(`${years[uid]} rejected proposals leave no partial group`,Object.keys(await value('groups')).length===before);
-  const gid=await client('createGroup',options(uid,{memberEmails:[`${ids.peer}@example.com`]}));created.push({uid,gid,client});
+  const peerUid={[ids.first]:ids.peer,[ids.second]:ids.peerSecond,[ids.third]:ids.peerThird}[uid];
+  const gid=await client('createGroup',options(uid,{memberUids:[peerUid]}));created.push({uid,gid,client});
   const group=await value(`groups/${gid}`),invitations=Object.entries(await value('invitations')||{}).filter(([,invite])=>invite.groupId===gid),advisorInvites=invitations.filter(([,invite])=>invite.type==='advisor'),requests=await value(`advisorRequests/${gid}`),slots=await value(`advisorRequestSlots/${gid}`);
   check(`${years[uid]} creates atomically with three selected candidates and no assigned advisor`,writes.length===1&&group.advisorId===''&&group.members[uid]===true&&group.advisorRequestPolicy==='first-accept-v1'&&group.proposalRequired===true&&group.proposal.mode==='text'&&group.advisorRequestVersion===1&&(await value(`userGroups/${uid}/${gid}`))===true&&advisorInvites.length===3);
-  check(`${years[uid]} indexes the exact chosen candidates and preserves colleague invitations`,advisorInvites.every(([id,invite])=>candidates.includes(invite.toUid)&&requests[invite.toUid]===id&&invite.status==='pending')&&Object.values(slots).length===3&&candidates.every(candidate=>Object.values(slots).includes(candidate))&&invitations.some(([,invite])=>invite.type==='member'&&invite.toEmail===`${ids.peer}@example.com`)&&Object.keys(await value(`tasks/${gid}`)).length>0);
+  check(`${years[uid]} indexes the exact chosen candidates and preserves colleague invitations`,advisorInvites.every(([id,invite])=>candidates.includes(invite.toUid)&&requests[invite.toUid]===id&&invite.status==='pending')&&Object.values(slots).length===3&&candidates.every(candidate=>Object.values(slots).includes(candidate))&&invitations.some(([,invite])=>invite.type==='member'&&invite.toUid===peerUid&&invite.schoolYear===years[uid])&&Object.keys(await value(`tasks/${gid}`)).length>0);
   await no(`advisor choice: ${years[uid]} cannot assign a candidate before acceptance`,set(at(uid,`groups/${gid}/advisorId`),ids.other));
   const selected=advisorInvites.find(([,invite])=>invite.toUid===ids.other);
   await ok(`advisor choice: ${years[uid]} selected teacher accepts through normal audited flow`,loadService(db(ids.other),ids.other)('respondInvitation',selected[0],true));
