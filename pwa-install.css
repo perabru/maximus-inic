@@ -1,0 +1,183 @@
+/* Installation offer: a small, dismissible card, never a full-screen overlay. */
+.pwa-install-offer{
+  --pwa-install-clearance:0px;
+  --pwa-install-surface:#fff;
+  --pwa-install-soft:#f1f0f8;
+  --pwa-install-ink:#25264b;
+  --pwa-install-muted:#50546d;
+  --pwa-install-border:#dedfec;
+  --pwa-install-accent:#3d4094;
+  --pwa-install-accent-hover:#303379;
+  --pwa-install-on-accent:#fff;
+  position:fixed;
+  z-index:45;
+  right:max(12px,env(safe-area-inset-right));
+  bottom:calc(12px + env(safe-area-inset-bottom) + var(--pwa-install-clearance));
+  width:min(480px,calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  margin:0;
+  padding:0;
+  color:var(--pwa-install-ink);
+  font-family:"Segoe UI","Noto Sans",Roboto,Arial,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  text-align:left;
+  isolation:isolate;
+}
+.pwa-install-offer[hidden],.pwa-install-offer [hidden]{display:none!important}
+.pwa-install-offer *{box-sizing:border-box}
+.pwa-install-offer .pwa-install-card{
+  padding:18px;
+  border:1px solid var(--pwa-install-border);
+  border-top:3px solid var(--pwa-install-accent);
+  border-radius:20px;
+  background:var(--pwa-install-surface);
+  box-shadow:0 12px 42px #20224a24,0 2px 8px #20224a0a;
+  max-height:calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--pwa-install-clearance));
+  max-height:min(72dvh,calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--pwa-install-clearance)));
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:var(--pwa-install-border) transparent;
+  animation:pwa-install-appear .2s ease-out;
+}
+.pwa-install-offer .pwa-install-header{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.pwa-install-offer .pwa-install-icon{
+  flex:0 0 52px;
+  width:52px;
+  height:52px;
+  margin:2px 0 0;
+  border:1px solid var(--pwa-install-border);
+  border-radius:15px;
+  background:#fff;
+  object-fit:contain;
+}
+.pwa-install-offer .pwa-install-copy{flex:1;min-width:0;padding-right:30px}
+.pwa-install-offer .pwa-install-kicker{
+  margin:0 0 4px;
+  padding:0;
+  color:var(--pwa-install-accent);
+  font-size:11px;
+  line-height:1.5;
+  font-weight:750;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.pwa-install-offer #pwa-install-title{
+  margin:0;
+  padding:0;
+  color:var(--pwa-install-ink);
+  font-size:21px;
+  line-height:1.25;
+  font-weight:750;
+  letter-spacing:-.025em;
+  overflow-wrap:break-word;
+}
+.pwa-install-offer #pwa-install-description{
+  margin:7px 0 0;
+  padding:0;
+  color:var(--pwa-install-muted);
+  font-size:14px;
+  line-height:1.6;
+  overflow-wrap:break-word;
+}
+.pwa-install-offer .pwa-install-close{
+  position:absolute;
+  top:-8px;
+  right:-8px;
+  display:inline-grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  margin:0;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:12px;
+  background:transparent;
+  color:var(--pwa-install-muted);
+  font:400 25px/1 Arial,sans-serif;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.pwa-install-offer #pwa-install-close{font-family:Arial,sans-serif;font-weight:400}
+.pwa-install-offer .pwa-install-close:hover{background:var(--pwa-install-soft);color:var(--pwa-install-ink)}
+.pwa-install-offer .pwa-install-close svg{width:19px;height:19px;pointer-events:none}
+.pwa-install-offer .pwa-install-actions{display:flex;align-items:stretch;gap:9px;margin:16px 0 0;padding:0}
+.pwa-install-offer .pwa-install-primary,.pwa-install-offer .pwa-install-later{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:46px;
+  margin:0;
+  padding:11px 14px;
+  border:1px solid transparent;
+  border-radius:12px;
+  font:600 15px/1.45 "Segoe UI","Noto Sans",Roboto,Arial,sans-serif;
+  text-align:center;
+  white-space:normal;
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.pwa-install-offer .pwa-install-primary{flex:1;background:var(--pwa-install-accent);color:var(--pwa-install-on-accent)}
+.pwa-install-offer .pwa-install-primary:hover{background:var(--pwa-install-accent-hover)}
+.pwa-install-offer .pwa-install-later{flex:0 0 auto;background:var(--pwa-install-surface);border-color:var(--pwa-install-border);color:var(--pwa-install-muted)}
+.pwa-install-offer .pwa-install-later:hover{background:var(--pwa-install-soft);color:var(--pwa-install-ink)}
+.pwa-install-offer .pwa-install-primary:disabled,.pwa-install-offer .pwa-install-later:disabled{opacity:1;background:var(--pwa-install-soft);border-color:var(--pwa-install-border);color:var(--pwa-install-muted);cursor:default}
+.pwa-install-offer .pwa-install-primary svg{width:18px;height:18px;flex-shrink:0}
+.pwa-install-offer :is(button,a):focus-visible{outline:3px solid #e97621;outline-offset:3px}
+.pwa-install-offer .pwa-install-help{margin:16px 0 0;padding:15px 0 0;border-top:1px solid var(--pwa-install-border);color:var(--pwa-install-ink)}
+.pwa-install-offer .pwa-install-help h3{margin:0 0 10px;padding:0;color:var(--pwa-install-ink);font-size:16px;line-height:1.45;font-weight:700;letter-spacing:normal}
+.pwa-install-offer .pwa-install-help p{margin:12px 0 0;padding:0;color:var(--pwa-install-muted);font-size:14px;line-height:1.65;overflow-wrap:break-word}
+.pwa-install-offer .pwa-install-steps{display:grid;gap:10px;margin:0;padding:0 0 0 23px;color:var(--pwa-install-muted);font-size:14px;line-height:1.65}
+.pwa-install-offer .pwa-install-steps li{margin:0;padding-left:4px;overflow-wrap:break-word}
+.pwa-install-offer .pwa-install-steps li::marker{color:var(--pwa-install-accent);font-weight:750}
+.pwa-install-offer .pwa-install-steps strong{color:var(--pwa-install-ink);font-weight:700}
+.pwa-install-offer .pwa-install-help-link{display:inline-flex;align-items:center;min-height:44px;margin:7px 0 0;padding:4px 0;color:var(--pwa-install-accent);font-size:14px;line-height:1.6;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.pwa-install-offer .pwa-install-status{margin:12px 0 0;padding:10px 12px;border-radius:9px;background:var(--pwa-install-soft);color:var(--pwa-install-muted);font-size:13px;line-height:1.65;overflow-wrap:break-word}
+.pwa-install-offer .pwa-install-status:empty{display:none}
+html[data-theme=dark] .pwa-install-offer{
+  --pwa-install-surface:#1e2131;
+  --pwa-install-soft:#282b40;
+  --pwa-install-ink:#eff0ff;
+  --pwa-install-muted:#bec2db;
+  --pwa-install-border:#41455f;
+  --pwa-install-accent:#b3b6ff;
+  --pwa-install-accent-hover:#cacbff;
+  --pwa-install-on-accent:#202240;
+}
+html[data-theme=dark] .pwa-install-offer .pwa-install-card{box-shadow:0 12px 42px #0006,0 2px 8px #0003}
+@media(max-width:700px){
+  #app-screen:not([hidden])~.pwa-install-offer{--pwa-install-clearance:78px}
+}
+@media(max-width:380px){
+  .pwa-install-offer .pwa-install-card{padding:15px;border-radius:17px}
+  .pwa-install-offer .pwa-install-header{gap:10px}
+  .pwa-install-offer .pwa-install-icon{flex-basis:44px;width:44px;height:44px;border-radius:13px}
+  .pwa-install-offer #pwa-install-title{font-size:19px}
+  .pwa-install-offer .pwa-install-actions{gap:7px}
+  .pwa-install-offer .pwa-install-primary,.pwa-install-offer .pwa-install-later{font-size:14px;padding-inline:11px}
+}
+@media(max-height:430px){
+  .pwa-install-offer .pwa-install-card{padding:13px}
+  .pwa-install-offer .pwa-install-icon{display:none}
+  .pwa-install-offer #pwa-install-description{margin-top:5px;font-size:13px}
+  .pwa-install-offer .pwa-install-actions{margin-top:11px}
+}
+@keyframes pwa-install-appear{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.pwa-install-offer .pwa-install-card{animation:none}.pwa-install-offer :is(button,a){transition:none}}
+@media(forced-colors:active){
+  .pwa-install-offer .pwa-install-card,.pwa-install-offer .pwa-install-icon,.pwa-install-offer .pwa-install-close,.pwa-install-offer .pwa-install-primary,.pwa-install-offer .pwa-install-later{border:1px solid CanvasText}
+  .pwa-install-offer :is(button,a):focus-visible{outline-color:Highlight}
+  .pwa-install-offer .pwa-install-primary:disabled,.pwa-install-offer .pwa-install-later:disabled{color:GrayText}
+}
+@media print{.pwa-install-offer{display:none!important}}

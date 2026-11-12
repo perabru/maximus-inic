@@ -40,9 +40,9 @@ O código da página é separado dos direitos sobre as fotografias, a marca da e
 ## Plataforma de acompanhamento (INIC 2027)
 
 - `portal.html`: login/cadastro, grupos, convites, cronograma, mensagens, calendário e coordenação.
-- `conformidade.html`: termo com preenchimento local e impressão; PDF em branco em `documentos/`.
+- `conformidade.html`: termo com preenchimento local e impressão; modelo em PDF em `documentos/`, com os responsáveis da escola identificados.
 - `instalar.html`: instruções Android e iOS.
-- `manifest.webmanifest`, `pwa.js`, `sw.js`: instalação e cache público. Autenticação e dados privados exigem conexão e não entram no cache do service worker.
+- `manifest.webmanifest`, `pwa.js`, `pwa-install.css`, `sw.js`: convite de instalação e cache público. Autenticação e dados privados exigem conexão e não entram no cache do service worker.
 - `theme.js`: tema claro/escuro; guarda apenas a preferência de aparência no navegador.
 
 ### Autenticação e autorização
@@ -75,12 +75,22 @@ A página destaca o download direto do PDF e o envio do arquivo assinado. Em **M
 
 Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Outros alunos não têm acesso. Orientadores acessam somente os termos aprovados dos integrantes dos grupos sob sua orientação. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
 
+O modelo do termo identifica **Prof. Esp. Bruno Michel Pera** como **Professor da disciplina** e **Profa. Esp. Mariana Carmona** como **Professora / Coordenadora**. O campo do orientador do grupo continua separado. O nome do professor da disciplina é fixo no formulário, inclusive depois de limpar os campos. Os nomes impressos não registram uma assinatura; os espaços para assinatura são mantidos. O script `scripts/build-term-template.py` gera as duas páginas A4 do PDF a partir das cláusulas do HTML, preservando o alinhamento entre as versões.
+
 ### Assinaturas eletrônicas da equipe escolar
 
 Depois do aceite do termo, o orientador e a coordenação podem assinar eletronicamente com a própria conta. Cada assinatura exige uma confirmação explícita e registra nome, papel, data e vínculo com o arquivo aprovado; o desenho é opcional. O orientador acessa somente os termos aceitos dos integrantes dos grupos que orienta. Um convite ainda não aceito não permite abrir o arquivo. A coordenação acompanha todas as assinaturas, e um coordenador que também orienta assina em cada papel separadamente.
 
 O aplicativo disponibiliza o original e uma versão em PDF com os registros das assinaturas, a identificação da cópia aceita e seu resumo SHA-256. O PDF final inclui o original como anexo, preservado byte a byte. Os registros são assinaturas eletrônicas realizadas no aplicativo. Reenvio, devolução ou novo aceite tornam os registros anteriores inaplicáveis à nova conferência; os responsáveis precisam assinar novamente. Arquivos e pareceres permanecem privados, e o remetente de avisos não recebe acesso a eles.
  Metadados e bytes ficam separados, com download autenticado, sem URL pública ou cache offline.
+
+### Convite de instalação no celular
+
+Ao entrar pelo celular em uma página pública ou no portal, aparece um cartão de instalação, sem exigir login. No Android, o botão usa o convite nativo quando o navegador disponibiliza `beforeinstallprompt`; a confirmação só abre após o toque. Quando essa opção ainda não existe, o cartão mostra as etapas do menu do navegador. No iPhone/iPad, orienta a usar **Compartilhar → Adicionar à Tela de Início** e **Abrir como App**, quando essa opção aparece. Navegadores internos de redes sociais recebem instruções para abrir o site no navegador do aparelho.
+
+**Agora não** e o botão de fechar adiam o convite por sete dias no mesmo navegador. O botão manual em **Como instalar no celular** continua disponível durante esse período. O cartão não aparece automaticamente no computador nem quando o site é aberto em modo de aplicativo instalado. A interface acompanha a conclusão da instalação, não muda o foco automaticamente e mantém espaço para a navegação inferior do portal. A preferência é local; se o navegador bloquear o armazenamento, o adiamento dura a página atual.
+
+O aplicativo depende das opções oferecidas pelo navegador: ele não força a instalação e não consegue detectar universalmente uma instalação anterior ao ser aberto em uma aba comum. Referências de implementação: [gesto do usuário e prompt único](https://developer.mozilla.org/en-US/docs/Web/API/BeforeInstallPromptEvent/prompt) e [instruções para iPhone](https://support.apple.com/en-lamr/guide/iphone/iphea86e5236/ios).
 
 ### Avisos no aplicativo instalado
 
@@ -177,4 +187,4 @@ O utilitário em [`scripts/school-years`](scripts/school-years/README.md) oferec
 
 `maximusInic/peopleDirectory` contém apenas a projeção de nome, série, papel, solicitação de perfil, disponibilidade e identificação do cadastro. Os perfis privados, e-mails, notas, termos e arquivos continuam nas coleções com acesso restrito. Cadastros bloqueados, contas técnicas e perfis Google ainda incompletos ficam fora da comunidade. Alterações de nome/papel, entrada/remoção e exclusão atualizam a projeção no mesmo lote.
 
-A coordenação sincroniza automaticamente os cadastros existentes ao acessar o portal. Novos cadastros concluídos publicam sua própria projeção. A interface aguarda a sincronização da coordenação antes de mostrar a lista. A publicação desta versão exige primeiro as regras atualizadas do Firebase e depois o cliente; o service worker usa a versão `20261112-9` e remove os caches antigos da comunidade.
+A coordenação sincroniza automaticamente os cadastros existentes ao acessar o portal. Novos cadastros concluídos publicam sua própria projeção. A interface aguarda a sincronização da coordenação antes de mostrar a lista. A publicação desta versão exige primeiro as regras atualizadas do Firebase e depois o cliente; o service worker usa a versão `20261112-10` e remove os caches antigos da comunidade.

@@ -207,3 +207,14 @@ As fixtures de regressão usam alunos distintos da mesma série nos fluxos posit
 Validação final desta versão: **33** verificações do serviço de série, **70** adversariais de série, **888** da suíte principal, **44** do diretório, **12** adversariais do diretório, **87** de exclusão, **43** do artigo e **16** de gestão em memória. Todas terminaram com código 0 sobre os mesmos arquivos antes/depois da execução. Na interface, passaram **265** cenários do portal e **38** da comunidade; a migração passou **20** testes em memória; calendário, indicadores e service worker passaram **41** testes, incluindo a remoção do cache antigo.
 
 SHA-256 final de `database.rules.json`: `98a5251a5ca709ecebfec0fc826f6d7c37fbf9d55b486e36d8ae7288b6d95e64`. SHA-256 final de `firebase-service.js`: `4d3c6de0232b6819ca228013f1fdb6ea3661f178ee1b7b3cbdb88a0c993ace3c`. Os testes não acessaram o banco de produção nem enviaram convites reais.
+
+
+## Convite de instalação no celular — 12/11/2026
+
+A suíte `pwa-install.test.mjs` executa o cliente real com DOM/VM e capacidades controladas do navegador. Os **25 cenários** cobrem Android, iPhone, iPad com identificação desktop, eventos antes/depois do DOM, abertura somente por clique, consumo único do prompt, cliques concorrentes, aceite/recusa, modo instalado, ajuda de instalação, recuperação de falhas e acessibilidade. O adiamento de sete dias é conferido em navegação, outra aba e retorno pelo histórico, inclusive com storage indisponível ou leitura antiga seguida de escrita negada.
+
+```sh
+node --test pwa-install.test.mjs push-client.test.mjs sw-push.test.mjs
+```
+
+A validação desta atualização terminou com **41 testes aprovados**: 25 de instalação, 10 do cliente de avisos e 6 do service worker. O teste de ativação verifica a remoção do cache anterior e a preservação da versão `20261112-10` e de caches de outros sites. Os cenários não instalam aplicativos em aparelhos reais, não pedem permissão real de notificações e não acessam dados de produção.
