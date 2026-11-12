@@ -4,7 +4,7 @@ import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261105-12';
 import { createCalendarView } from './calendar.js?v=20261105-8';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
-import { createArticleEditor } from './article-editor.js?v=20261110-1';
+import { createArticleEditor } from './article-editor.js?v=20261112-4';
 
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
@@ -545,7 +545,7 @@ function renderAccountArchived() {
   $('#view-title').textContent='Cadastro excluído';$('#view-kicker').textContent='ACESSO À PLATAFORMA';
   $('#pending-advisor-note').hidden=true;
   const panel=node('section','panel account-archived');
-  panel.append(node('span','badge warning','Acesso bloqueado'),node('h2','','Este cadastro foi excluído.'),node('p','','Procure a coordenação para conferir a situação ou solicitar a restauração do acesso.'),button('Sair da conta','button primary',()=>$('#logout').click()));
+  panel.append(node('span','badge warning','Acesso bloqueado'),node('h2','','O acesso desta conta está bloqueado.'),node('p','','Procure a coordenação para conferir a situação do seu cadastro.'),button('Sair da conta','button primary',()=>$('#logout').click()));
   $('#view-content').replaceChildren(panel);renderedKey='archived';
 }
 function loadingPanel(text) {const panel=node('div','loading-panel');panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');panel.setAttribute('aria-busy','true');panel.append(bookLoader(),node('p','',text));return panel;}
@@ -1371,31 +1371,57 @@ function showInviteForm(initialGroupId = '', initialType = 'member') {
     if(canCreateGroup())openForm({title:'Crie um grupo para enviar convites',fields:[node('p','dialog-note',state.role==='advisor'?'Você ainda não orienta um grupo. Crie o grupo e convide os estudantes pelo e-mail. Convites para orientar aparecem na aba Recebidos.':'Crie a proposta e depois convide integrantes ou orientadores.')],submit:'Criar grupo',handler:()=>{showCreateGroup();return false;}});
     return;
   }
-  const group=makeField('Grupo','groupId',{required:true,value:initialGroupId||manageable[0].id,options:manageable.map(g=>({value:g.id,label:g.name}))});
-  const type=makeField('Convidar como','type',{value:initialType,options:[{value:'member',label:'Estudante / integrante'},{value:'advisor',label:'Orientador(a)'}]});
-  const advisor=makeField('Orientador(a) cadastrado(a)','toUid',{options:[{value:'',label:'Selecione o orientador'},...state.advisors.map(p=>({value:p.id,label:advisorLabel(p)}))]});advisor.label.hidden=true;
-  const email=makeField('E-mail de quem receberá','toEmail',{type:'email',required:true,maxLength:254,placeholder:'email@exemplo.com',help:'A pessoa verá o convite ao entrar com este mesmo e-mail.'});
+  const initialGroup=manageable.find(item=>item.id===initialGroupId)||manageable[0];
+  const group=makeField('Grupo do convite','groupId',manageable.length===1?{type:'hidden',value:initialGroup.id}:{required:true,value:initialGroup.id,options:manageable.map(g=>({value:g.id,label:g.name}))});
+  const groupContext=node('div','invite-group-context');groupContext.append(node('small','','CONVITE PARA O GRUPO'),node('strong','',initialGroup.name));groupContext.hidden=manageable.length!==1;
+  const type=node('fieldset','invite-type-picker');type.append(node('legend','','Quem você quer convidar?'));
+  const typeChoices=[];
+  [['member','Aluno ou colega','Convide pelo e-mail de acesso.'],['advisor','Orientador(a)','Escolha um professor da lista.']].forEach(([value,title,help])=>{
+    const choice=node('label','invite-type-choice'),input=node('input'),copy=node('span','invite-type-copy');input.type='radio';input.name='type';input.value=value;input.checked=value===(initialType==='advisor'?'advisor':'member');
+    copy.append(node('strong','',title),node('small','',help));choice.append(input,copy);type.append(choice);typeChoices.push(input);input.addEventListener('change',toggle);
+  });
+  const advisor=node('fieldset','advisor-picker invite-advisor-picker');advisor.append(node('legend','','Escolha o orientador'));
+  const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Digite o nome do professor';search.setAttribute('aria-label','Buscar orientador para convidar');search.autocomplete='off';
+  const advisorList=node('div','advisor-picker-list'),advisorChoices=[];
+  const advisors=[...new Map(state.advisors.filter(person=>person.id).map(person=>[person.id,person])).values()].sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR'));
+  advisors.forEach(person=>{
+    const label=node('label','advisor-choice'),input=node('input'),copy=node('span','advisor-choice-copy'),status=node('small','','Disponível para convite');input.type='radio';input.name='toUid';input.value=person.id;label.dataset.search=normalize(person.name||'');
+    copy.append(node('strong','',advisorLabel(person)),status);const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');label.append(input,avatar,copy);advisorList.append(label);advisorChoices.push({person,input,label,status});input.addEventListener('change',updateSummary);
+  });
+  const advisorEmpty=node('p','empty-small',advisors.length?'Nenhum orientador com esse nome.':'A coordenação ainda não liberou orientadores para convite.');advisorEmpty.hidden=Boolean(advisors.length);
+  search.addEventListener('input',()=>{const query=normalize(search.value).trim();let visible=0;advisorChoices.forEach(({label})=>{label.hidden=Boolean(query&&!label.dataset.search.includes(query));if(!label.hidden)visible++;});advisorEmpty.hidden=visible>0;});
+  advisor.append(search,advisorList,advisorEmpty);
+  const email=makeField('E-mail do aluno ou colega','toEmail',{type:'email',required:true,maxLength:254,autocomplete:'email',inputMode:'email',placeholder:'colega@exemplo.com',help:'Use o mesmo e-mail com que a pessoa acessa o Meu INIC. O convite aparecerá na aba Convites dela.'});
   const guidance=node('p','form-note');guidance.id='advisor-invite-guidance';guidance.setAttribute('role','status');guidance.setAttribute('aria-live','polite');guidance.hidden=true;
   const proposalSlot=node('div','invite-proposal-slot');let proposalEditor=null,proposalEditorGroup='';
-  advisor.field.setAttribute('aria-describedby',guidance.id);
+  advisor.setAttribute('aria-describedby',guidance.id);
+  const summary=node('div','invite-summary');summary.setAttribute('role','status');summary.setAttribute('aria-live','polite');summary.setAttribute('aria-atomic','true');
+  const inviteType=()=>typeChoices.find(input=>input.checked)?.value||'member';
+  function updateSummary(){
+    const current=state.groups.find(item=>item.id===group.field.value),isAdvisor=inviteType()==='advisor';
+    const person=advisorChoices.find(({input})=>input.checked&&!input.disabled)?.person;const recipient=isAdvisor?person?.name:email.field.value.trim();
+    summary.replaceChildren(node('strong','','Confira o convite'),node('p','',recipient?`${recipient} receberá um convite para ${isAdvisor?'orientar o grupo':'participar do grupo'} “${current?.name||initialGroup.name}”.`:isAdvisor?'Selecione um orientador na lista acima.':'Informe o e-mail do aluno ou colega para continuar.'),node('small','','A pessoa receberá o convite no Meu INIC e precisará aceitá-lo.'));
+  }
   function toggle(){
-    const isAdvisor=type.field.value==='advisor';const current=state.groups.find(item=>item.id===group.field.value);const pending=pendingAdvisorInvitations(group.field.value);
-    const blocked=isAdvisor&&(Boolean(current?.advisorId)||pending.length>=3);
-    advisor.label.hidden=!isAdvisor;advisor.field.disabled=blocked;advisor.field.required=isAdvisor&&!blocked;email.label.hidden=isAdvisor;email.field.required=!isAdvisor;email.field.disabled=isAdvisor;guidance.hidden=!isAdvisor;
-    guidance.textContent=current?.advisorId?'Este grupo já tem orientador(a). Novos convites de orientação não estão disponíveis.':pending.length>=3?'Há 3 convites de orientação aguardando resposta. Aguarde uma resposta antes de enviar outro convite.':`Envie convites para até 3 orientadores ao mesmo tempo. O primeiro aceite confirma a orientação. ${pending.length} de 3 convites pendentes.`;
+    const isAdvisor=inviteType()==='advisor';const current=state.groups.find(item=>item.id===group.field.value);const pending=pendingAdvisorInvitations(group.field.value);
+    const available=advisorChoices.filter(({person})=>!pending.some(invite=>invite.toUid===person.id)).length;
+    const blocked=isAdvisor&&(Boolean(current?.advisorId)||pending.length>=3||!available);
+    advisor.hidden=!isAdvisor;search.disabled=blocked||!isAdvisor;email.label.hidden=isAdvisor;email.field.required=!isAdvisor;email.field.disabled=isAdvisor;guidance.hidden=!isAdvisor;
+    guidance.textContent=current?.advisorId?'Este grupo já tem orientador(a). Novos convites de orientação não estão disponíveis.':pending.length>=3?'Há 3 convites de orientação aguardando resposta. Aguarde uma resposta antes de enviar outro convite.':!advisors.length?'A coordenação ainda não liberou orientadores. Você já pode convidar alunos ou colegas.':!available?'Os orientadores disponíveis já receberam o convite deste grupo. Aguarde uma resposta.':`Convide até 3 orientadores. O primeiro aceite confirma a orientação. ${pending.length} de 3 convites pendentes.`;
+    advisorChoices.forEach(({person,input,status})=>{const invited=pending.some(invite=>invite.toUid===person.id);input.disabled=!isAdvisor||blocked||invited;input.required=isAdvisor&&!blocked&&!invited;if(input.disabled)input.checked=false;status.textContent=invited?'Convite já enviado · aguardando resposta':'Disponível para convite';});
     const needsProposal=isAdvisor&&!blocked&&!current?.proposal;
     proposalSlot.hidden=!needsProposal;
     if(needsProposal&&proposalEditorGroup!==current?.id){proposalEditor?.destroy();proposalEditor=createProposalEditor({});proposalEditorGroup=current?.id||'';proposalSlot.replaceChildren(proposalEditor.element);}
-    [...advisor.field.options].forEach(option=>{option.disabled=Boolean(option.value&&pending.some(invite=>invite.toUid===option.value));});
-    if(advisor.field.selectedOptions?.[0]?.disabled)advisor.field.value='';
     const submit=$('#dialog-submit');if(submit&&!submit.hasAttribute('aria-busy'))submit.disabled=blocked;
+    updateSummary();
   }
-  type.field.addEventListener('change',toggle);group.field.addEventListener('change',toggle);
+  group.field.addEventListener('change',toggle);email.field.addEventListener('input',updateSummary);
   const sameSession=()=>state.user?.uid===actor&&sessionVersion===session&&canAccessAcademic();
-  openForm({title:'Convidar para o grupo',fields:[group.label,type.label,advisor.label,email.label,guidance,proposalSlot,node('p','dialog-note','O destinatário precisa aceitar o convite para entrar no grupo.')],submit:'Enviar convite',busy:'Enviando convite…',guard:()=>sameSession()&&state.groups.some(canManage),cleanup:()=>proposalEditor?.destroy(),handler:async data=>{
+  openForm({title:'Enviar convite',fields:[manageable.length===1?group.field:group.label,groupContext,type,email.label,advisor,guidance,proposalSlot,summary],submit:'Enviar convite',busy:'Enviando convite…',guard:()=>sameSession()&&state.groups.some(canManage),cleanup:()=>proposalEditor?.destroy(),handler:async data=>{
     if(!sameSession())return;
     const groupId=String(data.get('groupId'));const inviteType=String(data.get('type'));const current=state.groups.find(item=>item.id===groupId);
     if(!current||!canManage(current))throw new Error('Você não pode enviar convites para este grupo.');
+    if(!['member','advisor'].includes(inviteType))throw new Error('Escolha aluno ou orientador para enviar o convite.');
     const toUid=String(data.get('toUid')||'');
     if(inviteType==='advisor'){
       if(current.advisorId)throw new Error('Este grupo já tem orientador(a). Novos convites de orientação não estão disponíveis.');
@@ -1412,7 +1438,11 @@ function showInviteForm(initialGroupId = '', initialType = 'member') {
         const refreshed=pendingAdvisorInvitations(groupId);if(refreshed.length>=3||refreshed.some(invite=>invite.toUid===toUid))throw new Error('Os convites deste grupo mudaram. Confira os destinatários pendentes.');
       }
     }
-    try{await service.invite({groupId,type:inviteType,...(inviteType==='advisor'?{toUid}:{toEmail:String(data.get('toEmail')||'').trim()})});}catch(error){if(sameSession())throw error;return;}if(sameSession())notice('Convite enviado. Acompanhe os convites pendentes na aba Enviados.');
+    const toEmail=String(data.get('toEmail')||'').trim().toLowerCase();
+    if(inviteType==='member'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido do aluno ou colega.');
+    const recipient=inviteType==='advisor'?state.advisors.find(person=>person.id===toUid)?.name||'o orientador':toEmail;
+    try{await service.invite({groupId,type:inviteType,...(inviteType==='advisor'?{toUid}:{toEmail})});}catch(error){if(sameSession())throw error;return;}
+    if(sameSession()){invitationFilter='sent';if(currentRoute.view==='invitations')render();notice(`Convite enviado para ${recipient}. A pessoa poderá aceitar na aba Convites do Meu INIC.`,'success',true,{title:'Convite enviado',href:'#convites',label:'Ver convites enviados'});}
   }});toggle();
 }
 
@@ -1673,13 +1703,14 @@ function currentManagedPerson(uid,{archived=false}={}) {
 function showEditUser(person) {
   if(!canManagePeople()||personArchived(person))return;
   const actor=state.user.uid,session=sessionVersion,uid=person.id;
-  const name=makeField('Nome completo','name',{value:person.name||'',required:true,minLength:2,maxLength:100});
+  const student=(person.role||'student')==='student'&&person.requestedRole!=='advisor';
+  const name=makeField(student?'Nome completo do aluno':'Nome completo','name',{value:person.name||'',required:true,minLength:2,maxLength:100,autocomplete:'name'});
   const email=makeField('E-mail de acesso','email',{value:person.email||'',help:'O e-mail de acesso permanece o mesmo.'});email.field.readOnly=true;
   const year=makeField('Série escolar','year',{value:person.year||'',options:[{value:'',label:'Não se aplica'},'1º ano','2º ano','3º ano']});
   if(person.year&&![...year.field.options].some(option=>option.value===person.year)){const option=node('option','',person.year);option.value=person.year;year.field.append(option);year.field.value=person.year;}
   const role=!isProtectedPerson(person)?makeField('Acesso à plataforma','role',{value:person.role||'student',options:[{value:'student',label:'Estudante'},{value:'advisor',label:'Professor(a) orientador(a)'}]}):null;
   const fields=[name.label,email.label,year.label];if(role)fields.push(role.label);else fields.push(node('p','dialog-note','O acesso desta conta está protegido. Você pode corrigir o nome e a série.'));
-  openForm({title:'Editar cadastro',kicker:'COORDENAÇÃO',access:'admin',fields,submit:'Salvar cadastro',busy:'Salvando cadastro…',handler:async data=>{
+  openForm({title:student?'Editar nome e cadastro do aluno':'Editar nome e cadastro',kicker:'COORDENAÇÃO',access:'admin',fields,submit:'Salvar alterações',busy:'Salvando cadastro…',handler:async data=>{
     if(state.user?.uid!==actor||sessionVersion!==session)return;
     const current=currentManagedPerson(uid);
     const payload={name:String(data.get('name')||'').trim(),year:String(data.get('year')||'')};
@@ -1693,47 +1724,28 @@ function showEditUser(person) {
     notice('Cadastro atualizado.');
   }});
 }
-function showArchiveUser(person) {
-  if(!canManagePeople()||personArchived(person)||isProtectedPerson(person))return;
-  const actor=state.user.uid,session=sessionVersion,uid=person.id;
+function showDeleteUserPermanently(person) {
+  if(!canManagePeople()||isProtectedPerson(person))return;
+  const actor=state.user.uid,session=sessionVersion,uid=person.id,archived=personArchived(person);
+  const unfinished=['archiving','deleting'].includes(person.archive?.status);
+  let deletionStarted=false;
   const details=node('div','dialog-details');details.append(node('strong','',person.name||'Pessoa cadastrada'),node('span','',person.email||''));
-  const description=node('p','dialog-note','O cadastro será removido da lista de ativos e perderá o acesso à plataforma. Os vínculos com grupos e as notas individuais serão removidos; grupos orientados ficarão sem orientador. Termos, assinaturas e histórico serão preservados para a coordenação.');
-  const confirmation=makeField('Confirmar exclusão deste cadastro','confirmArchive',{type:'checkbox',required:true});confirmation.label.classList.add('admin-confirmation');
-  openForm({title:'Excluir cadastro',kicker:'COORDENAÇÃO',access:'admin',fields:[details,description,node('p','dialog-note','A coordenação poderá restaurar o cadastro, mas os vínculos antigos com grupos não serão refeitos.'),confirmation.label],submit:'Excluir cadastro',danger:true,busy:'Excluindo cadastro…',handler:async data=>{
+  const description=node('p','dialog-note','Exclui o cadastro, os documentos pessoais e os vínculos com grupos. O conteúdo compartilhado dos grupos será preservado. Esta ação não pode ser desfeita.');
+  const confirmation=makeField('Entendo que este cadastro será excluído definitivamente.','confirmDeleteUser',{type:'checkbox',required:true});confirmation.label.classList.add('admin-confirmation');
+  const fields=[details,description];
+  if(unfinished)fields.push(node('p','form-note','O acesso já está bloqueado. Confirme para concluir a exclusão que ficou pendente.'));
+  fields.push(confirmation.label);
+  openForm({title:unfinished?'Concluir exclusão definitiva':'Excluir cadastro definitivamente',kicker:'COORDENAÇÃO',access:'admin',fields,submit:unfinished?'Concluir exclusão':'Excluir definitivamente',danger:true,busy:'Excluindo cadastro e dados pessoais…',handler:async data=>{
     if(state.user?.uid!==actor||sessionVersion!==session)return;
-    const current=currentManagedPerson(uid);
+    const pendingRetry=deletionStarted&&['archiving','deleting'].includes(state.users.find(item=>item.id===uid)?.archive?.status);
+    const current=currentManagedPerson(uid,{archived:archived||pendingRetry});
     if(isProtectedPerson(current))throw new Error('Não é possível excluir sua própria conta ou uma conta de coordenação.');
-    if(!data.has('confirmArchive'))throw new Error('Confirme a exclusão do cadastro para continuar.');
-    if(typeof service.archiveUser!=='function')throw new Error('Atualize a página para excluir um cadastro.');
-    try {await service.archiveUser(uid);}catch(error){if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())throw error;return;}
+    if(!data.has('confirmDeleteUser'))throw new Error('Confirme a exclusão definitiva do cadastro para continuar.');
+    if(typeof service.deleteUserPermanently!=='function')throw new Error('Atualize a página para excluir um cadastro definitivamente.');
+    deletionStarted=true;
+    try {await service.deleteUserPermanently(uid);}catch(error){if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())throw error;return;}
     if(state.user?.uid!==actor||sessionVersion!==session||!canManagePeople())return;
-    notice('Cadastro excluído. O acesso foi bloqueado; a coordenação pode restaurá-lo.');
-  }});
-}
-function showRestoreUser(person) {
-  if(!canManagePeople()||!personArchived(person)||person.archive?.status==='archiving')return;
-  const actor=state.user.uid,session=sessionVersion,uid=person.id;
-  const copy=node('p','dialog-note',`Restaurar o acesso de “${person.name||person.email||'esta pessoa'}”? O cadastro volta à lista de ativos. Para participar de grupos, a pessoa precisará de novos convites.`);
-  openForm({title:'Restaurar cadastro',kicker:'COORDENAÇÃO',access:'admin',fields:[copy],submit:'Restaurar acesso',busy:'Restaurando cadastro…',handler:async()=>{
-    if(state.user?.uid!==actor||sessionVersion!==session)return;
-    const current=currentManagedPerson(uid,{archived:true});
-    if(current.archive?.status==='archiving')throw new Error('Conclua a exclusão antes de restaurar o cadastro.');
-    if(typeof service.restoreUser!=='function')throw new Error('Atualize a página para restaurar um cadastro.');
-    try {await service.restoreUser(uid);}catch(error){if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())throw error;return;}
-    if(state.user?.uid!==actor||sessionVersion!==session||!canManagePeople())return;
-    notice('Cadastro restaurado. Os grupos precisam de novos convites.');
-  }});
-}
-function showResumeArchiveUser(person) {
-  if(!canManagePeople()||!personArchived(person)||person.archive?.status!=='archiving'||isProtectedPerson(person))return;
-  const actor=state.user.uid,session=sessionVersion,uid=person.id;
-  openForm({title:'Concluir exclusão do cadastro',kicker:'COORDENAÇÃO',access:'admin',fields:[node('p','dialog-note',`O acesso de “${person.name||person.email||'esta pessoa'}” já está bloqueado. Confirme para concluir a remoção dos vínculos pendentes.`)],submit:'Concluir exclusão',danger:true,busy:'Concluindo exclusão…',handler:async()=>{
-    if(state.user?.uid!==actor||sessionVersion!==session)return;
-    const current=currentManagedPerson(uid,{archived:true});if(isProtectedPerson(current))throw new Error('Este cadastro está protegido.');
-    if(typeof service.archiveUser!=='function')throw new Error('Atualize a página para concluir a exclusão.');
-    try {await service.archiveUser(uid);}catch(error){if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())throw error;return;}
-    if(state.user?.uid!==actor||sessionVersion!==session||!canManagePeople())return;
-    notice('Exclusão do cadastro concluída.');
+    notice('Cadastro e dados pessoais excluídos definitivamente. O conteúdo compartilhado dos grupos foi preservado.');
   }});
 }
 function paintManagedUsers() {
@@ -1745,11 +1757,12 @@ function paintManagedUsers() {
   list.replaceChildren();
   people.forEach(person=>{
     const archived=personArchived(person),card=node('article','admin-person-card');card.dataset.userId=person.id;
-    const copy=node('div','admin-person-copy');copy.append(node('span',`badge ${archived?'warning':''}`,archived?(person.archive?.status==='archiving'?'Exclusão em andamento':'Cadastro excluído'):person.role==='coordinator'?(isListedAdvisor(person.id)?'Coordenação e orientação':'Coordenação'):person.role==='advisor'?'Professor(a) orientador(a)':person.requestedRole==='advisor'?'Professor(a) aguardando aprovação':'Estudante'),node('h4','',person.name||'Sem nome'),node('p','',person.email||'Sem e-mail'),node('p','admin-person-year',person.year||'Série não informada'));
+    const unfinished=['archiving','deleting'].includes(person.archive?.status);
+    const copy=node('div','admin-person-copy');copy.append(node('span',`badge ${archived?'warning':''}`,archived?(unfinished?'Exclusão não concluída':'Cadastro bloqueado'):person.role==='coordinator'?(isListedAdvisor(person.id)?'Coordenação e orientação':'Coordenação'):person.role==='advisor'?'Professor(a) orientador(a)':person.requestedRole==='advisor'?'Professor(a) aguardando aprovação':'Estudante'),node('h4','',person.name||'Sem nome'),node('p','',person.email||'Sem e-mail'),node('p','admin-person-year',person.year||'Série não informada'));
     const actions=node('div','admin-person-actions');
     const addAction=(label,kind,handler,className='button secondary compact')=>{const control=button(label,className,handler);control.dataset.userAction=kind;control.dataset.userId=person.id;actions.append(control);};
-    if(archived){if(!isProtectedPerson(person))addAction(person.archive?.status==='archiving'?'Concluir exclusão':'Restaurar cadastro',person.archive?.status==='archiving'?'resume':'restore',()=>person.archive?.status==='archiving'?showResumeArchiveUser(person):showRestoreUser(person));}
-    else {addAction('Editar cadastro','edit',()=>showEditUser(person));if(!isProtectedPerson(person))addAction('Excluir cadastro','archive',()=>showArchiveUser(person),'text-button destructive-action');}
+    if(!archived)addAction('Editar nome e cadastro','edit',()=>showEditUser(person));
+    if(!isProtectedPerson(person))addAction(unfinished?'Concluir exclusão':'Excluir definitivamente','delete',()=>showDeleteUserPermanently(person),'text-button destructive-action');
     card.append(copy,actions);list.append(card);
   });
   if(!people.length)list.append(emptyState('Nenhum cadastro neste filtro','Altere o filtro ou a busca para encontrar a pessoa.'));
@@ -1757,7 +1770,7 @@ function paintManagedUsers() {
 function renderAdmin() {
   const fragment=document.createDocumentFragment();
   if(!canManagePeople())return fragment;
-  const intro=node('section','admin-intro');intro.append(node('h3','','Cadastros e grupos da escola'),node('p','','Edite cadastros de alunos e professores, gerencie acessos e acompanhe os grupos. Excluir um cadastro bloqueia o acesso; restaurar não refaz os vínculos antigos.'),link('Consultar termos e assinaturas','#termo','button secondary compact'),link('Gerenciar todos os grupos','#grupos','button secondary compact'),link('Abrir indicadores INIC','#indicadores','button secondary compact'));fragment.append(intro);
+  const intro=node('section','admin-intro');intro.append(node('h3','','Cadastros e grupos da escola'),node('p','','Corrija os nomes dos alunos, edite cadastros e acompanhe os grupos. A exclusão de cadastros e dados pessoais é definitiva; o conteúdo compartilhado dos grupos é preservado.'),link('Consultar termos e assinaturas','#termo','button secondary compact'),link('Gerenciar todos os grupos','#grupos','button secondary compact'),link('Abrir indicadores INIC','#indicadores','button secondary compact'));fragment.append(intro);
   const pending=state.users.filter(person=>!personArchived(person)&&person.requestedRole==='advisor'&&person.role!=='advisor'&&person.role!=='coordinator');
   const panel=node('section','panel');const head=node('div','panel-heading');head.append(node('h3','','Professores aguardando aprovação'),node('span','badge',pending.length));panel.append(head);
   pending.forEach(person=>{
@@ -1769,7 +1782,7 @@ function renderAdmin() {
   if(!pending.length)panel.append(node('p','empty-small','Nenhum professor aguardando aprovação.'));fragment.append(panel);
   const usersPanel=node('section','panel mt-24'),usersHead=node('div','panel-heading');usersHead.append(node('h3','','Pessoas cadastradas'),node('span','count-label'));usersHead.lastChild.id='admin-user-count';usersPanel.append(usersHead);
   const tools=node('div','admin-user-tools');const search=node('input');search.type='search';search.name='userSearch';search.placeholder='Buscar nome, e-mail ou série';search.setAttribute('aria-label','Buscar cadastros');search.value=userSearch;search.addEventListener('input',()=>{userSearch=search.value;paintManagedUsers();});tools.append(search);
-  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Excluídos']].forEach(([value,label])=>{const filter=button(label,'',()=>{userFilter=value;paintManagedUsers();});filter.dataset.userFilter=value;filters.append(filter);});tools.append(filters);usersPanel.append(tools);
+  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Cadastros bloqueados']].forEach(([value,label])=>{const filter=button(label,'',()=>{userFilter=value;paintManagedUsers();});filter.dataset.userFilter=value;filters.append(filter);});tools.append(filters);usersPanel.append(tools);
   const list=node('div','admin-user-list');list.id='admin-user-list';list.setAttribute('aria-label','Cadastros da escola');usersPanel.append(list);fragment.append(usersPanel);queueMicrotask(paintManagedUsers);return fragment;
 }
 
@@ -1778,7 +1791,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261109-1');
+  service = await import('./firebase-service.js?v=20261112-4');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

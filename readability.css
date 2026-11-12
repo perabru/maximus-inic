@@ -17,7 +17,7 @@ input::placeholder,textarea::placeholder,.field input::placeholder,.field textar
 .panel-heading h3{font-size:21px}
 .app-header h1{font-size:30px;line-height:1.25}
 .group-detail-header h2{font-size:30px}
-.article-preview .article-paper-section p{font-size:18px;line-height:1.85}
+.article-preview .article-paper-section>p{font-size:18px;line-height:1.85}
 .account-copy small,.article-field-meta{font-size:13px}
 .sidebar{overflow-y:auto}
 .group-tabs{gap:16px 24px;flex-wrap:wrap;overflow:visible}

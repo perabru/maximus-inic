@@ -32,7 +32,7 @@ const needUser = () => {
   return auth.currentUser;
 };
 async function requireActiveUser(user=needUser()) {
-  if((await get(path(`inactiveUsers/${user.uid}`))).val()===true)throw Object.assign(new Error('Este cadastro foi excluído da plataforma. Procure a coordenação para restaurar o acesso.'),{code:'account/archived'});
+  if((await get(path(`inactiveUsers/${user.uid}`))).val()===true)throw Object.assign(new Error('Este cadastro foi excluído da plataforma. Procure a coordenação se precisar de ajuda.'),{code:'account/archived'});
   return user;
 }
 async function coordinatorUser() {
@@ -352,7 +352,7 @@ export async function updateUser(uid,{name,year,role}={}) {
   if(nextRole!==previousRole){changes[`users/${uid}/requestedRole`]=nextRole==='student'?'student':'advisor';changes[`users/${uid}/onboardingRequired`]=false;}
   for(const group of collection(groupsSnapshot)){
     if(group.status==='deleting'){if(previousRole==='advisor'&&nextRole==='student'&&group.advisorId===uid)throw new Error('Conclua a exclusão do grupo '+group.name+' antes de alterar este acesso.');continue;}
-    if(nextName!==person.name&&group.members?.[uid]&&group.memberNames?.[uid]===person.name)changes[`groups/${group.id}/memberNames/${uid}`]=nextName;
+    if(nextName!==person.name&&group.members?.[uid])changes[`groups/${group.id}/memberNames/${uid}`]=nextName;
     if(previousRole==='advisor'&&nextRole==='student'&&group.advisorId===uid){releaseAdvisorChanges(group,uid,changes);for(const invitation of collection(invitationsSnapshot))if(invitation.groupId===group.id&&invitation.type==='advisor'&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';}
   }
   if(previousRole==='advisor'&&nextRole==='student')for(const invitation of collection(invitationsSnapshot))if(invitation.type==='advisor'&&invitation.toUid===uid&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';
@@ -429,6 +429,80 @@ export async function archiveUser(uid) {
   for(const invitation of collection(invitationsSnapshot))if(pendingForUser(invitation,uid,person.email)||Object.keys(changes).includes(`advisorRequests/${invitation.groupId}`)&&invitation.type==='advisor'&&invitation.status==='pending')changes[`invitations/${invitation.id}/status`]='cancelled';
   if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
   await update(path(),changes);
+}
+export async function deleteUserPermanently(uid) {
+  const actor=await coordinatorUser();checkIdentifier(uid);
+  const [personSnapshot,roleSnapshot,archiveSnapshot,inactiveSnapshot,actorSnapshot]=await Promise.all([
+    get(path(`users/${uid}`)),get(path(`roles/${uid}`)),get(path(`userArchives/${uid}`)),
+    get(path(`inactiveUsers/${uid}`)),get(path(`users/${actor.uid}`))
+  ]);
+  const person=personSnapshot.val(),previous=archiveSnapshot.val(),role=roleSnapshot.val()||previous?.role||'student';
+  if(uid===actor.uid||role==='coordinator')throw new Error('O cadastro da coordenação está protegido.');
+  // A completed deletion has no retained profile or archive. The UID-only
+  // blocking flag must remain: Firebase Authentication is a separate service,
+  // and an existing Auth session must never recreate this profile on login.
+  if(!person){if(inactiveSnapshot.val()===true&&!previous)return;throw new Error('Cadastro não encontrado.');}
+  if(!['student','advisor'].includes(role))throw new Error('Este cadastro não pode ser excluído por esta operação.');
+  if(previous?.status!=='deleting'){
+    const audit={uid,role,status:'deleting',archivedAt:serverTimestamp(),archivedBy:actor.uid,archivedByName:clean(actorSnapshot.val()?.name||'Coordenação',100),inviteCutoff:serverTimestamp()};
+    if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
+    // The new status is deliberately rejected by older database rules. An old
+    // deployment cannot partially archive someone and then fail the hard delete.
+    try{await update(path(),{[`inactiveUsers/${uid}`]:true,[`userArchives/${uid}`]:audit,[`pushSubscriptions/${uid}`]:null,[`advisorDirectory/${uid}`]:null});}
+    catch(error){
+      if(String(error?.code||'').toUpperCase().includes('PERMISSION_DENIED'))throw Object.assign(new Error('A exclusão definitiva ainda não está disponível. Solicite a atualização do aplicativo à administração. O cadastro não foi alterado.'),{code:'account/deletion-unavailable',cause:error});
+      throw error;
+    }
+  }else if(inactiveSnapshot.val()!==true)throw new Error('Não foi possível confirmar o bloqueio deste cadastro. Atualize a página antes de tentar novamente.');
+  try{
+    // Only metadata and indexes are loaded. Personal document bytes are removed
+    // by their known paths, without downloading every student's signed files.
+    const resources=['groups','invitations','admissions','memberRevocations','evaluations','inicResults','advisorRequests','advisorRequestSlots','advisorConfirmations','agreementAdvisorAccess'];
+    const snapshots=await Promise.all(resources.map(resource=>get(path(resource))));
+    const records=Object.fromEntries(resources.map((resource,index)=>[resource,snapshots[index].val()||{}]));
+    const changes={};
+    for(const resource of ['users','roles','advisorDirectory','userGroups','userArchives','pushSubscriptions','orientationNotices'])changes[`${resource}/${uid}`]=null;
+    // Every year accepted by agreementYear is covered, including a file or
+    // signature left without its metadata after a prior interrupted operation.
+    for(let year=2027;year<=2100;year++)for(const resource of ['agreements','agreementFiles','agreementReviews','agreementSignatures','agreementAdvisorAccess'])changes[`${resource}/${year}/${uid}`]=null;
+    const email=clean(person.email,254).toLowerCase(),removedInvitations=new Set(),releasedGroups=new Set();
+    for(const [id,invitation]of Object.entries(records.invitations)){
+      if(invitation.senderId===uid||invitation.toUid===uid||email&&clean(invitation.toEmail,254).toLowerCase()===email){
+        removedInvitations.add(id);changes[`invitations/${id}`]=null;changes[`invitationIssuedAt/${id}`]=null;
+      }
+    }
+    for(const [id,group]of Object.entries(records.groups)){
+      if(group.status==='deleting'&&(group.members?.[uid]||group.memberNames?.[uid]||group.advisorId===uid))throw new Error('Conclua a exclusão do grupo '+group.name+' e tente excluir este cadastro novamente.');
+      if(group.members?.[uid]||group.memberNames?.[uid]){
+        changes[`groups/${id}/members/${uid}`]=null;changes[`groups/${id}/memberNames/${uid}`]=null;
+        // Include empty individual paths too: a staff update racing the cleanup
+        // snapshot must not leave a grade, result or admission behind.
+        changes[`evaluations/${id}/members/${uid}`]=null;changes[`inicResults/${group.year}/${id}/${uid}`]=null;
+        changes[`admissions/${id}/${uid}`]=null;changes[`memberRevocations/${id}/${uid}`]=null;
+      }
+      if(group.advisorId===uid){releaseAdvisorChanges({...group,id},uid,changes);releasedGroups.add(id);}
+    }
+    for(const [id,invitation]of Object.entries(records.invitations))if(!removedInvitations.has(id)&&releasedGroups.has(invitation.groupId)&&invitation.type==='advisor'&&invitation.status==='pending')changes[`invitations/${id}/status`]='cancelled';
+    for(const [groupId,admissions]of Object.entries(records.admissions))for(const [memberUid,invitationId]of Object.entries(admissions||{}))if(memberUid===uid||removedInvitations.has(invitationId))changes[`admissions/${groupId}/${memberUid}`]=null;
+    for(const [groupId,revocations]of Object.entries(records.memberRevocations))if(Object.prototype.hasOwnProperty.call(revocations||{},uid))changes[`memberRevocations/${groupId}/${uid}`]=null;
+    for(const groupId of releasedGroups)changes[`memberRevocations/${groupId}/${uid}`]=null;
+    for(const [groupId,evaluations]of Object.entries(records.evaluations))if(Object.prototype.hasOwnProperty.call(evaluations.members||{},uid))changes[`evaluations/${groupId}/members/${uid}`]=null;
+    for(const [year,groups]of Object.entries(records.inicResults))for(const [groupId,results]of Object.entries(groups||{}))if(Object.prototype.hasOwnProperty.call(results||{},uid))changes[`inicResults/${year}/${groupId}/${uid}`]=null;
+    for(const [groupId,requests]of Object.entries(records.advisorRequests)){
+      if(releasedGroups.has(groupId))continue;
+      for(const [advisorUid,invitationId]of Object.entries(requests||{}))if(advisorUid===uid||removedInvitations.has(invitationId))changes[`advisorRequests/${groupId}/${advisorUid}`]=null;
+    }
+    for(const [groupId,slots]of Object.entries(records.advisorRequestSlots)){
+      if(releasedGroups.has(groupId))continue;
+      for(const [slot,advisorUid]of Object.entries(slots||{}))if(advisorUid===uid||removedInvitations.has(records.advisorRequests[groupId]?.[advisorUid]))changes[`advisorRequestSlots/${groupId}/${slot}`]=null;
+    }
+    for(const [groupId,confirmation]of Object.entries(records.advisorConfirmations))if(!releasedGroups.has(groupId)&&(confirmation.studentUid===uid||confirmation.advisorUid===uid||removedInvitations.has(confirmation.invitationId)))changes[`advisorConfirmations/${groupId}`]=null;
+    for(const [year,owners]of Object.entries(records.agreementAdvisorAccess))for(const [ownerUid,advisors]of Object.entries(owners||{}))if(ownerUid!==uid&&Object.prototype.hasOwnProperty.call(advisors||{},uid))changes[`agreementAdvisorAccess/${year}/${ownerUid}/${uid}`]=null;
+    if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
+    // Shared articles, proposals, messages, schedules and historical authorship
+    // are deliberately preserved; this operation removes individual records.
+    await update(path(),changes);
+  }catch(error){throw Object.assign(new Error(`${error?.message||'Não foi possível concluir a exclusão.'} O acesso permanece bloqueado. Tente excluir o cadastro novamente para concluir.`),{code:'account/deletion-incomplete',cause:error});}
 }
 export async function restoreUser(uid) {
   const actor=await coordinatorUser();checkIdentifier(uid);

@@ -53,6 +53,8 @@ Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam 
 
 No primeiro cadastro com Google, a pessoa escolhe **Estudante** ou **Professor(a)** e conclui seu perfil. A escolha de professor solicita a aprovação da coordenação; não concede permissões administrativas. Contas existentes mantêm seu perfil e papel. Professores aprovados enviam convites aos integrantes dos seus grupos e recebem convites para orientar outras equipes. O botão **Enviar convite +** também encaminha à criação de um grupo quando ainda não há uma equipe disponível.
 
+**Enviar convite** apresenta duas escolhas: **Aluno ou colega**, com um campo de e-mail, e **Orientador(a)**, com busca pelo nome na lista de professores aprovados. Um resumo confirma a pessoa, o papel e o grupo antes do envio. Quando há apenas um grupo, seu nome já aparece selecionado. A confirmação oferece **Ver convites enviados** e explica que o destinatário recebe o convite dentro do Meu INIC.
+
 Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos. O formulário também recebe até 20 e-mails de colegas; cada colega entra somente após aceitar o convite com o mesmo e-mail verificado. Não é necessário que a conta já exista no momento do convite.
 
 O aceite aparece no grupo e gera um aviso ao aluno proponente. A recusa não gera notificação para o aluno. Carregamento e confirmação acompanham as operações reais de cadastro, envio e resposta.
@@ -102,9 +104,13 @@ A aba **Avaliações** reúne a nota coletiva e as notas individuais, de 0 a 10,
 
 ### Cadastros de alunos e professores
 
-A coordenação edita nome, série e perfil de acesso, exclui cadastros da lista de ativos e restaura os excluídos. Excluir bloqueia o acesso imediatamente e remove vínculos com grupos; o processo pode ser retomado se houver falha de conexão. Restaurar não refaz grupos, notas individuais nem convites antigos. Contas da coordenação ficam protegidas contra exclusão e rebaixamento por essa gestão. O e-mail de autenticação permanece inalterado.
+A coordenação usa **Editar nome e cadastro** para corrigir nome, série e perfil de acesso. A correção do nome atualiza os nomes do aluno nos grupos em que participa; autoria e assinaturas históricas permanecem como foram registradas. Contas da coordenação ficam protegidas contra exclusão e rebaixamento. O e-mail de autenticação permanece inalterado.
 
-A exclusão é do cadastro na plataforma, com restauração pela coordenação. Documentos, pareceres e registros de assinatura ficam preservados para consulta autorizada. O primeiro passo da exclusão também remove a inscrição de avisos daquele usuário.
+**Excluir definitivamente** exige uma confirmação explícita. A primeira etapa bloqueia o acesso e registra o estado `deleting`; a segunda remove atomicamente perfil, permissões, documentos e assinaturas dos documentos próprios, pareceres, avaliações e resultados individuais, convites enviados/recebidos e seus índices, avisos e vínculos. Professores excluídos deixam de orientar os grupos, inclusive pesquisas arquivadas. Trabalhos compartilhados, colegas e autoria histórica são preservados. Em falha, o cadastro permanece visível e bloqueado com **Concluir exclusão**, permitindo retomar a limpeza. Cadastros arquivados pela versão anterior também podem ser excluídos definitivamente.
+
+Não existe restauração depois da conclusão. A identidade no **Firebase Authentication** é separada dos dados da aplicação: removê-la exige um backend com Firebase Admin SDK. Esta versão mantém apenas `inactiveUsers/{uid}=true` como marcador do cadastro removido para impedir que a identidade de login recrie o perfil. O marcador não guarda nome nem e-mail; referências de autoria nos trabalhos compartilhados continuam preservadas.
+
+**Ativação da exclusão definitiva:** exige publicar as novas regras de `database.rules.json` no Firebase. Com regras antigas, a primeira etapa é recusada integralmente, o cadastro permanece intacto e a interface informa que a operação ainda não está disponível. O editor formatado, a edição de nomes e o formulário de convites usam contratos já existentes.
 
 ### Chat do grupo de TCC
 
@@ -140,7 +146,11 @@ O texto é salvo automaticamente por seção, após uma breve pausa na digitaç�
 
 **Revisão de 10/11/2026:** os links dos cinco tópicos foram conferidos novamente no catálogo público do Drive de Pobre. O editor preserva a escolha local durante um conflito mesmo quando o autor volta ao texto original, chega uma atualização de outra seção ou a conexão é restabelecida. O aviso de alterações pendentes permanece até a resolução. Após a perda de acesso ao grupo, respostas atrasadas de salvamento e sincronização são ignoradas, mantendo o conteúdo privado fora da tela.
 
-**Ver artigo montado** reúne os campos na ordem do artigo; **Baixar rascunho** exporta um arquivo TXT, incluindo o texto ainda pendente da sessão. A prévia é um rascunho e não substitui o modelo oficial da edição do INIC. Nenhuma submissão ao evento é feita pelo aplicativo.
+Cada seção possui uma barra de ferramentas com negrito, itálico, sublinhado, tachado, fonte, tamanho, alinhamento, subtítulos, listas, cores, marca-texto, subscrito/sobrescrito, links, desfazer/refazer e limpeza da formatação selecionada. Os atalhos Ctrl/Cmd+B, I, U, Z e Y também funcionam. A colagem converte somente elementos, estilos e endereços permitidos; scripts, eventos e CSS arbitrário são descartados.
+
+**Ver artigo montado** reúne os campos na ordem do artigo e preserva a formatação. **Baixar para Word** exporta um documento HTML compatível com Word, com extensão `.doc`; **Baixar texto (.txt)** exporta o texto simples. Ambas as opções incluem o rascunho pendente da sessão. A prévia não substitui o modelo oficial da edição do INIC. Nenhuma submissão ao evento é feita pelo aplicativo.
+
+O campo existente `articles/{grupo}/{seção}/text` continua recebendo texto simples quando não há formatação. Textos formatados usam o prefixo versionado `INIC-RICH/1\n` seguido de uma árvore JSON de elementos permitidos. O editor cria os elementos com `createElement` e `textContent`, sem executar HTML recebido do banco. Textos antigos, inclusive trechos parecidos com HTML, continuam literais. Os limites existentes incluem o armazenamento da formatação; ultrapassá-los mostra um aviso e preserva o rascunho para redução ou exportação. É necessário recarregar clientes antigos para ler o formato novo.
 
 A falta de conexão mantém o texto pendente na memória da página e retoma o envio ao reconectar. Mantenha a sessão aberta até aparecer a confirmação ou baixe uma cópia. Sair da conta e fechar a página alertam sobre alterações pendentes; não há armazenamento persistente de artigos no navegador. Troca de conta, remoção do integrante, exclusão do grupo e substituição do orientador encerram os respectivos acessos. O orientador anterior perde o artigo; os estudantes continuam com o mesmo documento. Excluir o grupo também remove o artigo.
 
@@ -148,4 +158,4 @@ A falta de conexão mantém o texto pendente na memória da página e retoma o e
 
 ### Leitura e tipografia
 
-Textos gerais ampliados, controles em fonte normal com peso 600 e contraste reforçado. O artigo usa 18 px na escrita em telas maiores e 17 px no celular; explicações, ajudas e metadados também foram ampliados. A proposta acompanha as cores dos temas claro e escuro. `readability.css` reúne ajustes de espaçamento, quebras de linha e áreas de toque; a fonte usa as famílias do sistema, sem download adicional.
+Textos gerais ampliados, controles em fonte normal com peso 600 e contraste reforçado. A escrita formatada do artigo começa com Arial de 12 pt e permite escolher fonte e tamanho; explicações, ajudas e metadados mantêm seus tamanhos de leitura. A proposta acompanha as cores dos temas claro e escuro. `readability.css` reúne ajustes de espaçamento, quebras de linha e áreas de toque; as fontes do editor usam famílias disponíveis no dispositivo, com alternativas locais.

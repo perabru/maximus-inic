@@ -93,4 +93,22 @@ Saída esperada dessa verificação adicional: `PROPOSAL RUNTIME TESTS PASSED: 1
 
 Os 13 testes do editor incluem quatro novas regressões: retorno ao texto original durante um conflito, atualizações de outras seções e reconexão sem perda do rascunho, resolução explícita de versões, edição durante um salvamento pendente e respostas tardias após revogação do acesso. O conflito permanece pendente para os avisos de saída até ser resolvido. Callbacks tardios não podem reabrir o editor nem restaurar conteúdo privado depois de uma revogação.
 
+## Editor formatado, convites e exclusão definitiva — 12/11/2026
+
+`node --test article-editor.test.mjs article-richtext.test.mjs` cobre texto antigo, árvore formatada no campo `text`, salvamento e revisões, versões em conflito, colagem de conteúdo hostil, links e estilos permitidos, limite com custo da formatação, prévia, exportações Word/TXT, desfazer/refazer e remoção do conteúdo privado ao perder acesso. As regressões de composição de teclado, parágrafos formatados e posição do cursor em linhas vazias protegem o rascunho durante atualizações remotas e histórico local.
+
+`node user-deletion-runtime.test.mjs` executa o serviço com banco em memória e identidades fictícias: correção dos nomes em todos os grupos, proteção da coordenação, ausência de efeito parcial com regras antigas, limpeza de documentos de todos os anos admitidos, convites por UID/e-mail, preservação dos colegas, índices órfãos, retomada e escritas concorrentes. Os 12 cenários passaram.
+
+O teste abaixo roda o serviço e as regras reais no emulador local. Não acessa nem apaga dados de produção:
+
+```sh
+npx firebase emulators:exec --project demo-maximus-inic --only database "node user-deletion-security.mjs"
+```
+
+As 87 verificações incluem exclusão de estudante e professor, último integrante, grupo arquivado, documentos órfãos, convites históricos e pedidos de um orientador ainda ativo, bloqueio de notas e revogações tardias, recuperação após falha, proibição de recriar/restaurar o perfil eliminado, proteção dos coordenadores e privacidade das leituras de coleção. O marcador mínimo `inactiveUsers/{uid}=true` permanece; a suíte não testa remoção da conta no Firebase Authentication, pois essa operação não faz parte da API do navegador.
+
+Nesta revisão, também passaram novamente as 851 verificações principais de segurança, as 43 do artigo e as 19 do serviço de propostas. Os 219 cenários de `portal-ui.test.cjs` incluem as escolhas aluno/orientador, busca por nome, resumo do convite, validação, envio único, nome editável e conclusão de exclusão interrompida. A validação da interface usa DOM e simulação de seleção; não representa um teste visual em celular nem a execução do Microsoft Word.
+
+Publicar o cliente antes das novas regras não inicia exclusões incompletas: o estado inicial `deleting` é recusado integralmente pelas regras antigas. A ativação do recurso requer a publicação autorizada das regras no projeto Firebase.
+
 Nesta revisão também passaram os 213 cenários da interface do portal e as 43 verificações de acesso e sincronização do artigo no emulador. As regras de produção não foram alteradas; esta atualização corrige o controlador do editor.
