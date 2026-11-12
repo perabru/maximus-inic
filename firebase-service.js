@@ -169,15 +169,26 @@ export async function refreshSession() {
 }
 
 export function subscribeApp(user, callback) {
-  let stopped=false,activeStops=[],scopeStops=[],archiveStop=()=>{},activationVersion=0;
+  let stopped=false,sessionEnded=false,activeStops=[],scopeStops=[],archiveStop=()=>{},sessionStop=()=>{},activationVersion=0;
   let archives={},inactive={},archived=false;
-  const state={profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null,archived:false,archive:null};
+  const state={profile:null,role:'student',users:[],usersReady:false,usersError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null,archived:false,archive:null};
   const decorateUsers=()=>{state.users=(state.rawUsers||[]).map(person=>({...person,role:state.userRoles?.[person.id]||archives[person.id]?.role||'student',archived:inactive[person.id]===true,archive:archives[person.id]||null,archivedAt:archives[person.id]?.archivedAt||null}));};
   const emit=()=>{if(!stopped){const {rawUsers,userRoles,...publicState}=state;callback({...publicState});}};
   const report=error=>{if(!stopped){const {rawUsers,userRoles,...publicState}=state;callback({...publicState,error});}};
-  const clear=()=>{activeStops.forEach(stop=>stop());scopeStops.forEach(stop=>stop());activeStops=[];scopeStops=[];Object.assign(state,{profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null,rawUsers:[],userRoles:{}});};
+  const clearUsers=(error=null)=>{archives={};inactive={};Object.assign(state,{users:[],usersReady:false,usersError:error,rawUsers:[],userRoles:{}});};
+  const clearScope=()=>{scopeStops.forEach(stop=>stop());scopeStops=[];state.groups=[];state.invitations=[];clearUsers();};
+  const clear=()=>{activeStops.forEach(stop=>stop());activeStops=[];clearScope();Object.assign(state,{profile:null,role:'student',advisors:[],orientationNotices:[],orientationNoticesReady:false,orientationNoticesError:null});};
+  const endSession=error=>{
+    if(stopped||sessionEnded)return;
+    sessionEnded=true;activationVersion++;archiveStop();sessionStop();clear();state.archived=false;state.archive=null;profileCache=null;roleCache='student';report(error);
+  };
+  const sessionActive=()=>{
+    if(stopped||sessionEnded)return false;
+    if(auth.currentUser?.uid===user.uid)return true;
+    endSession({code:'PERMISSION_DENIED',message:'A sessão foi encerrada.'});return false;
+  };
   const watch=(target,fn,into=scopeStops,onError=null)=>{
-    let live=true;const raw=onValue(target,snapshot=>{if(!stopped&&live&&!archived)fn(snapshot);},error=>{if(!stopped&&live&&!archived){if(onError)onError(error);else report(error);}});
+    let live=true;const raw=onValue(target,snapshot=>{if(live&&sessionActive()&&!archived)fn(snapshot);},error=>{if(live&&sessionActive()&&!archived){live=false;if(onError)onError(error);else report(error);}});
     const stop=()=>{live=false;raw();};into.push(stop);return stop;
   };
   function attach(){
@@ -187,14 +198,25 @@ export function subscribeApp(user, callback) {
     watch(path(`userArchives/${user.uid}`),snapshot=>{state.archive=snapshot.val();state.invitations=state.invitations.filter(item=>item.senderId===user.uid||item.createdAt>(state.archive?.inviteCutoff||0));emit();},activeStops);
     watch(path(`roles/${user.uid}`),snapshot=>{
       const role=['coordinator','advisor'].includes(snapshot.val())?snapshot.val():'student';state.role=role;roleCache=role;
-      scopeStops.forEach(stop=>stop());scopeStops=[];state.groups=[];state.users=[];state.invitations=[];state.rawUsers=[];state.userRoles={};archives={};inactive={};
+      clearScope();
       if(role==='coordinator'){
+        // Wait for every source used by the people filters. Showing users before
+        // roles and archive flags arrive briefly misclassifies blocked accounts.
+        const peopleStops=[],peopleReady=new Set();let peopleClosed=false;
+        const closePeople=()=>{peopleClosed=true;peopleStops.forEach(stop=>stop());};
+        scopeStops.push(closePeople);
+        const peopleError=error=>{if(peopleClosed)return;closePeople();clearUsers(error);emit();};
+        const watchPeople=(key,apply)=>watch(path(key),snap=>{
+          if(peopleClosed)return;
+          apply(snap);peopleReady.add(key);state.usersReady=peopleReady.size===4;state.usersError=null;
+          if(state.usersReady)decorateUsers();emit();
+        },peopleStops,peopleError);
         watch(path('groups'),snap=>{state.groups=collection(snap).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
-        watch(path('users'),snap=>{state.rawUsers=collection(snap);decorateUsers();emit();});
+        watchPeople('users',snap=>{state.rawUsers=collection(snap);});
         watch(path('invitations'),snap=>{state.invitations=collection(snap).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
-        watch(path('roles'),snap=>{state.userRoles=snap.val()||{};decorateUsers();emit();});
-        watch(path('inactiveUsers'),snap=>{inactive=snap.val()||{};decorateUsers();emit();});
-        watch(path('userArchives'),snap=>{archives=snap.val()||{};decorateUsers();emit();});
+        watchPeople('roles',snap=>{state.userRoles=snap.val()||{};});
+        watchPeople('inactiveUsers',snap=>{inactive=snap.val()||{};});
+        watchPeople('userArchives',snap=>{archives=snap.val()||{};});
       }else{
         const ownGroups=new Map();let advisorGroups=[],groupListeners=new Map();
         const combine=()=>{state.groups=[...new Map([...ownGroups.values(),...advisorGroups].map(group=>[group.id,group])).values()].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();};
@@ -202,7 +224,7 @@ export function subscribeApp(user, callback) {
           const ids=Object.keys(snap.val()||{});
           for(const [id,stop]of groupListeners)if(!ids.includes(id)){stop();groupListeners.delete(id);ownGroups.delete(id);}
           for(const id of ids)if(!groupListeners.has(id)){
-            let live=true;const raw=onValue(path(`groups/${id}`),value=>{if(stopped||archived||!live)return;if(value.exists())ownGroups.set(id,{...value.val(),id});else ownGroups.delete(id);combine();},error=>{if(stopped||archived||!live)return;ownGroups.delete(id);combine();if(error.code!=='PERMISSION_DENIED')report(error);});
+            let live=true;const raw=onValue(path(`groups/${id}`),value=>{if(!live||!sessionActive()||archived)return;if(value.exists())ownGroups.set(id,{...value.val(),id});else ownGroups.delete(id);combine();},error=>{if(!live||!sessionActive()||archived)return;ownGroups.delete(id);combine();if(error.code!=='PERMISSION_DENIED')report(error);});
             groupListeners.set(id,()=>{live=false;raw();});
           }combine();
         });scopeStops.push(()=>{groupListeners.forEach(stop=>stop());groupListeners.clear();});
@@ -210,15 +232,16 @@ export function subscribeApp(user, callback) {
         const buckets=new Map();const watchInvites=(key,value)=>watch(query(path('invitations'),orderByChild(key),equalTo(value)),snap=>{buckets.set(key,collection(snap));state.invitations=[...new Map([...buckets.values()].flat().map(item=>[item.id,item])).values()].filter(item=>item.senderId===user.uid||item.createdAt>(state.archive?.inviteCutoff||0)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));emit();});
         watchInvites('senderId',user.uid);watchInvites('toUid',user.uid);if(user.email&&user.emailVerified)watchInvites('toEmail',user.email.toLowerCase());
       }emit();
-    },activeStops);
+    },activeStops,error=>{clearScope();state.role='student';roleCache='student';report(error);});
   }
   let initialized=false;
   archiveStop=onValue(path(`inactiveUsers/${user.uid}`),snapshot=>{
-    if(stopped)return;const next=snapshot.val()===true;
+    if(!sessionActive())return;const next=snapshot.val()===true;
     if(initialized&&next===archived)return;const current=++activationVersion;initialized=true;clear();archived=next;state.archived=next;state.archive=null;
-    if(next){profileCache=null;roleCache='student';emit();get(path(`userArchives/${user.uid}`)).then(value=>{if(!stopped&&current===activationVersion&&archived){state.archive=value.val();emit();}}).catch(()=>{});}else attach();
-  },report);
-  return()=>{stopped=true;archiveStop();clear();};
+    if(next){profileCache=null;roleCache='student';emit();get(path(`userArchives/${user.uid}`)).then(value=>{if(sessionActive()&&current===activationVersion&&archived){state.archive=value.val();emit();}}).catch(()=>{});}else attach();
+  },endSession);
+  sessionStop=onAuthStateChanged(auth,active=>{if(active?.uid!==user.uid)endSession({code:'PERMISSION_DENIED',message:'A sessão foi encerrada.'});});
+  return()=>{stopped=true;activationVersion++;archiveStop();sessionStop();clear();};
 }
 export function subscribeGroup(groupId, callback) {
   const user=needUser();

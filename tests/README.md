@@ -112,3 +112,18 @@ Nesta revisão, também passaram novamente as 851 verificações principais de s
 Publicar o cliente antes das novas regras não inicia exclusões incompletas: o estado inicial `deleting` é recusado integralmente pelas regras antigas. A ativação do recurso requer a publicação autorizada das regras no projeto Firebase.
 
 Nesta revisão também passaram os 213 cenários da interface do portal e as 43 verificações de acesso e sincronização do artigo no emulador. As regras de produção não foram alteradas; esta atualização corrige o controlador do editor.
+
+
+## Lista de pessoas com paginação e carregamento (12/11/2026)
+
+A coordenação exibe no máximo 10 cadastros por página. Busca e filtros são aplicados à lista completa antes de selecionar a página; atualizações ao vivo preservam a página e ajustam seu limite após remoções. Os campos de busca e os controles de navegação permanecem montados durante essas atualizações. A paginação é da interface: a assinatura existente do Firebase continua fornecendo o diretório completo.
+
+O estado `usersReady` só libera a lista após os quatro snapshots usados na classificação dos cadastros (`users`, `roles`, `inactiveUsers`, `userArchives`). `usersError` distingue falha de carregamento de uma lista vazia. Logout, bloqueio e perda de coordenação removem os dados da memória e da tela; callbacks de assinaturas antigas são ignorados.
+
+Validação desta alteração: 227 cenários DOM/VM da interface, 13 testes focados do serviço (incluindo as 24 ordens de chegada das quatro fontes) e 5 testes do service worker aprovados. Os testes focados usam dados fictícios e não acessam o Firebase de produção.
+
+```sh
+npm run test:ui
+node people-loading-runtime.test.mjs
+node sw-push.test.mjs
+```

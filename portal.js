@@ -9,7 +9,7 @@ import { createArticleEditor } from './article-editor.js?v=20261112-4';
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
 const hashes = {dashboard:'inicio',groups:'grupos',invitations:'convites',calendar:'calendario',agreements:'termo',admin:'coordenacao',indicators:'indicadores'};
-const state = {user:null,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null};
+const state = {user:null,profile:null,role:'student',users:[],usersReady:false,usersError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null};
 const groupData = new Map();
 const groupListeners = new Map();
 const groupAccess = new Map();
@@ -54,6 +54,8 @@ let taskFilter = 'all';
 let invitationFilter = 'incoming';
 let userSearch = '';
 let userFilter = 'all';
+let userPage = 1;
+const USERS_PER_PAGE = 10;
 let coordinationDashboard = null;
 let orientationNoticeBaselineReady=false;
 const seenOrientationNotices=new Set();
@@ -419,7 +421,7 @@ function verificationNotice() {
 function sessionChanged(user) {
   for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();
   destroyIndicators();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
-  const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';
+  const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';userPage=1;
   proposalDraft=null;
   cleanupDialog();$('#dialog-fields').replaceChildren();
   dialogVersion++;dialogHandler=null;dialogGuard=null;$('#form-dialog').close();
@@ -429,8 +431,9 @@ function sessionChanged(user) {
   agreements=[];agreementsReady=false;agreementsError=null;agreementRequirement={ready:false,fulfilled:false};agreementUploadBusy=false;agreementSearch='';agreementFilter='all';
   for (const unsubscribe of groupListeners.values()) unsubscribe();
   groupListeners.clear();groupAccess.clear();groupData.clear();
-  Object.assign(state,{user,profile:null,role:'student',users:[],advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null});
+  Object.assign(state,{user,profile:null,role:'student',users:[],usersReady:false,usersError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null});
   renderedKey = '';
+  $('#view-content').replaceChildren();
   $('.skip-link').href = user ? '#workspace-main' : '#main';
   $('#auth-screen').hidden = Boolean(user);
   $('#app-screen').hidden = !user;
@@ -444,7 +447,9 @@ function sessionChanged(user) {
     state.archive = data.archive || null;
     state.profile = data.profile || null;
     state.role = data.role || 'student';
-    state.users = data.users || [];
+    state.usersReady = !state.archived&&state.role==='coordinator'&&data.usersReady===true;
+    state.usersError = !state.archived&&state.role==='coordinator'?(data.usersError||null):null;
+    state.users = state.usersReady&&!state.usersError?(data.users||[]):[];
     state.advisors = data.advisors || [];
     state.groups = data.groups || [];
     state.invitations = data.invitations || [];
@@ -456,6 +461,10 @@ function sessionChanged(user) {
       cleanupDialog();revokeProposalUrls();$('#dialog-fields').replaceChildren();
       dialogVersion++;dialogHandler=null;$('#form-dialog').close();$('#app-notice').hidden=true;$('#verification-notice')?.remove();
     }
+    if(!canManagePeople()){
+      userPage=1;
+      if($('#admin-user-list')){renderedKey='';$('#view-content').replaceChildren(loadingPanel('Atualizando acesso…'));}
+    }else if(!state.usersReady||state.usersError){paintManagedUsers();paintPendingAdvisors();}
     if(coordinationDashboard&&(state.role!=='coordinator'||!canAccessAcademic())){destroyIndicators();$('#view-content').replaceChildren(loadingPanel('Atualizando acesso…'));}
     else coordinationDashboard?.updateState(state);
     if(data.orientationNoticesError)orientationNoticeBaselineReady=false;
@@ -536,6 +545,7 @@ function render() {
   }
   if (currentRoute.view === 'group') {renderGroup();return;}
   if (currentRoute.view === 'indicators') {renderIndicators();return;}
+  if(currentRoute.view==='admin'&&renderedKey==='admin'&&$('#admin-user-list')){paintManagedUsers();paintPendingAdvisors();return;}
   renderedKey = currentRoute.view;
   const views = {dashboard:renderDashboard,groups:renderGroups,invitations:renderInvitations,calendar:renderCalendar,admin:renderAdmin};
   $('#view-content').replaceChildren((views[currentRoute.view] || renderDashboard)());
@@ -1749,16 +1759,33 @@ function showDeleteUserPermanently(person) {
   }});
 }
 function paintManagedUsers() {
-  const list=$('#admin-user-list'),count=$('#admin-user-count');if(!list||!canManagePeople())return;
+  const list=$('#admin-user-list'),count=$('#admin-user-count'),pagination=$('#admin-user-pagination');if(!list||!canManagePeople())return;
+  document.querySelectorAll('[data-user-filter]').forEach(control=>control.setAttribute('aria-pressed',String(control.dataset.userFilter===userFilter)));
+  pagination.hidden=true;
+  list.setAttribute('aria-busy',String(!state.usersReady&&!state.usersError));
+  if(state.usersError){
+    count.textContent='Indisponível';
+    const error=node('div','admin-user-error');error.id='admin-user-error';error.setAttribute('role','alert');
+    error.append(node('h4','','Não foi possível carregar os cadastros.'),node('p','','Confira sua conexão e tente novamente.'),button('Tentar novamente','button secondary compact',()=>location.reload()));
+    list.replaceChildren(error);return;
+  }
+  if(!state.usersReady){count.textContent='Carregando…';list.replaceChildren(loadingPanel('Carregando cadastros…'));return;}
   const query=normalize(userSearch).trim();
   const people=state.users.filter(person=>(userFilter==='archived'?personArchived(person):!personArchived(person)&&(userFilter==='all'||(userFilter==='students'?(person.role||'student')==='student'&&person.requestedRole!=='advisor':person.role==='advisor'||(person.role!=='coordinator'&&person.requestedRole==='advisor'))))&&(!query||normalize(`${person.name||''} ${person.email||''} ${person.year||''}`).includes(query))).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR'));
-  if(count)count.textContent=`${people.length} cadastro(s)`;
-  document.querySelectorAll('[data-user-filter]').forEach(control=>control.setAttribute('aria-pressed',String(control.dataset.userFilter===userFilter)));
+  count.textContent=`${fmtNumber(people.length)} ${people.length===1?'cadastro':'cadastros'}`;
+  const pages=Math.max(1,Math.ceil(people.length/USERS_PER_PAGE));userPage=Math.min(Math.max(1,userPage),pages);
+  const start=(userPage-1)*USERS_PER_PAGE,end=Math.min(start+USERS_PER_PAGE,people.length);
+  $('#admin-user-range').textContent=people.length?`Mostrando ${fmtNumber(start+1)}–${fmtNumber(end)} de ${fmtNumber(people.length)} ${people.length===1?'cadastro':'cadastros'}`:'';
+  $('#admin-user-page').textContent=`Página ${fmtNumber(userPage)} de ${fmtNumber(pages)}`;
+  $('#admin-users-prev').disabled=userPage===1;$('#admin-users-next').disabled=userPage===pages;
+  pagination.hidden=!people.length;
   list.replaceChildren();
-  people.forEach(person=>{
+  people.slice(start,end).forEach(person=>{
     const archived=personArchived(person),card=node('article','admin-person-card');card.dataset.userId=person.id;
     const unfinished=['archiving','deleting'].includes(person.archive?.status);
-    const copy=node('div','admin-person-copy');copy.append(node('span',`badge ${archived?'warning':''}`,archived?(unfinished?'Exclusão não concluída':'Cadastro bloqueado'):person.role==='coordinator'?(isListedAdvisor(person.id)?'Coordenação e orientação':'Coordenação'):person.role==='advisor'?'Professor(a) orientador(a)':person.requestedRole==='advisor'?'Professor(a) aguardando aprovação':'Estudante'),node('h4','',person.name||'Sem nome'),node('p','',person.email||'Sem e-mail'),node('p','admin-person-year',person.year||'Série não informada'));
+    const copy=node('div','admin-person-copy'),title=node('div','admin-person-heading'),details=node('div','admin-person-details');
+    title.append(node('h4','',person.name||'Sem nome'),node('span',`badge ${archived?'warning':''}`,archived?(unfinished?'Exclusão não concluída':'Cadastro bloqueado'):person.role==='coordinator'?(isListedAdvisor(person.id)?'Coordenação e orientação':'Coordenação'):person.role==='advisor'?'Professor(a) orientador(a)':person.requestedRole==='advisor'?'Professor(a) aguardando aprovação':'Estudante'));
+    details.append(node('p','',person.email||'Sem e-mail'),node('p','admin-person-year',person.year||'Série não informada'));copy.append(title,details);
     const actions=node('div','admin-person-actions');
     const addAction=(label,kind,handler,className='button secondary compact')=>{const control=button(label,className,handler);control.dataset.userAction=kind;control.dataset.userId=person.id;actions.append(control);};
     if(!archived)addAction('Editar nome e cadastro','edit',()=>showEditUser(person));
@@ -1767,23 +1794,38 @@ function paintManagedUsers() {
   });
   if(!people.length)list.append(emptyState('Nenhum cadastro neste filtro','Altere o filtro ou a busca para encontrar a pessoa.'));
 }
-function renderAdmin() {
-  const fragment=document.createDocumentFragment();
-  if(!canManagePeople())return fragment;
-  const intro=node('section','admin-intro');intro.append(node('h3','','Cadastros e grupos da escola'),node('p','','Corrija os nomes dos alunos, edite cadastros e acompanhe os grupos. A exclusão de cadastros e dados pessoais é definitiva; o conteúdo compartilhado dos grupos é preservado.'),link('Consultar termos e assinaturas','#termo','button secondary compact'),link('Gerenciar todos os grupos','#grupos','button secondary compact'),link('Abrir indicadores INIC','#indicadores','button secondary compact'));fragment.append(intro);
+function paintPendingAdvisors() {
+  const list=$('#admin-advisor-list'),count=$('#admin-advisor-count');if(!list||!canManagePeople())return;
+  list.setAttribute('aria-busy',String(!state.usersReady&&!state.usersError));
+  if(state.usersError){count.textContent='—';list.replaceChildren(node('p','empty-small','As solicitações não puderam ser carregadas. Tente novamente na lista de cadastros abaixo.'));return;}
+  if(!state.usersReady){count.textContent='…';list.replaceChildren(node('p','empty-small','Carregando solicitações…'));return;}
   const pending=state.users.filter(person=>!personArchived(person)&&person.requestedRole==='advisor'&&person.role!=='advisor'&&person.role!=='coordinator');
-  const panel=node('section','panel');const head=node('div','panel-heading');head.append(node('h3','','Professores aguardando aprovação'),node('span','badge',pending.length));panel.append(head);
+  count.textContent=fmtNumber(pending.length);list.replaceChildren();
   pending.forEach(person=>{
     const row=node('div','approval-row'),copy=node('div');copy.append(node('strong','',person.name||'Professor(a)'),node('p','',person.email||''));
     const actor=state.user.uid,session=sessionVersion;
     const approve=button('Aprovar acesso','button primary compact',event=>action(event.currentTarget,async()=>{if(state.user?.uid!==actor||sessionVersion!==session)return;currentManagedPerson(person.id);try {await service.approveAdvisor(person.id);}catch(error){if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())throw error;return;}if(state.user?.uid===actor&&sessionVersion===session&&canManagePeople())notice('Acesso de orientador liberado.');}));
-    row.append(copy,approve);panel.append(row);
+    row.append(copy,approve);list.append(row);
   });
-  if(!pending.length)panel.append(node('p','empty-small','Nenhum professor aguardando aprovação.'));fragment.append(panel);
+  if(!pending.length)list.append(node('p','empty-small','Nenhum professor aguardando aprovação.'));
+}
+function renderAdmin() {
+  const fragment=document.createDocumentFragment();
+  if(!canManagePeople())return fragment;
+  const intro=node('section','admin-intro');intro.append(node('h3','','Cadastros e grupos da escola'),node('p','','Corrija os nomes dos alunos, edite cadastros e acompanhe os grupos. A exclusão de cadastros e dados pessoais é definitiva; o conteúdo compartilhado dos grupos é preservado.'),link('Consultar termos e assinaturas','#termo','button secondary compact'),link('Gerenciar todos os grupos','#grupos','button secondary compact'),link('Abrir indicadores INIC','#indicadores','button secondary compact'));fragment.append(intro);
+  const panel=node('section','panel');const head=node('div','panel-heading');head.append(node('h3','','Professores aguardando aprovação'),node('span','badge'));head.lastChild.id='admin-advisor-count';panel.append(head);
+  const pendingList=node('div');pendingList.id='admin-advisor-list';panel.append(pendingList);fragment.append(panel);
   const usersPanel=node('section','panel mt-24'),usersHead=node('div','panel-heading');usersHead.append(node('h3','','Pessoas cadastradas'),node('span','count-label'));usersHead.lastChild.id='admin-user-count';usersPanel.append(usersHead);
-  const tools=node('div','admin-user-tools');const search=node('input');search.type='search';search.name='userSearch';search.placeholder='Buscar nome, e-mail ou série';search.setAttribute('aria-label','Buscar cadastros');search.value=userSearch;search.addEventListener('input',()=>{userSearch=search.value;paintManagedUsers();});tools.append(search);
-  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Cadastros bloqueados']].forEach(([value,label])=>{const filter=button(label,'',()=>{userFilter=value;paintManagedUsers();});filter.dataset.userFilter=value;filters.append(filter);});tools.append(filters);usersPanel.append(tools);
-  const list=node('div','admin-user-list');list.id='admin-user-list';list.setAttribute('aria-label','Cadastros da escola');usersPanel.append(list);fragment.append(usersPanel);queueMicrotask(paintManagedUsers);return fragment;
+  const tools=node('div','admin-user-tools');const search=node('input');search.type='search';search.name='userSearch';search.placeholder='Buscar nome, e-mail ou série';search.setAttribute('aria-label','Buscar cadastros');search.value=userSearch;search.addEventListener('input',()=>{userSearch=search.value;userPage=1;paintManagedUsers();});tools.append(search);
+  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Cadastros bloqueados']].forEach(([value,label])=>{const filter=button(label,'',()=>{userFilter=value;userPage=1;paintManagedUsers();});filter.dataset.userFilter=value;filters.append(filter);});tools.append(filters);usersPanel.append(tools);
+  const pagination=node('div','admin-user-pagination');pagination.id='admin-user-pagination';pagination.hidden=true;
+  const range=node('p','admin-user-range');range.id='admin-user-range';range.setAttribute('role','status');range.setAttribute('aria-live','polite');range.setAttribute('aria-atomic','true');
+  const controls=node('nav','admin-page-controls');controls.setAttribute('aria-label','Páginas dos cadastros');
+  const previous=button('Anterior','button secondary compact',()=>{if(!canManagePeople()||!state.usersReady||state.usersError||userPage===1)return;userPage--;paintManagedUsers();});previous.id='admin-users-prev';previous.setAttribute('aria-controls','admin-user-list');
+  const page=node('span','admin-user-page');page.id='admin-user-page';
+  const next=button('Próxima','button secondary compact',()=>{if(!canManagePeople()||!state.usersReady||state.usersError||next.disabled)return;userPage++;paintManagedUsers();});next.id='admin-users-next';next.setAttribute('aria-controls','admin-user-list');
+  controls.append(previous,page,next);pagination.append(range,controls);usersPanel.append(pagination);
+  const list=node('div','admin-user-list');list.id='admin-user-list';list.setAttribute('aria-label','Cadastros da escola');usersPanel.append(list);fragment.append(usersPanel);queueMicrotask(()=>{paintManagedUsers();paintPendingAdvisors();});return fragment;
 }
 
 window.addEventListener('offline',()=>{const banner=$('#connection-banner');banner.textContent='Você está sem conexão. Grupos, convites e mensagens serão atualizados quando a conexão voltar.';banner.hidden=false;});
@@ -1791,7 +1833,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261112-4');
+  service = await import('./firebase-service.js?v=20261112-5');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {
