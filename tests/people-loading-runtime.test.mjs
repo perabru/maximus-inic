@@ -171,3 +171,19 @@ test('unsubscribe ignores every queued database and auth callback',async()=>{
   for(const listener of client.authListeners)listener.next(null);
   client.reads.at(-1).resolve({archivedAt:999});await Promise.resolve();assert.equal(client.states.length,count);
 });
+
+
+test('community waits for the coordinator backfill even after the directory snapshot',async()=>{
+  const client=runtime();client.start();client.send('peopleDirectory',null);client.complete({});
+  assert.equal(client.latest().peopleReady,false);assert.equal(client.latest().peopleError,null);
+  const completed=new Set();
+  for(let step=0;step<16;step++){for(const read of client.reads)if(!completed.has(read)){completed.add(read);read.resolve(read.path==='maximusInic/roles/coord'?'coordinator':null);}await Promise.resolve();}
+  assert.equal(client.latest().peopleReady,true);assert.equal(client.latest().peopleError,null);client.stop();
+});
+
+test('community shows a backfill prerequisite error instead of endless loading',()=>{
+  const client=runtime();client.start();client.send('peopleDirectory',null);
+  const error={code:'PERMISSION_DENIED',message:'Source unavailable'};client.find('users').error(error);
+  assert.equal(client.latest().peopleReady,false);assert.equal(client.latest().peopleError,error);
+  client.send('peopleDirectory',{});assert.equal(client.latest().peopleError,error);assert.equal(client.latest().peopleReady,false);client.stop();
+});

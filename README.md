@@ -49,13 +49,13 @@ O código da página é separado dos direitos sobre as fotografias, a marca da e
 
 Projeto Firebase informado para este aplicativo. Email/Password e Google habilitados, com domínio GitHub Pages autorizado. Dados do app em `maximusInic`; o nó legado `items` foi mantido com suas permissões anteriores. Contas administrativas iniciais foram criadas diretamente no Auth e seus papéis foram atribuídos no banco. Nenhuma senha ou token está no código.
 
-Novos alunos recebem somente acesso aos próprios grupos. Professores solicitam acesso de orientação no cadastro e aguardam aprovação da coordenação. Convites para alunos exigem confirmação do próprio endereço de e-mail; o login Google já fornece um e-mail verificado. O convite aparece dentro da plataforma: não há disparo automático de e-mail de convite.
+Alunos participam de apenas um grupo; professores aprovados podem orientar vários. A área **Pessoas** mostra os cadastros concluídos da comunidade, com nome, série, perfil e disponibilidade. Os convites novos selecionam o cadastro pelo nome e usam seu UID. Convites antigos por e-mail continuam exigindo a confirmação do endereço correspondente. O convite aparece dentro da plataforma; não há disparo automático de e-mail de convite. Professores solicitam acesso no cadastro e aguardam aprovação da coordenação.
 
 No primeiro cadastro com Google, a pessoa escolhe **Estudante** ou **Professor(a)** e conclui seu perfil. A escolha de professor solicita a aprovação da coordenação; não concede permissões administrativas. Contas existentes mantêm seu perfil e papel. Professores aprovados enviam convites aos integrantes dos seus grupos e recebem convites para orientar outras equipes. O botão **Enviar convite +** também encaminha à criação de um grupo quando ainda não há uma equipe disponível.
 
 **Enviar convite** apresenta duas escolhas: **Aluno ou colega**, com um campo de e-mail, e **Orientador(a)**, com busca pelo nome na lista de professores aprovados. Um resumo confirma a pessoa, o papel e o grupo antes do envio. Quando há apenas um grupo, seu nome já aparece selecionado. A confirmação oferece **Ver convites enviados** e explica que o destinatário recebe o convite dentro do Meu INIC.
 
-Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos. O formulário também recebe até 20 e-mails de colegas; cada colega entra somente após aceitar o convite com o mesmo e-mail verificado. Não é necessário que a conta já exista no momento do convite.
+Ao cadastrar uma **proposta de TCC**, o estudante pode selecionar até três orientadores aprovados. São permitidos no máximo três convites pendentes de orientação por grupo. Uma recusa libera espaço para convidar outro professor. O primeiro aceite confirma o orientador e encerra os demais convites pendentes; dois aceites simultâneos não substituem a orientação já confirmada. Proposta, cronograma e convites iniciais são gravados juntos. O formulário permite selecionar até 20 colegas cadastrados e disponíveis; cada colega entra somente após aceitar. A disponibilidade é atualizada ao vivo. O banco impede duas entradas simultâneas do mesmo aluno e mantém os professores disponíveis para outros grupos.
 
 O aceite aparece no grupo e gera um aviso ao aluno proponente. A recusa não gera notificação para o aluno. Carregamento e confirmação acompanham as operações reais de cadastro, envio e resposta.
 
@@ -71,7 +71,7 @@ O calendário destaca os nove feriados nacionais federais de 2027 e reúne as en
 
 O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, inclusive contas já cadastradas. Antes de usar os grupos, o aluno é direcionado a **Meu termo** para enviar um PDF, JPG ou PNG de até 3 MiB. Um termo válido já enviado continua atendendo à exigência. O acesso é liberado após a confirmação do servidor; falha, espera ou envio offline não liberam o uso. As regras também exigem o termo nas gravações acadêmicas. Professores pendentes aguardam aprovação e não conseguem usar essa escolha de perfil para pular a exigência.
 
-A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Enviar proposta e convites**; a confirmação do termo não dispara convites sozinha.
+A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Criar grupo e enviar convites**; a confirmação do termo não dispara convites sozinha.
 
 Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Outros alunos não têm acesso. Orientadores acessam somente os termos aprovados dos integrantes dos grupos sob sua orientação. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
 
@@ -118,7 +118,7 @@ Cada equipe possui um **Chat do grupo**, disponível pela lista de grupos e pela
 
 ### Atribuição, substituição e saída da orientação
 
-Estudantes cadastrados no **1º ou 2º ano** criam o grupo já com **Bruno Michel Pera** como orientador. O formulário destaca essa atribuição e não envia convites concorrentes a outros orientadores; os convites aos colegas continuam disponíveis. Para estudantes do **3º ano**, permanece a escolha de até três candidatos à orientação. A coordenação pode ajustar a orientação posteriormente. O serviço confirma o cadastro ativo e aprovado do orientador antes de gravar a proposta, sem conceder permissões por comparação de e-mail.
+Estudantes do **1º, 2º e 3º ano** escolhem até três professores aprovados para convidar. O grupo aguarda o primeiro aceite; não há atribuição automática de professor. A coordenação pode ajustar a orientação posteriormente. Os professores podem orientar vários grupos e cada aluno participa de apenas um. O serviço confirma o cadastro ativo e aprovado do professor antes de gravar a proposta, sem conceder permissões por comparação de e-mail.
 
 Em **Todos os grupos**, a coordenação usa **Atribuir orientador** quando a equipe ainda não tem professor. A atribuição vincula diretamente um orientador aprovado e ativo, inclusive um coordenador cadastrado também no diretório de orientação. O grupo passa a aparecer para o professor e os integrantes sem exigir outro aceite.
 
@@ -134,7 +134,7 @@ No grupo, cada estudante informa o próprio resultado do INIC; o professor regis
 
 ### Proposta antes do convite de orientação
 
-Antes de enviar um novo convite de TCC ao professor, o estudante escreve uma proposta com até quatro tópicos — tema e problema, objetivo, como será feito e resultado esperado — ou anexa um PDF, JPG ou PNG de até 3 MiB. É preciso preencher pelo menos um tópico ou anexar o arquivo. A proposta acompanha o grupo e pode ser consultada pelo professor no card do convite antes de aceitar ou recusar.
+A proposta é enviada **somente como anexo**: PDF, JPG ou PNG de até 3 MiB. O formulário mantém apenas os dados de identificação do grupo e da pesquisa; os campos de redação da proposta foram removidos. O professor pode abrir o anexo no convite antes de aceitar ou recusar. Arquivos existentes podem ser mantidos sem novo upload. Propostas antigas em texto continuam disponíveis para leitura; sua substituição exige um anexo e só acontece ao salvar.
 
 Os anexos da proposta têm armazenamento separado dos termos assinados. Um professor candidato acessa a proposta somente enquanto seu convite está pendente; recusa, cancelamento ou perda de vínculo encerram esse acesso. Os bytes não usam URL pública nem entram no cache offline. Convites antigos continuam identificados como anteriores à exigência, sem inventar uma proposta para eles.
 
@@ -159,3 +159,14 @@ A falta de conexão mantém o texto pendente na memória da página e retoma o e
 ### Leitura e tipografia
 
 Textos gerais ampliados, controles em fonte normal com peso 600 e contraste reforçado. A escrita formatada do artigo começa com Arial de 12 pt e permite escolher fonte e tamanho; explicações, ajudas e metadados mantêm seus tamanhos de leitura. A proposta acompanha as cores dos temas claro e escuro. `readability.css` reúne ajustes de espaçamento, quebras de linha e áreas de toque; as fontes do editor usam famílias disponíveis no dispositivo, com alternativas locais.
+
+
+## Comunidade e disponibilidade dos convites
+
+**Pessoas** apresenta cartões de alunos e professores, busca por nome/série, filtros de perfil e disponibilidade e até 12 cartões por página. O carregamento, falhas de conexão e a lista vazia têm estados próprios. As atualizações preservam a busca e a navegação por teclado.
+
+Um aluno que criou ou aceitou um grupo aparece como **Já participa de um grupo**. Ele não pode criar ou aceitar outro enquanto o vínculo existir; a remoção do integrante ou a exclusão do grupo libera sua disponibilidade. Um professor pode orientar vários grupos, mas cada grupo continua tendo um orientador confirmado. Convites repetidos ao mesmo cadastro e grupo são bloqueados enquanto aguardam resposta.
+
+`maximusInic/peopleDirectory` contém apenas a projeção de nome, série, papel, solicitação de perfil, disponibilidade e identificação do cadastro. Os perfis privados, e-mails, notas, termos e arquivos continuam nas coleções com acesso restrito. Cadastros bloqueados, contas técnicas e perfis Google ainda incompletos ficam fora da comunidade. Alterações de nome/papel, entrada/remoção e exclusão atualizam a projeção no mesmo lote.
+
+A coordenação sincroniza automaticamente os cadastros existentes ao acessar o portal. Novos cadastros concluídos publicam sua própria projeção. A interface aguarda a sincronização da coordenação antes de mostrar a lista. A publicação desta versão exige primeiro as regras atualizadas do Firebase e depois o cliente; o service worker usa a versão `20261112-8`.

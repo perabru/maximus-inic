@@ -23,12 +23,13 @@ const task={title:'Artigo',dueDate:'2027-07-31',completed:false,completedBy:'',w
 const termBytes=Buffer.from('%PDF-test fixture');
 const termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp});
 const termFile={base64:termBytes.toString('base64'),size:termBytes.length,contentType:'application/pdf',uploadedAt:stamp};
-await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database()),{items:{preserved:'existing'},maximusInic:{agreements:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['s1','s2','s3'].map(uid=>[uid,termFile]))},roles:{c:'coordinator',a1:'advisor',a2:'advisor',a3:'advisor'},users:{c:person('Coordenação','c@example.com'),s1:person('Aluno 1','s1@example.com'),s2:person('Aluno 2','s2@example.com'),s3:person('Aluno 3','s3@example.com'),a1:person('Orientador 1','a1@example.com'),a2:person('Orientador 2','a2@example.com'),a3:person('Orientador 3','a3@example.com')},advisorDirectory:{a1:{uid:'a1',name:'Orientador 1'},a2:{uid:'a2',name:'Orientador 2'},a3:{uid:'a3',name:'Orientador 3'}},groups:{g1:{...group('Grupo 1','s1','a1'),advisorRequestPolicy:null},g2:{...group('Grupo 2','s2','a2'),advisorRequestPolicy:null}},tasks:{g1:{t1:task}},userGroups:{s1:{g1:true},s2:{g2:true}}}}));
+await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database()),{items:{preserved:'existing'},maximusInic:{agreements:{2027:Object.fromEntries(['s1','s2','s3','s4','s5','s6','service-student'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['s1','s2','s3','s4','s5','s6','service-student'].map(uid=>[uid,termFile]))},roles:{c:'coordinator',a1:'advisor',a2:'advisor',a3:'advisor'},users:{c:person('Coordenação','c@example.com'),s1:person('Aluno 1','s1@example.com'),s2:person('Aluno 2','s2@example.com'),s3:person('Aluno 3','s3@example.com'),s4:person('Aluno 4','s4@example.com'),s5:person('Aluno 5','s5@example.com'),s6:person('Aluno 6','s6@example.com'),'service-student':person('Aluno 2','service-student@example.com'),a1:person('Orientador 1','a1@example.com'),a2:person('Orientador 2','a2@example.com'),a3:person('Orientador 3','a3@example.com')},advisorDirectory:{a1:{uid:'a1',name:'Orientador 1'},a2:{uid:'a2',name:'Orientador 2'},a3:{uid:'a3',name:'Orientador 3'}},groups:{g1:{...group('Grupo 1','s1','a1'),advisorRequestPolicy:null},g2:{...group('Grupo 2','s2','a2'),advisorRequestPolicy:null}},tasks:{g1:{t1:task}},userGroups:{s1:{g1:true},s2:{g2:true}}}}));
 const db=(uid,emailVerified=true)=>env.authenticatedContext(uid,{email:`${uid}@example.com`,email_verified:emailVerified}).database();
 let passed=0;
 const ok=async(name,promise)=>{await assertSucceeds(promise);passed++;console.log('PASS',name);};
 const no=async(name,promise)=>{await assertFails(promise);passed++;console.log('PASS',name);};
 try{
+ await loadService(db('c'),'c')('syncPeopleDirectory');
  await no('anonymous cannot read platform',get(ref(env.unauthenticatedContext().database(),'maximusInic')));
  await ok('existing items permission preserved',get(ref(env.unauthenticatedContext().database(),'items')));
  await no('student cannot read other profile',get(ref(db('s1'),'maximusInic/users/s2')));
@@ -60,7 +61,7 @@ try{
  await ok('verified recipient creates admission',set(ref(db('s3'),'maximusInic/admissions/g1/s3'),'i1'));
  await no('isolated membership grant cannot leave pending invitation',set(ref(db('s3'),'maximusInic/groups/g1/members/s3'),true));
  await no('cannot consume invite without membership',set(ref(db('s3'),'maximusInic/invitations/i1/status'),'accepted'));
- await ok('atomic member acceptance commits access and consumes invitation',update(ref(db('s3'),'maximusInic'),{'groups/g1/members/s3':true,'groups/g1/memberNames/s3':'Aluno 3','userGroups/s3/g1':true,'invitations/i1/status':'accepted'}));
+ await ok('atomic member acceptance commits access and consumes invitation',update(ref(db('s3'),'maximusInic'),{'groups/g1/members/s3':true,'groups/g1/memberNames/s3':'Aluno 3','userGroups/s3/g1':true,'peopleDirectory/s3/groupId':'g1','invitations/i1/status':'accepted'}));
  await no('accepted invitation cannot be reused',set(ref(db('s3'),'maximusInic/admissions/g1/s3'),'i1'));
  await no('admission cannot target another group',set(ref(db('s3'),'maximusInic/admissions/g2/s3'),'i1'));
  await no('student cannot assign self as advisor',set(ref(db('s1'),'maximusInic/groups/g1/advisorId'),'s1'));
@@ -74,26 +75,27 @@ try{
  await ok('audited advisor acceptance links and consumes invitation',loadService(db('a3'),'a3')('respondInvitation','i2',true));
  await no('old advisor loses group access',get(ref(db('a1'),'maximusInic/groups/g1')));
  await ok('new advisor reads assigned group',get(ref(db('a3'),'maximusInic/groups/g1')));
- const newGroup={...group('Novo grupo','s1',''),proposalRequired:true};
- await ok('student creates own group',set(ref(db('s1'),'maximusInic/groups/newGroup'),newGroup));
- await ok('student creates default schedule milestone',set(ref(db('s1'),'maximusInic/tasks/newGroup/tema'),{...task,createdBy:'s1'}));
- await no('student cannot create arbitrary milestone',set(ref(db('s1'),'maximusInic/tasks/newGroup/random'),{...task,createdBy:'s1'}));
- await no('group cannot be created with foreign member',set(ref(db('s1'),'maximusInic/groups/badGroup'),{...newGroup,members:{s1:true,s2:true},memberNames:{s1:'Aluno1',s2:'Aluno2'}}));
+ const newGroup={...group('Novo grupo','s4',''),proposalRequired:true};
+ await no('student cannot create a group without the unique membership claim',set(ref(db('s4'),'maximusInic/groups/newGroup'),newGroup));
+ await ok('student creates own group atomically with its unique membership claim',update(ref(db('s4'),'maximusInic'),{'groups/newGroup':newGroup,'userGroups/s4/newGroup':true,'peopleDirectory/s4/groupId':'newGroup'}));
+ await ok('student creates default schedule milestone',set(ref(db('s4'),'maximusInic/tasks/newGroup/tema'),{...task,createdBy:'s4'}));
+ await no('student cannot create arbitrary milestone',set(ref(db('s4'),'maximusInic/tasks/newGroup/random'),{...task,createdBy:'s4'}));
+ await no('group cannot be created with foreign member',set(ref(db('s4'),'maximusInic/groups/badGroup'),{...newGroup,members:{s4:true,s2:true},memberNames:{s4:'Aluno4',s2:'Aluno2'}}));
  await no('nonmember cannot read tasks',get(ref(db('s2'),'maximusInic/tasks/newGroup')));
  await no('unverified cannot query email invitations',get(query(ref(db('s3',false),'maximusInic/invitations'),orderByChild('toEmail'),equalTo('s3@example.com'))));
  await no('unverified cannot read known email invitation',get(ref(db('s3',false),'maximusInic/invitations/i1')));
  await no('fractional group year rejected',update(ref(db('c'),'maximusInic/groups/g1'),{year:2027.5}));
  await no('invalid month rejected',update(ref(db('c'),'maximusInic/tasks/g1/t1'),{dueDate:'2027-19-10'}));
  await no('task creation cannot forge author',set(ref(db('a3'),'maximusInic/tasks/g1/badAuthor'),{...task,createdBy:'s1'}));
- await ok('atomic group plus private index creation',update(ref(db('s3'),'maximusInic'),{'groups/atomicGroup':{...group('Atômico','s3',''),proposalRequired:true},'userGroups/s3/atomicGroup':true}));
+ await ok('atomic group plus private index creation',update(ref(db('s5'),'maximusInic'),{'groups/atomicGroup':{...group('Atômico','s5',''),proposalRequired:true},'userGroups/s5/atomicGroup':true,'peopleDirectory/s5/groupId':'atomicGroup'}));
  await ok('approved teacher can create group assigned to self',update(ref(db('a3'),'maximusInic'),{'groups/teacherGroup':group('Orientado','a3','a3'),'userGroups/a3/teacherGroup':true}));
- const cancelInvite={...invitation,toEmail:'s2@example.com'};
+ const cancelInvite={...invitation,toEmail:'s6@example.com'};
  await ok('new invitation for cancellation test',set(ref(db('c'),'maximusInic/invitations/i3'),cancelInvite));
- await ok('recipient admission before cancellation',set(ref(db('s2'),'maximusInic/admissions/g1/s2'),'i3'));
+ await ok('recipient admission before cancellation',set(ref(db('s6'),'maximusInic/admissions/g1/s6'),'i3'));
  await ok('sender cancels pending invitation',set(ref(db('c'),'maximusInic/invitations/i3/status'),'cancelled'));
- await no('cancelled invitation blocks entire atomic acceptance',update(ref(db('s2'),'maximusInic'),{'groups/g1/members/s2':true,'groups/g1/memberNames/s2':'Aluno 2','userGroups/s2/g1':true,'invitations/i3/status':'accepted'}));
- await no('cancelled recipient still has no group access',get(ref(db('s2'),'maximusInic/groups/g1')));
- await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database(),'maximusInic/groups/formerCreator'),{...group('Ex-criador','s2','a3'),createdBy:'s1'}));
+ await no('cancelled invitation blocks entire atomic acceptance',update(ref(db('s6'),'maximusInic'),{'groups/g1/members/s6':true,'groups/g1/memberNames/s6':'Aluno 6','userGroups/s6/g1':true,'peopleDirectory/s6/groupId':'g1','invitations/i3/status':'accepted'}));
+ await no('cancelled recipient still has no group access',get(ref(db('s6'),'maximusInic/groups/g1')));
+ await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database(),'maximusInic/groups/formerCreator'),{...group('Ex-criador','s6','a3'),createdBy:'s1'}));
  await no('removed former creator cannot bootstrap reserved task',set(ref(db('s1'),'maximusInic/tasks/formerCreator/artigo'),{...task,createdBy:'s1'}));
 
  const evaluation=(uid,score=8)=>({score,feedback:'Orientação do projeto',updatedBy:uid,updatedAt:serverTimestamp(),evaluatorName:uid==='c'?'Coordenação':`Orientador ${uid.slice(1)}`});
@@ -133,17 +135,17 @@ try{
  await ok('member admission can exist before removal',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'staleMember'));
  await no('raw member removal cannot skip grades indices and revocation',set(ref(db('a3'),'maximusInic/groups/g1/members/s1'),null));
  await no('coordinator cannot bypass member cleanup with parent set',set(ref(db('c'),'maximusInic/groups/g1'),{...group('Forged','s3','a3')}));
- await ok('advisor removes creator with evaluation atomically',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s1':null,'groups/g1/memberNames/s1':null,'userGroups/s1/g1':null,'evaluations/g1/members/s1':null,'admissions/g1/s1':null,'memberRevocations/g1/s1':serverTimestamp()}));
+ await ok('advisor removes creator with evaluation atomically',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s1':null,'groups/g1/memberNames/s1':null,'userGroups/s1/g1':null,'peopleDirectory/s1/groupId':'','evaluations/g1/members/s1':null,'admissions/g1/s1':null,'memberRevocations/g1/s1':serverTimestamp()}));
  await no('removed creator loses group grade access',get(ref(db('s1'),'maximusInic/evaluations/g1/group')));
  await no('removed creator loses own grade access',get(ref(db('s1'),'maximusInic/evaluations/g1/members/s1')));
  await no('old pending email invite cannot recreate admission after removal',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'staleMember'));
  await no('future invitation timestamp cannot bypass revocation',set(ref(db('c'),'maximusInic/invitations/futureForged'),{...staleInvite,createdAt:Date.now()+60000}));
  await ok('new invitation after removal is allowed',set(ref(db('c'),'maximusInic/invitations/newMember'),staleInvite));
  await ok('new invitation after removal creates fresh admission',set(ref(db('s1'),'maximusInic/admissions/g1/s1'),'newMember'));
- await ok('new invitation after removal allows fresh membership',update(ref(db('s1'),'maximusInic'),{'groups/g1/members/s1':true,'groups/g1/memberNames/s1':'Aluno 1','userGroups/s1/g1':true,'invitations/newMember/status':'accepted'}));
+ await ok('new invitation after removal allows fresh membership',update(ref(db('s1'),'maximusInic'),{'groups/g1/members/s1':true,'groups/g1/memberNames/s1':'Aluno 1','userGroups/s1/g1':true,'peopleDirectory/s1/groupId':'g1','invitations/newMember/status':'accepted'}));
  if((await get(ref(db('s1'),'maximusInic/evaluations/g1/members/s1'))).exists())throw new Error('Removed grade reappeared on reentry');
- await ok('creator can be removed again after fresh admission',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s1':null,'groups/g1/memberNames/s1':null,'userGroups/s1/g1':null,'evaluations/g1/members/s1':null,'admissions/g1/s1':null,'memberRevocations/g1/s1':serverTimestamp()}));
- await ok('advisor removes last member without deleting group',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s3':null,'groups/g1/memberNames/s3':null,'userGroups/s3/g1':null,'evaluations/g1/members/s3':null,'admissions/g1/s3':null,'memberRevocations/g1/s3':serverTimestamp()}));
+ await ok('creator can be removed again after fresh admission',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s1':null,'groups/g1/memberNames/s1':null,'userGroups/s1/g1':null,'peopleDirectory/s1/groupId':'','evaluations/g1/members/s1':null,'admissions/g1/s1':null,'memberRevocations/g1/s1':serverTimestamp()}));
+ await ok('advisor removes last member without deleting group',update(ref(db('a3'),'maximusInic'),{'groups/g1/members/s3':null,'groups/g1/memberNames/s3':null,'userGroups/s3/g1':null,'peopleDirectory/s3/groupId':'','evaluations/g1/members/s3':null,'admissions/g1/s3':null,'memberRevocations/g1/s3':serverTimestamp()}));
  if((await get(ref(db('a3'),'maximusInic/groups/g1/advisorId'))).val()!=='a3')throw new Error('Advisor link removed with membership');
  await ok('advisor locks group for deletion',set(ref(db('a3'),'maximusInic/groups/g1/status'),'deleting'));
  await no('deletion lock cannot be reverted by advisor',set(ref(db('a3'),'maximusInic/groups/g1/status'),'active'));
@@ -175,22 +177,23 @@ try{
  await env.withSecurityRulesDisabled(async context=>{
   const root=ref(context.database(),'maximusInic');
   await update(root,{
-   'groups/serviceGroup':{...group('Serviço real','s2','a2'),createdBy:'s1',members:{s2:true,s3:true},memberNames:{s2:'Aluno 2',s3:'Aluno 3'}},
-   'userGroups/s1/serviceGroup':true,'userGroups/s2/serviceGroup':true,'userGroups/s3/serviceGroup':true,'userGroups/a2/serviceGroup':true,
+   'groups/serviceGroup':{...group('Serviço real','service-student','a2'),createdBy:'s1',members:{'service-student':true,s3:true},memberNames:{'service-student':'Aluno 2',s3:'Aluno 3'}},
+   'userGroups/s1/serviceGroup':true,'userGroups/service-student/serviceGroup':true,'userGroups/s3/serviceGroup':true,'userGroups/a2/serviceGroup':true,
+   'peopleDirectory/service-student/groupId':'serviceGroup','peopleDirectory/s3/groupId':'serviceGroup',
    'tasks/serviceGroup/t1':{...task,createdBy:'a2'},
    'events/serviceGroup/review':{title:'Reunião de orientação',date:'2027-06-15',description:'Conferir artigo',createdBy:'a2',createdAt:stamp,updatedAt:stamp},
-   'messages/serviceGroup/m1':{text:'Conversa do grupo',senderId:'s2',senderName:'Aluno 2',createdAt:stamp},
-   'admissions/serviceGroup/s2':'serviceInvite1','admissions/serviceGroup/outside':'serviceInvite2',
-   'invitations/serviceInvite1':{...invitation,createdAt:stamp,groupId:'serviceGroup',groupName:'Serviço real',senderId:'s2',toEmail:'s3@example.com'},
+   'messages/serviceGroup/m1':{text:'Conversa do grupo',senderId:'service-student',senderName:'Aluno 2',createdAt:stamp},
+   'admissions/serviceGroup/service-student':'serviceInvite1','admissions/serviceGroup/outside':'serviceInvite2',
+   'invitations/serviceInvite1':{...invitation,createdAt:stamp,groupId:'serviceGroup',groupName:'Serviço real',senderId:'service-student',toEmail:'s3@example.com'},
    'invitations/serviceInvite2':{...invitation,createdAt:stamp,groupId:'serviceGroup',groupName:'Serviço real',senderId:'c',toEmail:'outside@example.com'}
   });
  });
  let failCascadeOnce=true;
  const staffService=loadService(db('a2'),'a2',{beforeUpdate:(target,changes)=>{if(failCascadeOnce&&changes['groups/serviceGroup']===null){failCascadeOnce=false;throw new Error('simulated connection interruption');}}});
  await ok('actual service edits group metadata as assigned advisor',staffService('updateGroup','serviceGroup',{topic:'Pesquisa revisada pelo professor'}));
- await ok('actual service renames local member alias',staffService('updateMember','serviceGroup','s2',{name:'Nome usado no grupo'}));
+ await ok('actual service renames local member alias',staffService('updateMember','serviceGroup','service-student',{name:'Nome usado no grupo'}));
  await ok('actual service saves group grade zero with server audit',staffService('saveEvaluation','serviceGroup',{score:0,feedback:'Ponto de partida'}));
- await ok('actual service saves individual decimal grade',staffService('saveMemberEvaluation','serviceGroup','s2',{score:7.25,feedback:'Melhorar referências'}));
+ await ok('actual service saves individual decimal grade',staffService('saveMemberEvaluation','serviceGroup','service-student',{score:7.25,feedback:'Melhorar referências'}));
  await ok('actual service saves second individual grade',staffService('saveMemberEvaluation','serviceGroup','s3',{score:9.5,feedback:'Boa pesquisa'}));
  for(const score of [-1,11,NaN,Infinity,'7']){let rejected=false;try{await staffService('saveEvaluation','serviceGroup',{score});}catch{rejected=true;}if(!rejected)throw new Error('Service accepted invalid grade');}
  passed++;console.log('PASS actual service rejects invalid nonfinite and out of range grades');
@@ -208,10 +211,10 @@ try{
  stopStudent();
  if(watches.some(path=>/evaluations\/serviceGroup\/members$/.test(path)))throw new Error('Student subscribed to all member grades');
  passed++;console.log('PASS actual student service subscribes only group and own grade');
- await ok('actual service removes member plus grade index admission and revocation atomically',staffService('removeMember','serviceGroup','s2'));
+ await ok('actual service removes member plus grade index admission and revocation atomically',staffService('removeMember','serviceGroup','service-student'));
  await env.withSecurityRulesDisabled(async context=>{
-  for(const path of ['groups/serviceGroup/members/s2','groups/serviceGroup/memberNames/s2','userGroups/s2/serviceGroup','evaluations/serviceGroup/members/s2','admissions/serviceGroup/s2'])if((await get(ref(context.database(),'maximusInic/'+path))).exists())throw new Error('Member cleanup left '+path);
-  if(typeof (await get(ref(context.database(),'maximusInic/memberRevocations/serviceGroup/s2'))).val()!=='number')throw new Error('Revocation missing or not numeric');
+  for(const path of ['groups/serviceGroup/members/service-student','groups/serviceGroup/memberNames/service-student','userGroups/service-student/serviceGroup','evaluations/serviceGroup/members/service-student','admissions/serviceGroup/service-student'])if((await get(ref(context.database(),'maximusInic/'+path))).exists())throw new Error('Member cleanup left '+path);
+  if(typeof (await get(ref(context.database(),'maximusInic/memberRevocations/serviceGroup/service-student'))).val()!=='number')throw new Error('Revocation missing or not numeric');
  });
  let deletionInterrupted=false;try{await staffService('deleteGroup','serviceGroup');}catch(error){deletionInterrupted=error.message==='simulated connection interruption';}
  if(!deletionInterrupted)throw new Error('Expected simulated deletion interruption');
@@ -220,9 +223,9 @@ try{
  await ok('actual service retries and completes full deletion payload',staffService('deleteGroup','serviceGroup'));
  await env.withSecurityRulesDisabled(async context=>{
   for(const resource of ['groups','tasks','messages','events','evaluations','admissions','memberRevocations'])if((await get(ref(context.database(),`maximusInic/${resource}/serviceGroup`))).exists())throw new Error('Service cascade left '+resource);
-  for(const uid of ['s1','s2','s3','a2'])if((await get(ref(context.database(),`maximusInic/userGroups/${uid}/serviceGroup`))).exists())throw new Error('Service cascade left index '+uid);
+  for(const uid of ['s1','service-student','s3','a2'])if((await get(ref(context.database(),`maximusInic/userGroups/${uid}/serviceGroup`))).exists())throw new Error('Service cascade left index '+uid);
   for(const id of ['serviceInvite1','serviceInvite2'])if((await get(ref(context.database(),`maximusInic/invitations/${id}`))).exists())throw new Error('Service cascade left invitation '+id);
-  if((await get(ref(context.database(),'maximusInic/users/s2/name'))).val()!=='Aluno 2')throw new Error('Service changed global profile');
+  if((await get(ref(context.database(),'maximusInic/users/service-student/name'))).val()!=='Aluno 2')throw new Error('Service changed global profile');
   if((await get(ref(context.database(),'items/preserved'))).val()!=='existing')throw new Error('Legacy items modified');
  });
  passed++;console.log('PASS actual cascade removes resources from other senders and nonmember admissions without touching profiles or legacy data');

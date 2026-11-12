@@ -86,10 +86,11 @@ export async function runOnboardingContractEventTests({env,db,ok,no,count}) {
 
  const invited=await teacher('invite',{groupId:'g2',toEmail:'s3@example.com',type:'member'});expect(Boolean(invited));count('actual assigned teacher sends a member invitation');
  await ok('teacher sees invitations received by own UID',get(query(ref(db('a2'),'maximusInic/invitations'),orderByChild('toUid'),equalTo('a2'))));
- const studentGroup={name:'Convite para professor',topic:'Pesquisa',description:'',year:2027,advisorId:'',members:{s2:true},memberNames:{s2:'Aluno 2'},createdBy:'s2',createdAt:Date.now(),status:'active'};
- await env.withSecurityRulesDisabled(async context=>set(ref(context.database(),'maximusInic/groups/inviteTeacher'),studentGroup));
- await student('saveProposal','inviteTeacher',{proposal:{mode:'text',topics:{problem:'Proposta sintética',objective:'',method:'',expectedResult:''}}});
- const teacherInvite=await student('invite',{groupId:'inviteTeacher',toUid:'a2',type:'advisor'});expect(Boolean(teacherInvite));count('actual student invites approved teacher by UID');
+ const invitationStudentUid='event-inviter',invitationStudent=loadService(db(invitationStudentUid),invitationStudentUid);
+ const studentGroup={name:'Convite para professor',topic:'Pesquisa',description:'',year:2027,advisorId:'',members:{[invitationStudentUid]:true},memberNames:{[invitationStudentUid]:'Aluno de convites'},createdBy:invitationStudentUid,createdAt:Date.now(),status:'active'};
+ await env.withSecurityRulesDisabled(async context=>{const database=context.database(),profile={name:'Aluno de convites',email:`${invitationStudentUid}@example.com`,requestedRole:'student',year:'2º ano',createdAt:Date.now()};await update(ref(database,'maximusInic'),{[`users/${invitationStudentUid}`]:profile,'groups/inviteTeacher':studentGroup,[`userGroups/${invitationStudentUid}/inviteTeacher`]:true,[`peopleDirectory/${invitationStudentUid}`]:{uid:invitationStudentUid,name:profile.name,year:profile.year,role:'student',requestedRole:'student',listedAdvisor:false,groupId:'inviteTeacher'},[`agreements/2027/${invitationStudentUid}`]:{...(await get(ref(database,'maximusInic/agreements/2027/s2'))).val(),uid:invitationStudentUid,ownerName:profile.name},[`agreementFiles/2027/${invitationStudentUid}`]:(await get(ref(database,'maximusInic/agreementFiles/2027/s2'))).val()});});
+ await invitationStudent('saveProposal','inviteTeacher',{proposal:{mode:'text',topics:{problem:'Proposta sintética',objective:'',method:'',expectedResult:''}}});
+ const teacherInvite=await invitationStudent('invite',{groupId:'inviteTeacher',toUid:'a2',type:'advisor'});expect(Boolean(teacherInvite));count('actual student invites approved teacher by UID');
  await ok('actual teacher accepts received orientation invitation',teacher('respondInvitation',teacherInvite,true));
  expect((await get(ref(db('a2'),'maximusInic/groups/inviteTeacher/advisorId'))).val()==='a2');
  let foreignDenied=false;try{await loadService(db('a3'),'a3')('invite',{groupId:'g2',toEmail:'s3@example.com',type:'member'});}catch{foreignDenied=true;}expect(foreignDenied);count('actual teacher cannot send invite for another teacher group');

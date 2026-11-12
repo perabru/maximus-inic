@@ -23,47 +23,37 @@ export function validateProposalFile(file) {
 export function createProposalEditor({value=null,proposalFile=null,onChange=()=>{}}={}) {
   const initial=value&&typeof value==='object'?value:null;
   let file=proposalFile||null,disposed=false;
-  let mode=initial?.mode==='file'||file?'file':'text';
+  const canRetain=initial?.mode==='file'&&Boolean(initial.filename&&initial.version);
   const id=`tcc-proposal-${++editorSequence}`;
   const element=make('fieldset','tcc-proposal-editor');
-  element.append(make('legend','','Proposta para o orientador'),make('p','tcc-proposal-intro','Escreva até quatro tópicos ou anexe sua proposta. O professor poderá consultá-la antes de responder ao convite.'));
-  const options=make('div','tcc-proposal-options');
-  const radios=[];
-  for(const [option,label] of [['text','Escrever proposta'],['file','Anexar proposta']]) {
-    const row=make('label','tcc-proposal-option'),input=make('input');input.type='radio';input.name=id+'-mode';input.value=option;input.checked=mode===option;
-    row.append(input,make('span','',label));options.append(row);radios.push(input);
-    input.addEventListener('change',()=>{if(disposed||!input.checked)return;mode=option;paint();onChange();});
-  }
-  element.append(options);
-  const textPanel=make('div','tcc-proposal-topics'),fields=new Map();
-  for(const topic of proposalTopics) {
-    const label=make('label','tcc-proposal-field'),input=make('textarea');input.name=`${id}-${topic.key}`;input.rows=3;input.maxLength=proposalLimits.maxTopicLength;input.value=typeof initial?.topics?.[topic.key]==='string'?initial.topics[topic.key]:'';
-    input.addEventListener('input',()=>{if(!disposed)onChange();});
-    label.append(make('span','',topic.title),make('small','',topic.help),input);textPanel.append(label);fields.set(topic.key,input);
-  }
-  textPanel.append(make('p','tcc-proposal-help','Preencha ao menos um tópico. Use até 2.000 caracteres em cada campo.'));
+  element.append(make('legend','','Anexar proposta'),make('p','tcc-proposal-intro','Envie o arquivo da proposta. O professor poderá consultá-lo antes de responder ao convite.'));
+  if(initial?.mode==='text')element.append(make('p','tcc-proposal-legacy-note','Sua proposta anterior continua salva. Para atualizá-la, anexe um arquivo e confirme o envio.'));
   const filePanel=make('div','tcc-proposal-file'),fileLabel=make('label','tcc-proposal-field'),fileInput=make('input');fileInput.type='file';fileInput.name=id+'-file';fileInput.accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';
-  fileLabel.append(make('span','','Arquivo da proposta'),make('small','','PDF, JPG ou PNG · até 3 MiB'),fileInput);
-  const fileStatus=make('p','tcc-proposal-file-status');fileStatus.setAttribute('role','status');
+  const fileHelp=make('small','','PDF, JPG ou PNG · até 3 MiB');fileHelp.id=id+'-help';
+  fileLabel.append(make('span','','Arquivo da proposta'),fileHelp,fileInput);
+  const fileStatus=make('p','tcc-proposal-file-status');fileStatus.id=id+'-status';fileStatus.setAttribute('role','status');fileStatus.setAttribute('aria-live','polite');fileStatus.setAttribute('aria-atomic','true');
+  fileInput.setAttribute('aria-describedby',`${fileHelp.id} ${fileStatus.id}`);
+  const clearSelection=make('button','tcc-proposal-clear','Remover seleção');clearSelection.type='button';
+  clearSelection.addEventListener('click',()=>{if(disposed)return;file=null;fileInput.value='';paintFile();onChange();fileInput.focus?.();});
   fileInput.addEventListener('change',()=>{if(disposed)return;file=fileInput.files?.[0]||null;paintFile();onChange();});
-  filePanel.append(fileLabel,fileStatus);element.append(textPanel,filePanel);
-  function paintFile(){fileStatus.textContent=file?`${file.name} · ${Math.ceil(file.size/1024)} KiB`:initial?.mode==='file'&&initial.filename?`Arquivo atual: ${initial.filename}. Escolha outro somente se quiser substituir.`:'Nenhum arquivo selecionado.';}
-  function paint(){textPanel.hidden=mode!=='text';filePanel.hidden=mode!=='file';for(const input of fields.values())input.disabled=mode!=='text';fileInput.disabled=mode!=='file';paintFile();}
-  paint();
+  filePanel.append(fileLabel,fileStatus,clearSelection);element.append(filePanel);
+  function paintFile(){
+    let error='';if(file){try{validateProposalFile(file);}catch(reason){error=reason.message;}}
+    fileInput.setAttribute('aria-invalid',String(Boolean(error)));
+    filePanel.className=`tcc-proposal-file${error?' has-error':file||canRetain?' has-file':''}`;
+    fileStatus.textContent=error||(file?`${file.name} · ${Math.ceil(file.size/1024)} KiB · Pronto para enviar.`:canRetain?`Arquivo atual: ${initial.filename}. Escolha outro somente se quiser substituir.`:'Nenhum arquivo selecionado. Escolha o arquivo da sua proposta.');
+    clearSelection.hidden=!file;
+  }
+  paintFile();
   return {
     element,
     read(){
       if(disposed)throw new Error('Abra a proposta novamente.');
-      if(mode==='file'){
-        if(file)return {proposal:{mode:'file'},proposalFile:validateProposalFile(file)};
-        if(initial?.mode==='file'&&initial.filename&&initial.version)return {proposal:{...initial,mode:'file'},proposalFile:null};
-        throw new Error('Anexe sua proposta antes de enviar o convite.');
-      }
-      const topics={};for(const {key} of proposalTopics){const text=fields.get(key).value.trim();if(text.length>proposalLimits.maxTopicLength)throw new Error('Use até 2.000 caracteres por tópico.');if(text)topics[key]=text;}
-      if(!Object.keys(topics).length)throw new Error('Escreva ao menos um tópico ou anexe a proposta.');
-      return {proposal:{mode:'text',topics},proposalFile:null};
+      if(file)return {proposal:{mode:'file'},proposalFile:validateProposalFile(file)};
+      if(canRetain)return {proposal:{...initial,mode:'file'},proposalFile:null};
+      throw new Error('Anexe sua proposta antes de enviar.');
     },
-    destroy(){disposed=true;file=null;fileInput.value='';for(const input of [...radios,...fields.values(),fileInput])input.disabled=true;}
+    destroy(){disposed=true;file=null;fileInput.value='';fileInput.disabled=true;clearSelection.disabled=true;}
   };
 }
 

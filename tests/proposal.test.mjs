@@ -5,7 +5,7 @@ export async function runProposalTests({env,db,ok,no,count}) {
 const stamp=Date.now(),person=uid=>({name:uid,email:uid+'@example.com',requestedRole:'student',year:'3º ano',createdAt:stamp});
 const bytes=Buffer.from('%PDF-test proposal'),termMeta=uid=>({uid,year:2027,filename:'termo.pdf',ownerName:uid,size:bytes.length,contentType:'application/pdf',uploadedAt:stamp}),termFile={base64:bytes.toString('base64'),size:bytes.length,contentType:'application/pdf',uploadedAt:stamp};
 const group=(uid,advisor='')=>({name:'Proposta de TCC',topic:'Pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[uid]:true,prpeer:true},memberNames:{[uid]:uid,prpeer:'prpeer'},createdBy:uid,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1',advisorRequestVersion:0,proposalRequired:true});
-const seed={roles:{prc:'coordinator',pra1:'advisor',pra2:'advisor',prworker:'advisor'},users:Object.fromEntries(['prc','pra1','pra2','prs','prpeer','prout','prworker'].map(uid=>[uid,person(uid)])),groups:{prg:group('prs'),prg2:group('prout','pra2')},advisorDirectory:{pra1:{uid:'pra1',name:'pra1'},pra2:{uid:'pra2',name:'pra2'}},notificationWorkers:{prworker:true},agreements:{2027:Object.fromEntries(['prs','prpeer','prout'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['prs','prpeer','prout'].map(uid=>[uid,termFile]))}};
+const seed={roles:{prc:'coordinator',pra1:'advisor',pra2:'advisor',prworker:'advisor'},users:Object.fromEntries(['prc','pra1','pra2','prs','prpeer','prout','prworker','prnew'].map(uid=>[uid,person(uid)])),groups:{prg:group('prs'),prg2:group('prout','pra2')},advisorDirectory:{pra1:{uid:'pra1',name:'pra1'},pra2:{uid:'pra2',name:'pra2'}},notificationWorkers:{prworker:true},agreements:{2027:Object.fromEntries(['prs','prpeer','prout','prnew'].map(uid=>[uid,termMeta(uid)]))},agreementFiles:{2027:Object.fromEntries(['prs','prpeer','prout','prnew'].map(uid=>[uid,termFile]))}};
 const changes={};
 function flatten(prefix,value){if(value!==null&&typeof value==='object')for(const [key,child]of Object.entries(value))flatten(prefix?`${prefix}/${key}`:key,child);else changes[prefix]=value;}
 flatten('',seed);
@@ -52,13 +52,13 @@ const fileChanges=m=>({'groups/prg/proposal':m,'proposalFiles/prg':{base64:bytes
  await no('archived student cannot read proposal',get(at('prs','groups/prg/proposal')));
  await no('archived student cannot edit proposal',set(at('prs','groups/prg/proposal'),text('prs',updatedText.version)));
  await env.withSecurityRulesDisabled(async ctx=>set(ref(ctx.database(),'maximusInic/inactiveUsers/prs'),null));
- const atomicGroup={...group('prs'),members:{prs:true},memberNames:{prs:'prs'},advisorRequestVersion:1};
- await no('new student cannot create group without proposal flow marker',set(at('prs','groups/prmissingMarker'),{...atomicGroup,proposalRequired:null}));
- const atomicFile=file('prs');
+ const atomicGroup={...group('prnew'),members:{prnew:true},memberNames:{prnew:'prnew'},advisorRequestVersion:1};
+ await no('new student cannot create group without proposal flow marker',set(at('prnew','groups/prmissingMarker'),{...atomicGroup,proposalRequired:null}));
+ const atomicFile=file('prnew');
  const atomicPayload={base64:bytes.toString('base64'),size:bytes.length,contentType:'application/pdf',version:atomicFile.version,uploadedAt:serverTimestamp()};
- await ok('new group file proposal and advisor invitation commit together',update(at('prs',''),{
-   'groups/pratomic':{...atomicGroup,proposal:atomicFile},'proposalFiles/pratomic':atomicPayload,'userGroups/prs/pratomic':true,
-   'invitations/pr-atomic-invite':{groupId:'pratomic',groupName:'Proposta de TCC',toEmail:'',toUid:'pra2',type:'advisor',senderId:'prs',senderName:'prs',status:'pending',createdAt:serverTimestamp()},
+ await ok('new group file proposal and advisor invitation commit together',update(at('prnew',''),{
+   'groups/pratomic':{...atomicGroup,proposal:atomicFile},'proposalFiles/pratomic':atomicPayload,'userGroups/prnew/pratomic':true,'peopleDirectory/prnew':{uid:'prnew',name:'prnew',year:'3º ano',role:'student',requestedRole:'student',listedAdvisor:false,groupId:'pratomic'},
+   'invitations/pr-atomic-invite':{groupId:'pratomic',groupName:'Proposta de TCC',toEmail:'',toUid:'pra2',type:'advisor',senderId:'prnew',senderName:'prnew',status:'pending',createdAt:serverTimestamp()},
    'invitationIssuedAt/pr-atomic-invite':serverTimestamp(),'advisorRequests/pratomic/pra2':'pr-atomic-invite','advisorRequestSlots/pratomic/0':'pra2'
  }));
  await ok('newly invited candidate reads file committed with group',get(at('pra2','proposalFiles/pratomic')));

@@ -92,7 +92,7 @@ export async function runAgreementReviewTests({env,db,ok,no,count}) {
  revisions.set(revisionKey(first),returned.agreements[0].review.reviewedAt);
  check('student receives literal correction reason and original upload identity',returned.agreements[0].review.reason==='Falta assinatura.\nEnvie novamente.'&&returned.agreements[0].review.uploadedAt===first.uploadedAt);
  check('review decision does not add an unrequested academic approval gate',returned.requirement.fulfilled===true);
- await ok('agreement review: returned student may continue existing academic work',student('createGroup',{name:'Continuidade após devolução',topic:'Pesquisa de TCC'}));
+ await ok('agreement review: returned student may continue existing academic work',student('updateGroup','reviewowned',{topic:'Pesquisa de TCC revisada após devolução'}));
  await ok('agreement review: corrected reupload succeeds after return',student('uploadAgreement',file('Corrigido.pdf'),{year}));
  const second=await meta(ids.student);
  check('resubmission gets a fresh upload version and timestamp',second.uploadVersion!==first.uploadVersion&&second.uploadedAt>first.uploadedAt);

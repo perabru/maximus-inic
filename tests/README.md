@@ -152,3 +152,35 @@ node user-deletion-runtime.test.mjs
 As verificações usam exclusivamente dados fictícios e o emulador local. SHA-256 do arquivo de regras validado: `8281364e72243edfb8c1f644cfe24f54b1ff02a260c7f5672875171aaeac6830`.
 
 Na interface, 229 cenários DOM/VM foram aprovados: seleção de até três orientadores em todos os anos, rascunhos com escolhas preservadas, mudança de série sem alterar candidatos e bloqueio após mudança de perfil. O filtro Professores inclui a coordenação somente quando também consta no diretório de orientação.
+
+## Comunidade, convites por pessoa e um grupo por aluno — 12/11/2026
+
+O diretório `peopleDirectory` contém somente UID, nome, série, papel, solicitação de papel, indicação de professor aprovado e identificador do grupo do aluno. A leitura exige uma conta autenticada e ativa. E-mails, termos, propostas, notas e a coleção privada de cadastros continuam com seus controles de acesso anteriores. Contas técnicas e perfis Google que ainda não concluíram a escolha de perfil não entram na comunidade.
+
+Novos cadastros publicam a projeção ao concluir o perfil. Na sessão da coordenação, `syncPeopleDirectory` consulta os registros atuais, completa as projeções existentes e reconcilia apenas índices que não correspondem mais a integrantes. Esse processo não altera os textos, as propostas ou os integrantes dos grupos. A lista aguarda a sincronização e distingue falha de carregamento de uma lista vazia. Tentativas de aplicar um resultado antigo após mudança de cadastro, vínculo, papel ou sessão são recusadas pelas validações ou descartadas pelo controlador.
+
+O identificador único `peopleDirectory/{uid}/groupId` é a reserva de participação do aluno. Novas associações precisam atualizar, na mesma operação, o grupo, o índice privado `userGroups` e essa reserva. Não é possível transferir a reserva enquanto a associação anterior continuar válida, apagar o índice para esconder uma participação ou reiniciar o cadastro Google para liberar a vaga. As regras também recusam duas criações ou dois aceites concorrentes; apenas uma operação pode prevalecer. Professores e coordenadores são isentos desse limite e continuam podendo orientar vários grupos. Arquivar um grupo preserva seus integrantes; a remoção do integrante ou a exclusão do grupo libera sua participação.
+
+Convites da comunidade usam UID, sem divulgar o e-mail do destinatário. O índice `memberRequests` impede dois convites simultâneos pendentes para a mesma pessoa e grupo. Convites antigos por e-mail continuam respondíveis, sujeitos à mesma regra de participação única e ao termo obrigatório. A edição de nomes, aprovação de professores, bloqueio, restauração e exclusão atualiza ou remove a projeção pública. A exclusão também remove os novos índices de convite.
+
+As expectativas antigas que criavam vários grupos para o mesmo aluno foram substituídas por alunos distintos nos testes. Os testes de criação direta agora incluem os índices e a reserva exigidos, enquanto as tentativas de omitir esses dados continuam sendo recusadas.
+
+Validação desta alteração, exclusivamente com identidades fictícias:
+
+- **889** verificações da suíte principal de regras e serviço.
+- **44** verificações de comunidade e convites no emulador (`social-directory-security.mjs`), incluindo concorrência, perfis incompletos, contas técnicas, professores com vários grupos e operações de gestão.
+- **12** tentativas adicionais de contornar os controles por operações diretas (`social-directory-adversarial.mjs`), incluindo rebaixamento de papel, convite antigo por e-mail, remoção incompleta de índices e cadastro Google.
+- **87** verificações existentes de exclusão definitiva no emulador.
+- **15** cenários controlados de assinaturas e carregamento, incluindo a espera pela sincronização da comunidade e a apresentação de erros.
+- **16** cenários existentes de gestão de cadastros em memória.
+
+```sh
+npm test
+npx firebase emulators:exec --project demo-maximus-inic --only database "node social-directory-security.mjs"
+npx firebase emulators:exec --project demo-maximus-inic --only database "node social-directory-adversarial.mjs"
+npx firebase emulators:exec --project demo-maximus-inic --only database "node user-deletion-security.mjs"
+node people-loading-runtime.test.mjs
+node user-deletion-runtime.test.mjs
+```
+
+SHA-256 das regras validadas: `64068dc99ee04a2e66f245085ff8abc2480201d14828c632b1f36a52c8b0d4c7`. Essas regras precisam ser publicadas antes do novo cliente. Os testes não consultam nem modificam o projeto Firebase de produção.

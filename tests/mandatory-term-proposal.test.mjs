@@ -39,7 +39,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
   });
  });
 
- const students=['npMissing','npReady','npOther','npOrphan','npFile','npMismatch','npWrongYear','npPending','npDeferred','npRejected','npSessionLogout','npSessionUnsub'];
+ const students=['npMissing','npReady','npOther','npOrphan','npFile','npMismatch','npWrongYear','npPending','npDeferred','npRejected','npSessionLogout','npSessionUnsub','npInitial','npLegacyOwner','npEmpty','npVersioned','npDeclined','npLocked'];
  const advisors=['npAdvisor1','npAdvisor2','npAdvisor3','npAdvisor4'];
  const changes={};
  for(const uid of [...students,...advisors,'npCoord'])changes[`users/${uid}`]=person(uid,advisors.includes(uid)||uid==='npCoord'?'advisor':'student');
@@ -48,14 +48,14 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  changes['notificationWorkers/npWorker']=true;
  for(const uid of advisors){changes[`roles/${uid}`]='advisor';changes[`advisorDirectory/${uid}`]={uid,name:uid};}
  changes['advisorDirectory/npCoord']={uid:'npCoord',name:'npCoord'};
- for(const [gid,uid,advisor] of [['npGate','npMissing','npAdvisor1'],['npReadyGroup','npReady','npAdvisor1'],['npForeignGroup','npOther','npAdvisor2'],['npPendingGroup','npPending','npAdvisor1']]){
+ for(const [gid,uid,advisor] of [['npGate','npMissing','npAdvisor1'],['npReadyGroup','npInitial','npAdvisor1'],['npForeignGroup','npOther','npAdvisor2'],['npPendingGroup','npPending','npAdvisor1']]){
   changes[`groups/${gid}`]=group(uid,advisor);
   changes[`userGroups/${uid}/${gid}`]=true;
  }
  changes['tasks/npGate/artigo']={title:'Artigo',dueDate:'2027-07-31',completed:false,completedBy:'',weight:1,createdBy:'npAdvisor1',createdAt:stamp};
- changes['groups/npLegacyProposal']=group('npReady');
- changes['userGroups/npReady/npLegacyProposal']=true;
- for(const uid of ['npReady','npOther','npPending','npDeferred'])Object.assign(changes,term(uid));
+ changes['groups/npLegacyProposal']=group('npLegacyOwner');
+ changes['userGroups/npLegacyOwner/npLegacyProposal']=true;
+ for(const uid of ['npReady','npOther','npPending','npDeferred','npInitial','npLegacyOwner','npEmpty','npVersioned','npDeclined','npLocked'])Object.assign(changes,term(uid));
  changes['agreements/2027/npOrphan']=metadata('npOrphan');
  changes['agreementFiles/2027/npFile']=document();
  Object.assign(changes,term('npMismatch'),term('npWrongYear',2026));
@@ -66,6 +66,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
 
  const missing=loadService(db('npMissing'),'npMissing');
  const ready=loadService(db('npReady'),'npReady');
+ const empty=loadService(db('npEmpty'),'npEmpty'),versioned=loadService(db('npVersioned'),'npVersioned'),declined=loadService(db('npDeclined'),'npDeclined'),locked=loadService(db('npLocked'),'npLocked');
  const coordinator=loadService(db('npCoord'),'npCoord');
  const teacher1=loadService(db('npAdvisor1'),'npAdvisor1');
  const teacher2=loadService(db('npAdvisor2'),'npAdvisor2');
@@ -142,6 +143,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assertion('mandatory term: coordination can retrieve retained private uploaded document',downloaded.filename==='Termo assinado.pdf'&&Buffer.from(await downloaded.blob.arrayBuffer()).equals(pdf));
  await ok('mandatory term: successful upload unlocks student messages',missing('sendMessage','npGate','Termo enviado'));
  await ok('mandatory term: successful upload unlocks student progress',missing('updateTask','npGate','artigo',{completed:true}));
+ await ok('mandatory term: a student leaves the existing group before joining another',teacher1('removeMember','npGate','npMissing'));
  await ok('mandatory term: successful upload unlocks accepted membership invitation',missing('respondInvitation','npMemberInvite',true));
 
  let releaseUpload,reachedUpload;
@@ -207,15 +209,15 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assertion('proposal: declined choice can be replaced while keeping three pending candidates',slots&&Object.keys(slots).length===3&&slots.npAdvisor4===replacement&&!slots.npAdvisor3&&(await value(`invitations/${firstDeclined}/status`))==='declined');
  await ok('proposal: selected advisor prepares admission before atomic confirmation',set(ref(db('npAdvisor1'),`${root}/admissions/${proposalId}/npAdvisor1`),slots.npAdvisor1));
  await no('proposal: raw acceptance cannot omit cancellation of other pending candidates',update(ref(db('npAdvisor1'),root),{[`groups/${proposalId}/advisorId`]:'npAdvisor1',[`invitations/${slots.npAdvisor1}/status`]:'accepted',[`advisorConfirmations/${proposalId}`]:{studentUid:'npReady',advisorUid:'npAdvisor1',advisorName:'npAdvisor1',invitationId:slots.npAdvisor1,createdAt:serverTimestamp(),requestVersion:await value(`groups/${proposalId}/advisorRequestVersion`)}}));
- const emptyId=await ready('createGroup',{name:'Proposta sem candidato',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:[]});
- await no('proposal: standalone raw advisor invitation cannot bypass reserved slots',set(ref(db('npReady'),`${root}/invitations/npNoSlot`),invitation(emptyId,'npAdvisor1')));
- await no('proposal: new student advisor invitation on a legacy group still needs slots',set(ref(db('npReady'),`${root}/invitations/npLegacyNoSlot`),invitation('npLegacyProposal','npAdvisor4')));
+ const emptyId=await empty('createGroup',{name:'Proposta sem candidato',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:[]});
+ await no('proposal: standalone raw advisor invitation cannot bypass reserved slots',set(ref(db('npEmpty'),`${root}/invitations/npNoSlot`),{...invitation(emptyId,'npAdvisor1'),senderId:'npEmpty',senderName:'npEmpty'}));
+ await no('proposal: new student advisor invitation on a legacy group still needs slots',set(ref(db('npLegacyOwner'),`${root}/invitations/npLegacyNoSlot`),{...invitation('npLegacyProposal','npAdvisor4'),senderId:'npLegacyOwner',senderName:'npLegacyOwner'}));
  await no('proposal: new coordinator advisor invitation on a legacy group also needs slots',set(ref(db('npCoord'),`${root}/invitations/npLegacyStaffNoSlot`),{...invitation('npLegacyProposal','npAdvisor4'),senderId:'npCoord',senderName:'npCoord'}));
  await ok('proposal: actual advisor can accept an existing unassigned legacy invitation',loadService(db('npAdvisor3'),'npAdvisor3')('respondInvitation','npLegacyAdvisorInvite',true));
  assertion('proposal: legacy invitation acceptance retains first confirmed advisor and acknowledgement',(await value('groups/npLegacyProposal/advisorId'))==='npAdvisor3'&&(await value('advisorConfirmations/npLegacyProposal/advisorUid'))==='npAdvisor3');
  await admin(database=>update(ref(database,root),{'invitations/npLegacyLate':{...invitation('npLegacyProposal','npAdvisor4'),senderId:'npCoord',senderName:'npCoord',createdAt:stamp},'admissions/npLegacyProposal/npAdvisor4':'npLegacyLate'}));
  await no('proposal: an old legacy advisor invitation cannot replace a confirmed advisor',update(ref(db('npAdvisor4'),root),{'groups/npLegacyProposal/advisorId':'npAdvisor4','invitations/npLegacyLate/status':'accepted','advisorConfirmations/npLegacyProposal':{studentUid:'npReady',advisorUid:'npAdvisor4',advisorName:'npAdvisor4',invitationId:'npLegacyLate',createdAt:serverTimestamp(),requestVersion:0}}));
- await no('proposal: server rejects atomic request to an unapproved candidate',update(ref(db('npReady'),root),{[`advisorRequests/${emptyId}/npOther`]:'npUnapproved',[`advisorRequestSlots/${emptyId}/0`]:'npOther',[`groups/${emptyId}/advisorRequestVersion`]:(await value(`groups/${emptyId}/advisorRequestVersion`))+1,[`invitations/npUnapproved`]:invitation(emptyId,'npOther')}));
+ await no('proposal: server rejects atomic request to an unapproved candidate',update(ref(db('npEmpty'),root),{[`advisorRequests/${emptyId}/npOther`]:'npUnapproved',[`advisorRequestSlots/${emptyId}/0`]:'npOther',[`groups/${emptyId}/advisorRequestVersion`]:(await value(`groups/${emptyId}/advisorRequestVersion`))+1,[`invitations/npUnapproved`]:{...invitation(emptyId,'npOther'),senderId:'npEmpty',senderName:'npEmpty'}}));
  await no('proposal: student cannot reserve advisors for another students group',update(ref(db('npReady'),root),{'advisorRequests/npForeignGroup/npAdvisor3':'npForeignRequest','invitations/npForeignRequest':invitation('npForeignGroup','npAdvisor3')}));
 
  const race=await Promise.allSettled([teacher1('respondInvitation',slots.npAdvisor1,true),teacher2('respondInvitation',slots.npAdvisor2,true)]);
@@ -240,7 +242,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  assert.deepEqual(await value(`advisorConfirmations/${proposalId}`),confirmation);
  count('proposal: acceptance acknowledgement is stable across repeated and late responses');
 
- const versionedId=await ready('createGroup',{name:'Proposta concorrente',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
+ const versionedId=await versioned('createGroup',{name:'Proposta concorrente',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
  const versionedSlots=await value(`advisorRequests/${versionedId}`);
  let releaseAcceptance,reachedAcceptance,pausedAcceptance=false;
  const acceptanceGate=new Promise(resolve=>{releaseAcceptance=resolve;});
@@ -251,7 +253,7 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  const staleAcceptance=pausedTeacher('respondInvitation',versionedSlots.npAdvisor1,true);
  const staleRejected=reject('proposal: stale acceptance is rejected after concurrent candidate reservation',()=>staleAcceptance);
  await acceptanceReached;
- const addedDuringAcceptance=await ready('invite',{groupId:versionedId,toUid:'npAdvisor2',type:'advisor'});
+ const addedDuringAcceptance=await versioned('invite',{groupId:versionedId,toUid:'npAdvisor2',type:'advisor'});
  count('proposal: student can reserve another candidate before acceptance transaction commits');
  releaseAcceptance();
  await staleRejected;
@@ -259,16 +261,16 @@ export async function runMandatoryTermProposalTests({env,db,ok,no,count}) {
  await ok('proposal: advisor retries acceptance against fresh candidate version',pausedTeacher('respondInvitation',versionedSlots.npAdvisor1,true));
  assertion('proposal: fresh acceptance binds current version and cancels concurrent candidate',(await value(`advisorConfirmations/${versionedId}/requestVersion`))+1===(await value(`groups/${versionedId}/advisorRequestVersion`))&&(await value(`invitations/${addedDuringAcceptance}/status`))==='cancelled');
 
- const declinedId=await ready('createGroup',{name:'Proposta de recusa silenciosa',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor2']});
+ const declinedId=await declined('createGroup',{name:'Proposta de recusa silenciosa',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor2']});
  const declinedSlots=await value(`advisorRequests/${declinedId}`);
  await ok('proposal: advisor can decline a received proposal',teacher2('respondInvitation',declinedSlots.npAdvisor2,false));
  assertion('proposal: decline creates no student acknowledgement or assigned advisor',(await value(`invitations/${declinedSlots.npAdvisor2}/status`))==='declined'&&!(await value(`advisorConfirmations/${declinedId}`))&&(await value(`groups/${declinedId}/advisorId`))==='');
- const retryInvite=await ready('invite',{groupId:declinedId,toUid:'npAdvisor3',type:'advisor'});
+ const retryInvite=await declined('invite',{groupId:declinedId,toUid:'npAdvisor3',type:'advisor'});
  assertion('proposal: student can select a new candidate after a decline without losing invitation history',(await value(`advisorRequests/${declinedId}/npAdvisor3`))===retryInvite&&(await value(`invitations/${declinedSlots.npAdvisor2}/status`))==='declined');
- const lockedId=await ready('createGroup',{name:'Proposta bloqueada',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
+ const lockedId=await locked('createGroup',{name:'Proposta bloqueada',topic:'Pesquisa de TCC',proposal:textProposal,advisorIds:['npAdvisor1']});
  await ok('proposal: coordinator locks proposal before deletion',coordinator('updateGroup',lockedId,{status:'deleting'}));
- await reject('proposal: actual advisor requests stop during deletion lock',()=>ready('invite',{groupId:lockedId,toUid:'npAdvisor2',type:'advisor'}));
- await no('proposal: server prevents raw request during deletion lock',update(ref(db('npReady'),root),{[`advisorRequests/${lockedId}/npAdvisor2`]:'npLockedRequest',[`advisorRequestSlots/${lockedId}/1`]:'npAdvisor2',[`groups/${lockedId}/advisorRequestVersion`]:(await value(`groups/${lockedId}/advisorRequestVersion`))+1,'invitations/npLockedRequest':invitation(lockedId,'npAdvisor2')}));
+ await reject('proposal: actual advisor requests stop during deletion lock',()=>locked('invite',{groupId:lockedId,toUid:'npAdvisor2',type:'advisor'}));
+ await no('proposal: server prevents raw request during deletion lock',update(ref(db('npLocked'),root),{[`advisorRequests/${lockedId}/npAdvisor2`]:'npLockedRequest',[`advisorRequestSlots/${lockedId}/1`]:'npAdvisor2',[`groups/${lockedId}/advisorRequestVersion`]:(await value(`groups/${lockedId}/advisorRequestVersion`))+1,'invitations/npLockedRequest':{...invitation(lockedId,'npAdvisor2'),senderId:'npLocked',senderName:'npLocked'}}));
  await ok('proposal: coordinator deletes group and proposal resources atomically',coordinator('deleteGroup',proposalId));
  assertion('proposal: deletion removes advisor requests, fixed slots and acceptance channel',!(await value(`groups/${proposalId}`))&&!(await value(`advisorRequests/${proposalId}`))&&!(await value(`advisorRequestSlots/${proposalId}`))&&!(await value(`advisorConfirmations/${proposalId}`))&&!(await value(`userGroups/npReady/${proposalId}`)));
  const remainingInvites=await value('invitations');

@@ -1,15 +1,16 @@
 'use strict';
 
 import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-7';
-import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261105-12';
+import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261112-8';
 import { createCalendarView } from './calendar.js?v=20261112-7';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
 import { createArticleEditor } from './article-editor.js?v=20261112-4';
+import { createCommunityView, participantStatus } from './community.js?v=20261112-8';
 
 const $ = selector => document.querySelector(selector);
 const roleNames = {student:'Estudante',advisor:'Orientador(a)',coordinator:'Coordenação'};
-const hashes = {dashboard:'inicio',groups:'grupos',invitations:'convites',calendar:'calendario',agreements:'termo',admin:'coordenacao',indicators:'indicadores'};
-const state = {user:null,profile:null,role:'student',users:[],usersReady:false,usersError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null};
+const hashes = {dashboard:'inicio',people:'pessoas',groups:'grupos',invitations:'convites',calendar:'calendario',agreements:'termo',admin:'coordenacao',indicators:'indicadores'};
+const state = {user:null,profile:null,role:'student',users:[],usersReady:false,usersError:null,people:[],peopleReady:false,peopleError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null};
 const groupData = new Map();
 const groupListeners = new Map();
 const groupAccess = new Map();
@@ -45,6 +46,7 @@ let renderedKey = '';
 let dialogHandler = null;
 let dialogGuard = null;
 let dialogCleanup = null;
+let dialogLiveUpdate = null;
 let dialogVersion = 0;
 let dialogAccess = 'academic';
 let dialogBusyText = 'Salvando…';
@@ -57,6 +59,7 @@ let userFilter = 'all';
 let userPage = 1;
 const USERS_PER_PAGE = 10;
 let coordinationDashboard = null;
+let communityView = null;
 let orientationNoticeBaselineReady=false;
 const seenOrientationNotices=new Set();
 const proposalUrls=new Set();
@@ -135,8 +138,10 @@ function canAccessAcademic() {
   if(!state.user || !state.ready || !state.profile || state.profile.onboardingRequired === true || isPendingAdvisor())return false;
   return state.role === 'advisor' || state.role === 'coordinator' || (requiresAgreement() && agreementSatisfied());
 }
-function canCreateGroup() { return canAccessAcademic(); }
-function canPrepareProposal() { return Boolean(!state.archived && state.user && state.ready && state.profile && state.role === 'student' && state.profile.onboardingRequired !== true && !isPendingAdvisor()); }
+function studentGroupId() {return state.role==='student'?(state.people.find(person=>person.id===state.user?.uid)?.groupId||state.groups.find(group=>group.members?.[state.user?.uid]===true)?.id||''):'';}
+function canCreateGroup() { return canAccessAcademic()&&(state.role!=='student'||state.peopleReady&&!state.peopleError&&!studentGroupId()); }
+function canPrepareProposal() { return Boolean(!state.archived && state.user && state.ready && state.profile && state.role === 'student' && state.profile.onboardingRequired !== true && !isPendingAdvisor() && state.peopleReady && !state.peopleError && !studentGroupId()); }
+function canInviteToGroup(group) {return Boolean(group&&!state.archived&&group.status!=='deleting'&&group.status!=='archived'&&group.archived!==true&&(isGroupManager(group)||state.role==='student'&&group.members?.[state.user?.uid]===true));}
 function canUseAgreements() { return !state.archived && (state.role === 'coordinator' || state.role === 'advisor' || (state.role === 'student' && state.profile?.requestedRole !== 'advisor')); }
 function statusOf(task) {
   if (task.completed) return {key:'done',text:'Concluída',className:'success'};
@@ -247,8 +252,8 @@ function makeField(labelText, name, options = {}) {
   if (options.help) label.append(node('small','',options.help));
   return {label,field};
 }
-function cleanupDialog() {const cleanup=dialogCleanup;dialogCleanup=null;cleanup?.();}
-function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = false,access = 'academic',busy = 'Salvando…',guard=null,cleanup=null,handler}) {
+function cleanupDialog() {const cleanup=dialogCleanup;dialogCleanup=null;dialogLiveUpdate=null;cleanup?.();}
+function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = false,access = 'academic',busy = 'Salvando…',guard=null,cleanup=null,onUpdate=null,handler}) {
   if(state.user && access === 'academic' && !canAccessAcademic()){render();return;}
   if(access === 'draft' && !canPrepareProposal()){render();return;}
   if(access === 'admin' && (state.role !== 'coordinator'||state.archived)){render();return;}
@@ -256,7 +261,7 @@ function openForm({title,kicker = 'MEU INIC',fields,submit = 'Salvar',danger = f
   if(access === 'review' && state.role !== 'coordinator'){render();return;}
   if(access === 'signature' && !['advisor','coordinator'].includes(state.role)){render();return;}
   if(guard&&!guard()){render();return;}
-  cleanupDialog();dialogCleanup=cleanup;
+  cleanupDialog();dialogCleanup=cleanup;dialogLiveUpdate=onUpdate;
   dialogVersion++;
   dialogGuard=guard;
   dialogAccess=access;
@@ -291,7 +296,7 @@ $('#dialog-form').addEventListener('submit',async event => {
     const result = await handler(new FormData(event.currentTarget));
     if (version===dialogVersion&&result !== false) $('#form-dialog').close();
   } catch(error) {if(version===dialogVersion)$('#dialog-status').textContent = errorText(error);}
-  finally {if(version===dialogVersion){submit.disabled = false;submit.removeAttribute('aria-busy');status.classList.remove('is-loading');status.removeAttribute('aria-busy');if(status.querySelector('.book-loader'))status.replaceChildren();}}
+  finally {if(version===dialogVersion){submit.disabled = false;submit.removeAttribute('aria-busy');status.classList.remove('is-loading');status.removeAttribute('aria-busy');if(status.querySelector('.book-loader'))status.replaceChildren();if($('#form-dialog').open)dialogLiveUpdate?.();}}
 });
 function confirmAction(title, description, callback, submit = 'Confirmar', busy = 'Salvando resposta…') {
   openForm({title,fields:[node('p','dialog-note',description)],submit,busy,handler:callback});
@@ -431,7 +436,7 @@ function verificationNotice() {
 }
 function sessionChanged(user) {
   for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();
-  destroyIndicators();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
+  destroyIndicators();destroyCommunity();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
   const sessionId=++sessionVersion;seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';userPage=1;
   proposalDraft=null;
   cleanupDialog();$('#dialog-fields').replaceChildren();
@@ -442,7 +447,7 @@ function sessionChanged(user) {
   agreements=[];agreementsReady=false;agreementsError=null;agreementRequirement={ready:false,fulfilled:false};agreementUploadBusy=false;agreementSearch='';agreementFilter='all';
   for (const unsubscribe of groupListeners.values()) unsubscribe();
   groupListeners.clear();groupAccess.clear();groupData.clear();
-  Object.assign(state,{user,profile:null,role:'student',users:[],usersReady:false,usersError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null});
+  Object.assign(state,{user,profile:null,role:'student',users:[],usersReady:false,usersError:null,people:[],peopleReady:false,peopleError:null,advisors:[],groups:[],invitations:[],orientationNotices:[],ready:false,error:null,archived:false,archive:null});
   renderedKey = '';
   $('#view-content').replaceChildren();
   $('.skip-link').href = user ? '#workspace-main' : '#main';
@@ -461,6 +466,9 @@ function sessionChanged(user) {
     state.usersReady = !state.archived&&state.role==='coordinator'&&data.usersReady===true;
     state.usersError = !state.archived&&state.role==='coordinator'?(data.usersError||null):null;
     state.users = state.usersReady&&!state.usersError?(data.users||[]):[];
+    state.peopleReady = !state.archived&&data.peopleReady===true;
+    state.peopleError = !state.archived?(data.peopleError||null):null;
+    state.people = state.peopleReady&&!state.peopleError?(data.people||[]):[];
     state.advisors = data.advisors || [];
     state.groups = data.groups || [];
     state.invitations = data.invitations || [];
@@ -468,7 +476,7 @@ function sessionChanged(user) {
     state.error = data.error || null;
     state.ready = true;
     if(state.archived){
-      state.profile=null;state.users=[];state.advisors=[];state.groups=[];state.invitations=[];state.orientationNotices=[];proposalDraft=null;
+      state.profile=null;state.users=[];state.people=[];state.peopleReady=false;state.advisors=[];state.groups=[];state.invitations=[];state.orientationNotices=[];proposalDraft=null;destroyCommunity();
       cleanupDialog();revokeProposalUrls();$('#dialog-fields').replaceChildren();
       dialogVersion++;dialogHandler=null;$('#form-dialog').close();$('#app-notice').hidden=true;$('#verification-notice')?.remove();
     }
@@ -478,9 +486,12 @@ function sessionChanged(user) {
     }else if(!state.usersReady||state.usersError){paintManagedUsers();paintPendingAdvisors();}
     if(coordinationDashboard&&(state.role!=='coordinator'||!canAccessAcademic())){destroyIndicators();$('#view-content').replaceChildren(loadingPanel('Atualizando acesso…'));}
     else coordinationDashboard?.updateState(state);
+    if(communityView&&(state.archived||!canAccessAcademic()))destroyCommunity();
+    else communityView?.update(communityOptions());
     if(data.orientationNoticesError)orientationNoticeBaselineReady=false;
     else if(!state.archived&&data.orientationNoticesReady===true){const fresh=[];state.orientationNotices.forEach(item=>{const key=`${item.id}/${item.createdAt}`;if(!seenOrientationNotices.has(key)){seenOrientationNotices.add(key);if(!item.read)fresh.push(item);}});if(orientationNoticeBaselineReady&&fresh.length){const newest=fresh.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];notice(orientationNoticeCopy(newest),'info',true,{title:'Aviso de orientação',href:'#convites',label:'Ver aviso'});}orientationNoticeBaselineReady=true;}
     if(dialogGuard&&!dialogGuard()&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;dialogGuard=null;$('#form-dialog').close();}
+    if($('#form-dialog').open)dialogLiveUpdate?.();
     if(dialogAccess==='admin'&&(state.role!=='coordinator'||state.archived)&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
     if(dialogAccess==='signature'&&!['advisor','coordinator'].includes(state.role)&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
     if(dialogAccess==='review'&&state.role!=='coordinator'&&$('#form-dialog').open){dialogVersion++;dialogHandler=null;$('#form-dialog').close();}
@@ -499,7 +510,7 @@ function sessionChanged(user) {
 function updateShell() {
   if(!$('#indicators-nav')){const entry=link('','#indicadores');entry.id='indicators-nav';entry.dataset.route='indicators';const icon=node('span','','▥');icon.setAttribute('aria-hidden','true');entry.append(icon,node('span','','Indicadores INIC'));$('#admin-nav').before(entry);}
   const route = currentRoute.view === 'group' ? 'groups' : currentRoute.view;
-  const titles = {dashboard:'Visão geral',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',agreements:state.role==='coordinator'?'Termos e assinaturas':state.role==='advisor'?'Termos para assinar':'Meu termo',admin:'Coordenação',indicators:'Indicadores INIC',group:'Meu grupo'};
+  const titles = {dashboard:'Visão geral',people:'Comunidade INIC',groups:state.role==='coordinator'?'Todos os grupos':'Meus grupos',invitations:'Convites',calendar:'Calendário',agreements:state.role==='coordinator'?'Termos e assinaturas':state.role==='advisor'?'Termos para assinar':'Meu termo',admin:'Coordenação',indicators:'Indicadores INIC',group:'Meu grupo'};
   $('#view-title').textContent = titles[currentRoute.view] || 'Visão geral';
   $('#view-kicker').textContent = state.role === 'coordinator' ? 'ACOMPANHAMENTO DA ESCOLA' : 'SEU ESPAÇO DE PESQUISA';
   $('#profile-button').hidden=state.archived;
@@ -535,6 +546,7 @@ function render() {
   pruneArticleEditors();
   if (!state.user) return;
   if(currentRoute.view!=='indicators')destroyIndicators();
+  if(currentRoute.view!=='people')destroyCommunity();
   if(state.archived){renderAccountArchived();return;}
   if (['admin','indicators'].includes(currentRoute.view) && state.role !== 'coordinator' && state.ready) {navigate('dashboard');return;}
   updateShell();
@@ -556,6 +568,7 @@ function render() {
   }
   if (currentRoute.view === 'group') {renderGroup();return;}
   if (currentRoute.view === 'indicators') {renderIndicators();return;}
+  if (currentRoute.view === 'people') {renderPeople();return;}
   if(currentRoute.view==='admin'&&renderedKey==='admin'&&$('#admin-user-list')){paintManagedUsers();paintPendingAdvisors();return;}
   renderedKey = currentRoute.view;
   const views = {dashboard:renderDashboard,groups:renderGroups,invitations:renderInvitations,calendar:renderCalendar,admin:renderAdmin};
@@ -710,16 +723,19 @@ function buildAgreementUpload() {
 }
 function proposalCallout() {
   const panel=node('section','proposal-callout');panel.id='proposal-callout';
-  const copy=node('div','proposal-callout-copy');copy.append(node('span','term-step','SEU GRUPO'),node('h3','','Monte sua equipe e envie os convites.'),node('p','','Informe os e-mails dos colegas e escolha até 3 orientadores. Os convites são enviados juntos com a proposta.'));
+  const copy=node('div','proposal-callout-copy');copy.append(node('span','term-step','SEU GRUPO'),node('h3','','Monte sua equipe e envie os convites.'),node('p','','Anexe a proposta e escolha colegas e até 3 professores cadastrados para convidar.'));
   const actions=node('div','proposal-callout-actions');const control=button('Montar meu grupo','button orange',()=>canCreateGroup()?showCreateGroup():showProposalDraft());control.id='proposal-callout-button';
   const status=node('p','proposal-callout-status');status.id='proposal-callout-status';actions.append(control,status);panel.append(copy,actions);return panel;
 }
 function paintProposalCallout() {
   const control=$('#proposal-callout-button'),status=$('#proposal-callout-status');if(!control||!status)return;
   const draft=proposalDraft?.uid===state.user?.uid;
-  const copy=$('#proposal-callout .proposal-callout-copy');if(copy){copy.querySelector('h3').textContent='Monte sua equipe e envie os convites.';copy.querySelector('p').textContent='Estudantes de todos os anos podem escolher até 3 orientadores. Informe os e-mails dos colegas e envie os convites junto com a proposta.';}
+  const copy=$('#proposal-callout .proposal-callout-copy');if(copy){copy.querySelector('h3').textContent='Monte sua equipe e envie os convites.';copy.querySelector('p').textContent='Estudantes de todos os anos podem escolher até 3 professores. Anexe sua proposta e selecione colegas disponíveis na comunidade.';}
   control.textContent=canCreateGroup()?(draft?'Enviar proposta e convites':'Montar meu grupo'):(draft?'Revisar meu grupo':'Montar meu grupo');
   status.textContent=canCreateGroup()?(draft?'Rascunho pronto. Revise e confirme o envio.':'Opcional · você também pode entrar por convite.'):(draft?'Rascunho salvo nesta sessão. Envie o termo para concluir.':'Você pode preparar agora. Envie o termo antes de concluir.');
+  control.disabled=!canCreateGroup()&&!canPrepareProposal();
+  if(studentGroupId())status.textContent='Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.';
+  else if(!state.peopleReady||state.peopleError)status.textContent=state.peopleError?'Não foi possível consultar seu grupo. Tente novamente em Pessoas.':'Consultando sua participação nos grupos…';
 }
 function renderAgreements() {
   const key=`agreements/${state.user.uid}/${state.role}/${state.role==='advisor'?advisorAgreementGroupId:''}`;
@@ -1007,6 +1023,7 @@ function renderDashboard() {
   const welcome=node('section','welcome');const copy=node('div');copy.append(node('p','eyebrow','O PRÓXIMO PASSO DA SUA PESQUISA'),node('h2','',`Olá, ${myName().split(' ')[0]}. Vamos construir conhecimento?`),node('p','',state.role==='coordinator'?'Acompanhe grupos, orientadores e entregas em um só lugar.':'Seu grupo, seu orientador e as próximas entregas estão aqui. Comece por um pequeno passo.'));welcome.append(copy);
   if(canCreateGroup())welcome.append(button(state.role==='student'?'Montar meu grupo e convidar':'Criar um grupo','button orange',showCreateGroup));else welcome.append(link('Conhecer as pesquisas','index.html#artigos','button orange'));
   fragment.append(welcome);
+  const communityLink=node('section','community-dashboard-link'),communityCopy=node('div');communityCopy.append(node('h3','','Conheça a comunidade INIC'),node('p','','Encontre alunos disponíveis, escolha professores e envie convites pelo perfil.'));communityLink.append(communityCopy,link('Encontrar pessoas','#pessoas','button primary'));fragment.append(communityLink);
   const reviewCard=studentAgreementReviewCard();if(reviewCard)fragment.append(reviewCard);
   const tasks=allTasks();const complete=tasks.filter(t=>t.completed).length;const late=tasks.filter(t=>statusOf(t).key==='late').length;
   const stats=node('div','stats-grid');
@@ -1050,69 +1067,74 @@ function buildAdvisorPicker(initialIds = []) {
   field.append(node('p','advisor-picker-help','Envie convites para até 3 orientadores ao mesmo tempo. O primeiro aceite confirma a orientação.'));
   const count=node('p','advisor-picker-count','0 de 3 selecionados');count.setAttribute('role','status');count.setAttribute('aria-live','polite');
   const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Buscar professor(a) pelo nome';search.setAttribute('aria-label','Buscar orientadores aprovados');
-  const list=node('div','advisor-picker-list');const selected=new Set();
-  const advisors=[...new Map(state.advisors.filter(person=>person.id).map(person=>[person.id,person])).values()];
-  const controls=[];
-  function paint(){count.textContent=`${selected.size} de 3 selecionados`;controls.forEach(({input})=>{input.disabled=selected.size>=3&&!input.checked;});}
-  advisors.forEach(person=>{
-    const label=node('label','advisor-choice');label.dataset.search=normalize(person.name);const input=node('input');input.type='checkbox';input.name='advisorIds';input.value=person.id;
-    if(initialIds.includes(person.id)&&selected.size<3){selected.add(person.id);input.checked=true;}
-    const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');
-    const copy=node('span','advisor-choice-copy');copy.append(node('strong','',advisorLabel(person)),node('small','','Orientador(a) aprovado(a)'));
-    input.addEventListener('change',()=>{if(input.checked&&selected.size>=3){input.checked=false;count.textContent='Selecione no máximo 3 orientadores.';return;}if(input.checked)selected.add(person.id);else selected.delete(person.id);paint();});
-    controls.push({input,label});label.append(input,avatar,copy);list.append(label);
-  });
-  const empty=node('p','empty-small',advisors.length?'Nenhum orientador com esse nome.':'A coordenação ainda não liberou orientadores para convite.');empty.hidden=Boolean(advisors.length);
-  search.addEventListener('input',()=>{const query=normalize(search.value).trim();let visible=0;controls.forEach(({label})=>{label.hidden=Boolean(query&&!label.dataset.search.includes(query));if(!label.hidden)visible++;});empty.hidden=visible>0;});
+  const list=node('div','advisor-picker-list'),empty=node('p','empty-small');
+  const selected=new Set(initialIds.slice(0,3));let controls=[],advisorCount=0,disposed=false;
+  function paintSelection(){count.textContent=`${selected.size} de 3 selecionados`;controls.forEach(({input})=>{input.disabled=selected.size>=3&&!input.checked;});}
+  function filterChoices(){
+    const query=normalize(search.value).trim();let visible=0;
+    controls.forEach(({label})=>{label.hidden=Boolean(query&&!label.dataset.search.includes(query));if(!label.hidden)visible++;});
+    empty.hidden=visible>0;empty.textContent=advisorCount?'Nenhum orientador com esse nome.':'A coordenação ainda não liberou orientadores para convite.';
+  }
+  function paint(){
+    if(disposed)return;
+    const focusedUid=list.contains(document.activeElement)?document.activeElement?.value:null,scrollTop=list.scrollTop;
+    const advisors=[...new Map(state.advisors.filter(person=>person.id).map(person=>[person.id,person])).values()];advisorCount=advisors.length;
+    for(const id of selected)if(!advisors.some(person=>person.id===id))selected.delete(id);
+    controls=[];list.replaceChildren();
+    advisors.forEach(person=>{
+      const label=node('label','advisor-choice');label.dataset.search=normalize(person.name);const input=node('input');input.type='checkbox';input.name='advisorIds';input.value=person.id;input.checked=selected.has(person.id);
+      const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');
+      const copy=node('span','advisor-choice-copy');copy.append(node('strong','',advisorLabel(person)),node('small','','Orientador(a) aprovado(a) · pode orientar vários grupos'));
+      input.addEventListener('change',()=>{if(disposed||input.disabled)return;if(input.checked&&selected.size>=3&&!selected.has(person.id)){input.checked=false;count.textContent='Selecione no máximo 3 orientadores.';return;}if(input.checked)selected.add(person.id);else selected.delete(person.id);paintSelection();});
+      controls.push({input,label});label.append(input,avatar,copy);list.append(label);
+    });
+    paintSelection();filterChoices();list.scrollTop=scrollTop;
+    if(focusedUid)(controls.find(({input})=>input.value===focusedUid&&!input.disabled)?.input||search).focus({preventScroll:true});
+  }
+  search.addEventListener('input',()=>{if(!disposed)filterChoices();});
   field.append(search,count,list,empty,node('p','advisor-picker-help','Você também pode escolher depois, em Convites.'));
   paint();
-  return {field,selectedIds:()=>[...selected]};
+  return {field,selectedIds:()=>[...selected],update:paint,destroy(){disposed=true;selected.clear();list.replaceChildren();}};
 }
-function showCreateGroup() {
-  if(!canCreateGroup()){render();return;}
-  openProposalForm(false);
+function showCreateGroup(invitedPerson=null) {
+  if(!canCreateGroup()){if(studentGroupId())notice('Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.','info');else render();return;}
+  openProposalForm(false,{invitedPerson:invitedPerson?.id?invitedPerson:null});
 }
 function showProposalDraft() {
   if(!canPrepareProposal()){render();return;}
   if(canCreateGroup()){showCreateGroup();return;}
   openProposalForm(true);
 }
-function proposalMemberEmails(value) {
-  const own=String(state.user?.email||'').toLowerCase();
-  const emails=[...new Set(String(value||'').split(/[\s,;]+/).map(email=>email.trim().toLowerCase()).filter(email=>email&&email!==own))];
-  if(emails.some(email=>email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))throw new Error('Confira os e-mails dos colegas antes de continuar.');
-  if(emails.length>20)throw new Error('Convide no máximo 20 colegas por proposta.');
-  return emails;
-}
-function openProposalForm(draftOnly) {
+function openProposalForm(draftOnly,{invitedPerson=null}={}) {
   const uid=state.user?.uid,session=sessionVersion;
   const student=state.role==='student';const saved=student&&proposalDraft?.uid===uid?proposalDraft:{};
   const name=makeField('Nome do grupo','name',{value:saved.name||'',required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
   const topic=makeField(student?'Tema da proposta':'Tema da pesquisa','topic',{value:saved.topic||'',required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
-  const description=makeField('Descrição da proposta','description',{type:'textarea',value:saved.description||'',maxLength:3000,placeholder:'Problema, objetivo e ideia inicial da pesquisa.'});
   const year=makeField('Edição do INIC','year',{type:'number',value:saved.year||2027,required:true,min:2027,max:2100});
   const proposalEditor=student?createProposalEditor({value:saved.proposal||null,proposalFile:saved.proposalFile||null}):null;
-  const picker=student?buildAdvisorPicker(saved.advisorIds||[]):null;
-  const memberEmails=student?makeField('E-mails dos colegas para convidar (opcional)','memberEmails',{type:'textarea',value:(saved.memberEmails||[]).join('\n'),maxLength:6000,placeholder:'colega1@gmail.com\ncolega2@gmail.com',help:'Separe por vírgulas ou linhas. Cada colega recebe o convite no aplicativo ao entrar com esse e-mail.'}):null;
-  if(memberEmails)memberEmails.field.rows=3;
+  const picker=student?buildAdvisorPicker(invitedPerson&&participantStatus(invitedPerson).type==='advisor'?[invitedPerson.id]:(saved.advisorIds||[])):null;
+  const members=buildStudentPicker({multiple:true,selectedIds:invitedPerson&&participantStatus(invitedPerson).type==='member'?[invitedPerson.id]:(saved.memberUids||[])});
   const advisor=student?null:makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))],help:state.role==='coordinator'&&isListedAdvisor()?'Escolha seu nome para orientar este novo grupo. Outros orientadores receberão um convite e precisam aceitar.':'O orientador receberá um convite e será vinculado após aceitar.'});
-  const fields=[name.label,topic.label,description.label,year.label,...(proposalEditor?[proposalEditor.element]:[]),...(memberEmails?[memberEmails.label]:[]),picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'Ao confirmar, o grupo, o cronograma e todos os convites são criados juntos. O orientador será vinculado após aceitar o convite.':'O grupo recebe um cronograma inicial editável.')];
-  openForm({title:draftOnly?'Preparar meu grupo':student?'Nova proposta de TCC':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,cleanup:()=>proposalEditor?.destroy(),submit:draftOnly?'Salvar rascunho':student?'Enviar proposta e convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando proposta e enviando convites…':'Criando grupo…',handler:async data=>{
+  const fields=[name.label,topic.label,year.label,...(proposalEditor?[proposalEditor.element]:[]),members.field,picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'O anexo, o grupo e os convites são salvos juntos. Cada aluno pode participar de apenas um grupo. O professor será vinculado após aceitar.':'O professor pode orientar vários grupos. Os alunos convidados só entram após aceitar.')];
+  openForm({title:draftOnly?'Preparar meu grupo':student?'Meu grupo e proposta':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,onUpdate:()=>{members.update();picker?.update();},cleanup:()=>{proposalEditor?.destroy();members.destroy();picker?.destroy();},submit:draftOnly?'Salvar rascunho':student?'Criar grupo e enviar convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando grupo e enviando convites…':'Criando grupo…',handler:async data=>{
     if(state.user?.uid!==uid||sessionVersion!==session)return;
     if(student&&(state.role!=='student'||isPendingAdvisor()))throw new Error('Seu perfil mudou. Abra a proposta novamente para conferir a orientação.');
     if(draftOnly&&!canPrepareProposal())throw new Error('Seu perfil mudou. Confira seu cadastro antes de continuar.');
-    if(!draftOnly&&!canCreateGroup())throw new Error('Envie o termo assinado e aguarde a confirmação antes de enviar a proposta.');
+    if(student&&studentGroupId())throw new Error('Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.');
+    if(!draftOnly&&!canCreateGroup())throw new Error('Confira seu termo e aguarde o carregamento das pessoas antes de criar o grupo.');
     const advisorIds=picker?.selectedIds()||[];
     if(advisorIds.length>3)throw new Error('Selecione no máximo 3 orientadores.');
     if(student&&advisorIds.some(id=>!state.advisors.some(person=>person.id===id)))throw new Error('A lista de orientadores mudou. Revise os nomes antes de enviar.');
-    const emails=student?proposalMemberEmails(data.get('memberEmails')):[];
-    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:String(data.get('description')).trim(),year:Number(data.get('year')),...(student?{advisorIds,memberEmails:emails,...proposalEditor.read()}:{advisorId:String(data.get('advisorId')||'')})};
+    const memberUids=members.selectedIds();
+    if(!state.peopleReady||state.peopleError)throw new Error('Aguarde o carregamento das pessoas antes de enviar os convites.');
+    if(memberUids.some(id=>!state.people.some(person=>person.id===id&&participantStatus(person).type==='member'&&participantStatus(person).available)))throw new Error('Um dos alunos selecionados já entrou em um grupo. Confira a lista antes de continuar.');
+    const payload={name:String(data.get('name')).trim(),topic:String(data.get('topic')).trim(),description:'',year:Number(data.get('year')),memberUids,...(student?{advisorIds,...proposalEditor.read()}:{advisorId:String(data.get('advisorId')||'')})};
     if(student)proposalDraft={uid,...payload};
     if(draftOnly){paintProposalCallout();notice('Rascunho preparado. Envie o termo assinado para concluir a proposta.');return;}
     const id=await service.createGroup(payload);
     if(state.user?.uid!==uid||sessionVersion!==session)return;
     proposalDraft=null;
-    const count=emails.length+advisorIds.length;
+    const count=memberUids.length+advisorIds.length;
     notice(student?(count?`Proposta criada. ${count} convite(s) enviado(s) para os colegas e orientadores selecionados.`:'Proposta criada. Você pode enviar convites na área do grupo.'):'Grupo criado. Convide os integrantes e organize as entregas.');navigate('group',typeof id==='string'?id:id.id);
   }});
 }
@@ -1384,85 +1406,150 @@ function renderGroupEvaluations(group,data) {
 function pendingAdvisorInvitations(groupId) {
   return state.invitations.filter(invite=>invite.groupId===groupId&&invite.type==='advisor'&&invite.status==='pending');
 }
-function showInviteForm(initialGroupId = '', initialType = 'member') {
+function personInviteAvailability(person,group) {
+  if(!state.peopleReady||state.peopleError)return {available:false,label:'Consultando disponibilidade',detail:'Aguarde o carregamento das pessoas para enviar o convite.'};
+  if(!person)return {available:false,label:'Cadastro indisponível',detail:'O cadastro não está mais disponível. Atualize a lista de pessoas.'};
+  const status=participantStatus(person);
+  if(person.id===state.user?.uid)return {available:false,label:'Seu perfil',detail:'Você não precisa enviar um convite para si.'};
+  if(!status.available)return status;
+  if(!group||!canInviteToGroup(group))return {available:false,label:'Escolha seu grupo',detail:'Escolha um grupo em que você pode enviar convites.'};
+  if(status.type==='member'&&group.members?.[person.id])return {available:false,label:'Já está no grupo',detail:'Este aluno já participa do grupo. Cada aluno pode participar de apenas um grupo.'};
+  if(status.type==='advisor'&&group.advisorId)return {available:false,label:group.advisorId===person.id?'Já orienta este grupo':'Grupo já tem orientador',detail:group.advisorId===person.id?'Este professor já aceitou orientar este grupo. Ele pode orientar outros grupos também.':'Este grupo já tem um orientador confirmado. Não é necessário enviar outro convite.'};
+  if(state.invitations.some(invite=>invite.groupId===group.id&&invite.type===status.type&&invite.toUid===person.id&&invite.status==='pending'))return {available:false,label:'Convite enviado',detail:'Já existe um convite para este grupo aguardando a resposta desta pessoa.'};
+  if(status.type==='advisor'&&pendingAdvisorInvitations(group.id).length>=3)return {available:false,label:'Aguardando respostas',detail:'Este grupo já tem 3 convites de orientação pendentes. Aguarde uma resposta.'};
+  return {available:true,label:status.type==='advisor'?'Convidar para orientar':'Convidar para meu grupo',detail:status.detail};
+}
+function communityInvitationState(person) {
+  const manageable=state.groups.filter(canInviteToGroup);
+  if(!manageable.length)return {disabled:!canCreateGroup(),label:canCreateGroup()?'Criar grupo e convidar':'Sem grupo para convidar',detail:canCreateGroup()?'Crie seu grupo para enviar o convite.':'Os convites são enviados por participantes de um grupo.'};
+  const options=manageable.map(group=>personInviteAvailability(person,group));
+  const available=options.find(option=>option.available);
+  return available?{disabled:false,label:available.label,detail:available.detail}:{disabled:true,label:options[0].label,detail:options[0].detail};
+}
+function communityOptions() {
+  return {people:state.people,ready:state.peopleReady,error:state.peopleError,currentUid:state.user?.uid||'',invitationState:communityInvitationState,onRetry:()=>{if(state.user)sessionChanged(state.user);},onInvite:person=>{
+    if(!state.peopleReady||state.peopleError)return;
+    const latest=state.people.find(item=>item.id===person.id);if(!latest||!participantStatus(latest).available)return;
+    const manageable=state.groups.filter(canInviteToGroup),group=manageable.find(item=>personInviteAvailability(latest,item).available);
+    if(!manageable.length&&canCreateGroup()){showCreateGroup(latest);return;}
+    if(!group){notice(communityInvitationState(latest).detail,'info');return;}
+    showInviteForm(group.id,participantStatus(latest).type,latest.id);
+  }};
+}
+function destroyCommunity(){communityView?.destroy();communityView=null;}
+function renderPeople(){
+  if(!communityView){communityView=createCommunityView(communityOptions());$('#view-content').replaceChildren(communityView.element);}else communityView.update(communityOptions());
+  renderedKey='people';
+}
+function buildStudentPicker({multiple=false,selectedIds=[],onChange=()=>{},group=()=>null}={}) {
+  const field=node('fieldset','advisor-picker member-picker');field.append(node('legend','',multiple?'Convidar colegas (opcional)':'Escolha o aluno'));
+  const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Buscar aluno pelo nome ou série';search.setAttribute('aria-label',multiple?'Buscar colegas para o grupo':'Buscar aluno para convidar');search.autocomplete='off';
+  const list=node('div','advisor-picker-list'),status=node('p','member-picker-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  const selected=new Set(selectedIds);let active=true,disposed=false;
+  function available(person){return group()?personInviteAvailability(person,group()):{...participantStatus(person),available:participantStatus(person).available&&person.id!==state.user?.uid};}
+  function paint(){
+    if(disposed)return;
+    const focusUid=list.contains(document.activeElement)?document.activeElement?.value:null;
+    list.replaceChildren();
+    if(!state.peopleReady||state.peopleError){search.disabled=true;list.append(node('p','empty-small',state.peopleError?'Não foi possível carregar os alunos. Feche o formulário e tente novamente em Pessoas.':'Carregando alunos e disponibilidade…'));status.textContent='Aguarde a consulta antes de selecionar.';return;}
+    search.disabled=!active;
+    const students=state.people.filter(person=>participantStatus(person).type==='member'&&person.id!==state.user?.uid).sort((a,b)=>Number(available(b).available)-Number(available(a).available)||a.name.localeCompare(b.name,'pt-BR'));
+    for(const uid of selected)if(!students.some(person=>person.id===uid&&available(person).available))selected.delete(uid);
+    const query=normalize(search.value).trim(),matches=students.filter(person=>!query||normalize(`${person.name} ${person.year||''}`).includes(query));
+    for(const person of matches){
+      const option=available(person),label=node('label',`advisor-choice${option.available?'':' is-unavailable'}`),input=node('input'),copy=node('span','advisor-choice-copy');
+      input.type=multiple?'checkbox':'radio';input.name=multiple?'memberUids':'memberUid';input.value=person.id;input.checked=selected.has(person.id);input.disabled=!active||!option.available;label.dataset.memberUid=person.id;
+      const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');
+      copy.append(node('strong','',person.name),node('small','',[person.year,option.available?'Disponível para convite':option.label].filter(Boolean).join(' · ')));
+      if(!option.available)copy.append(node('small','',option.detail));
+      input.addEventListener('change',()=>{if(disposed||input.disabled)return;if(input.checked){if(multiple&&selected.size>=20&&!selected.has(person.id)){input.checked=false;status.textContent='Selecione no máximo 20 colegas.';return;}if(!multiple){selected.clear();list.querySelectorAll('input').forEach(other=>{if(other!==input)other.checked=false;});}selected.add(person.id);}else selected.delete(person.id);paintStatus();onChange();});
+      label.append(input,avatar,copy);list.append(label);
+    }
+    if(!matches.length)list.append(node('p','empty-small',students.length?'Nenhum aluno com esse nome ou série.':'Ainda não há outros alunos cadastrados. Os colegas aparecerão após criar a conta.'));
+    paintStatus();if(focusUid)[...list.querySelectorAll('input')].find(input=>input.value===focusUid&&!input.disabled)?.focus({preventScroll:true});
+  }
+  function paintStatus(){status.textContent=multiple?`${selected.size} de 20 colegas selecionados. Cada pessoa só entra no grupo após aceitar.`:'Alunos que já participam de um grupo aparecem como indisponíveis.';}
+  search.addEventListener('input',paint);field.append(search,list,status);paint();
+  return {field,selectedIds:()=>[...selected],update(){paint();},setActive(value){active=value;field.hidden=!value;paint();},destroy(){disposed=true;selected.clear();list.replaceChildren();}};
+}
+function showInviteForm(initialGroupId = '', initialType = 'member', initialUid = '') {
   const actor=state.user?.uid,session=sessionVersion;
-  const manageable=state.groups.filter(canManage);
+  const manageable=state.groups.filter(canInviteToGroup);
   if(!manageable.length){
-    if(canCreateGroup())openForm({title:'Crie um grupo para enviar convites',fields:[node('p','dialog-note',state.role==='advisor'?'Você ainda não orienta um grupo. Crie o grupo e convide os estudantes pelo e-mail. Convites para orientar aparecem na aba Recebidos.':'Crie a proposta e depois convide integrantes ou orientadores.')],submit:'Criar grupo',handler:()=>{showCreateGroup();return false;}});
+    if(canCreateGroup())openForm({title:'Crie seu grupo para convidar',fields:[node('p','dialog-note','Dê um nome à sua equipe, anexe a proposta e escolha as pessoas cadastradas que você quer convidar.')],submit:'Criar grupo',handler:()=>{showCreateGroup(state.people.find(person=>person.id===initialUid));return false;}});
+    else notice(studentGroupId()?'Você já participa de um grupo. Abra seu grupo para consultar os integrantes e os convites.':'Aguarde seu grupo ficar disponível para enviar convites.','info');
     return;
   }
   const initialGroup=manageable.find(item=>item.id===initialGroupId)||manageable[0];
   const group=makeField('Grupo do convite','groupId',manageable.length===1?{type:'hidden',value:initialGroup.id}:{required:true,value:initialGroup.id,options:manageable.map(g=>({value:g.id,label:g.name}))});
+  const currentGroup=()=>state.groups.find(item=>item.id===group.field.value);
   const groupContext=node('div','invite-group-context');groupContext.append(node('small','','CONVITE PARA O GRUPO'),node('strong','',initialGroup.name));groupContext.hidden=manageable.length!==1;
   const type=node('fieldset','invite-type-picker');type.append(node('legend','','Quem você quer convidar?'));
   const typeChoices=[];
-  [['member','Aluno ou colega','Convide pelo e-mail de acesso.'],['advisor','Orientador(a)','Escolha um professor da lista.']].forEach(([value,title,help])=>{
-    const choice=node('label','invite-type-choice'),input=node('input'),copy=node('span','invite-type-copy');input.type='radio';input.name='type';input.value=value;input.checked=value===(initialType==='advisor'?'advisor':'member');
-    copy.append(node('strong','',title),node('small','',help));choice.append(input,copy);type.append(choice);typeChoices.push(input);input.addEventListener('change',toggle);
-  });
-  const advisor=node('fieldset','advisor-picker invite-advisor-picker');advisor.append(node('legend','','Escolha o orientador'));
-  const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Digite o nome do professor';search.setAttribute('aria-label','Buscar orientador para convidar');search.autocomplete='off';
-  const advisorList=node('div','advisor-picker-list'),advisorChoices=[];
-  const advisors=[...new Map(state.advisors.filter(person=>person.id).map(person=>[person.id,person])).values()].sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR'));
-  advisors.forEach(person=>{
-    const label=node('label','advisor-choice'),input=node('input'),copy=node('span','advisor-choice-copy'),status=node('small','','Disponível para convite');input.type='radio';input.name='toUid';input.value=person.id;label.dataset.search=normalize(person.name||'');
-    copy.append(node('strong','',advisorLabel(person)),status);const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');label.append(input,avatar,copy);advisorList.append(label);advisorChoices.push({person,input,label,status});input.addEventListener('change',updateSummary);
-  });
-  const advisorEmpty=node('p','empty-small',advisors.length?'Nenhum orientador com esse nome.':'A coordenação ainda não liberou orientadores para convite.');advisorEmpty.hidden=Boolean(advisors.length);
-  search.addEventListener('input',()=>{const query=normalize(search.value).trim();let visible=0;advisorChoices.forEach(({label})=>{label.hidden=Boolean(query&&!label.dataset.search.includes(query));if(!label.hidden)visible++;});advisorEmpty.hidden=visible>0;});
-  advisor.append(search,advisorList,advisorEmpty);
-  const email=makeField('E-mail do aluno ou colega','toEmail',{type:'email',required:true,maxLength:254,autocomplete:'email',inputMode:'email',placeholder:'colega@exemplo.com',help:'Use o mesmo e-mail com que a pessoa acessa o Meu INIC. O convite aparecerá na aba Convites dela.'});
-  const guidance=node('p','form-note');guidance.id='advisor-invite-guidance';guidance.setAttribute('role','status');guidance.setAttribute('aria-live','polite');guidance.hidden=true;
-  const proposalSlot=node('div','invite-proposal-slot');let proposalEditor=null,proposalEditorGroup='';
-  advisor.setAttribute('aria-describedby',guidance.id);
-  const summary=node('div','invite-summary');summary.setAttribute('role','status');summary.setAttribute('aria-live','polite');summary.setAttribute('aria-atomic','true');
+  for(const [value,title,help]of [['member','Aluno ou colega','Escolha uma pessoa cadastrada.'],['advisor','Professor(a)','Pode orientar vários grupos.']]){
+    const choice=node('label','invite-type-choice'),input=node('input'),copy=node('span','invite-type-copy');input.type='radio';input.name='type';input.value=value;input.checked=value===(initialType==='advisor'?'advisor':'member');copy.append(node('strong','',title),node('small','',help));choice.append(input,copy);type.append(choice);typeChoices.push(input);input.addEventListener('change',toggle);
+  }
   const inviteType=()=>typeChoices.find(input=>input.checked)?.value||'member';
+  const memberPicker=buildStudentPicker({selectedIds:initialType==='member'&&initialUid?[initialUid]:[],group:currentGroup,onChange:updateSummary});
+  const advisor=node('fieldset','advisor-picker invite-advisor-picker');advisor.append(node('legend','','Escolha o professor'));
+  const search=node('input','advisor-picker-search');search.type='search';search.placeholder='Digite o nome do professor';search.setAttribute('aria-label','Buscar orientador para convidar');search.autocomplete='off';
+  const advisorList=node('div','advisor-picker-list'),advisorEmpty=node('p','empty-small');let selectedAdvisorId=initialType==='advisor'?initialUid:'';
+  const guidance=node('p','form-note');guidance.id='advisor-invite-guidance';guidance.setAttribute('role','status');guidance.setAttribute('aria-live','polite');advisor.setAttribute('aria-describedby',guidance.id);
+  advisor.append(search,advisorList,advisorEmpty);
+  const proposalSlot=node('div','invite-proposal-slot');let proposalEditor=null,proposalEditorGroup='';
+  const summary=node('div','invite-summary');summary.setAttribute('role','status');summary.setAttribute('aria-live','polite');summary.setAttribute('aria-atomic','true');
+  function selectedPerson(){const uid=inviteType()==='advisor'?selectedAdvisorId:memberPicker.selectedIds()[0];return state.people.find(person=>person.id===uid);}
   function updateSummary(){
-    const current=state.groups.find(item=>item.id===group.field.value),isAdvisor=inviteType()==='advisor';
-    const person=advisorChoices.find(({input})=>input.checked&&!input.disabled)?.person;const recipient=isAdvisor?person?.name:email.field.value.trim();
-    summary.replaceChildren(node('strong','','Confira o convite'),node('p','',recipient?`${recipient} receberá um convite para ${isAdvisor?'orientar o grupo':'participar do grupo'} “${current?.name||initialGroup.name}”.`:isAdvisor?'Selecione um orientador na lista acima.':'Informe o e-mail do aluno ou colega para continuar.'),node('small','','A pessoa receberá o convite no Meu INIC e precisará aceitá-lo.'));
+    const person=selectedPerson(),current=currentGroup(),isAdvisor=inviteType()==='advisor';
+    const available=personInviteAvailability(person,current);
+    summary.replaceChildren(node('strong','','Confira o convite'),node('p','',person?available.available?`${person.name} receberá um convite para ${isAdvisor?'orientar':'participar do'} grupo “${current?.name||initialGroup.name}”.`:available.detail:isAdvisor?'Selecione um professor disponível na lista acima.':'Selecione um aluno disponível na lista acima.'),node('small','','A pessoa recebe o convite no Meu INIC e só entra no grupo após aceitar.'));
+    const submit=$('#dialog-submit');if(submit&&!submit.hasAttribute('aria-busy'))submit.disabled=!person||!available.available;
+  }
+  function paintAdvisors(){
+    const focused=advisorList.contains(document.activeElement)?document.activeElement?.value:null;
+    advisorList.replaceChildren();
+    const people=state.people.filter(person=>participantStatus(person).type==='advisor').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+    const query=normalize(search.value).trim(),current=currentGroup();
+    if(selectedAdvisorId&&!people.some(person=>person.id===selectedAdvisorId&&personInviteAvailability(person,current).available))selectedAdvisorId='';
+    let visible=0;
+    for(const person of people){
+      const availability=personInviteAvailability(person,current),label=node('label','advisor-choice'),input=node('input'),copy=node('span','advisor-choice-copy');input.type='radio';input.name='toUid';input.value=person.id;input.checked=selectedAdvisorId===person.id;input.disabled=inviteType()!=='advisor'||!availability.available;label.hidden=Boolean(query&&!normalize(person.name).includes(query));if(!label.hidden)visible++;
+      copy.append(node('strong','',advisorLabel(person)),node('small','',availability.available?'Disponível · pode orientar vários grupos':availability.label));if(!availability.available)copy.append(node('small','',availability.detail));
+      const avatar=node('span','avatar',initials(person.name));avatar.setAttribute('aria-hidden','true');label.append(input,avatar,copy);advisorList.append(label);
+      input.addEventListener('change',()=>{if(!input.checked||input.disabled)return;selectedAdvisorId=person.id;advisorList.querySelectorAll('input').forEach(other=>{if(other!==input)other.checked=false;});updateSummary();});
+    }
+    advisorEmpty.hidden=visible>0;advisorEmpty.textContent=state.peopleError?'Não foi possível carregar os professores. Feche o formulário e tente novamente em Pessoas.':!state.peopleReady?'Carregando professores e disponibilidade…':people.length?'Nenhum professor com esse nome.':'A coordenação ainda não liberou professores para convite.';
+    if(focused)[...advisorList.querySelectorAll('input')].find(input=>input.value===focused&&!input.disabled)?.focus({preventScroll:true});
   }
   function toggle(){
-    const isAdvisor=inviteType()==='advisor';const current=state.groups.find(item=>item.id===group.field.value);const pending=pendingAdvisorInvitations(group.field.value);
-    const available=advisorChoices.filter(({person})=>!pending.some(invite=>invite.toUid===person.id)).length;
-    const blocked=isAdvisor&&(Boolean(current?.advisorId)||pending.length>=3||!available);
-    advisor.hidden=!isAdvisor;search.disabled=blocked||!isAdvisor;email.label.hidden=isAdvisor;email.field.required=!isAdvisor;email.field.disabled=isAdvisor;guidance.hidden=!isAdvisor;
-    guidance.textContent=current?.advisorId?'Este grupo já tem orientador(a). Novos convites de orientação não estão disponíveis.':pending.length>=3?'Há 3 convites de orientação aguardando resposta. Aguarde uma resposta antes de enviar outro convite.':!advisors.length?'A coordenação ainda não liberou orientadores. Você já pode convidar alunos ou colegas.':!available?'Os orientadores disponíveis já receberam o convite deste grupo. Aguarde uma resposta.':`Convide até 3 orientadores. O primeiro aceite confirma a orientação. ${pending.length} de 3 convites pendentes.`;
-    advisorChoices.forEach(({person,input,status})=>{const invited=pending.some(invite=>invite.toUid===person.id);input.disabled=!isAdvisor||blocked||invited;input.required=isAdvisor&&!blocked&&!invited;if(input.disabled)input.checked=false;status.textContent=invited?'Convite já enviado · aguardando resposta':'Disponível para convite';});
-    const needsProposal=isAdvisor&&!blocked&&!current?.proposal;
+    const isAdvisor=inviteType()==='advisor',current=currentGroup(),pending=pendingAdvisorInvitations(group.field.value);
+    memberPicker.setActive(!isAdvisor);advisor.hidden=!isAdvisor;guidance.hidden=!isAdvisor;search.disabled=!isAdvisor||!state.peopleReady||Boolean(state.peopleError);paintAdvisors();
+    guidance.textContent=current?.advisorId?'Este grupo já tem um orientador confirmado. O professor pode orientar outros grupos.':pending.length>=3?'Há 3 convites de orientação aguardando resposta. Aguarde uma resposta para enviar outro.':`Escolha até 3 professores por grupo. O primeiro aceite confirma a orientação. ${pending.length} de 3 convites pendentes.`;
+    const needsProposal=isAdvisor&&!current?.advisorId&&pending.length<3&&!current?.proposal;
     proposalSlot.hidden=!needsProposal;
     if(needsProposal&&proposalEditorGroup!==current?.id){proposalEditor?.destroy();proposalEditor=createProposalEditor({});proposalEditorGroup=current?.id||'';proposalSlot.replaceChildren(proposalEditor.element);}
-    const submit=$('#dialog-submit');if(submit&&!submit.hasAttribute('aria-busy'))submit.disabled=blocked;
     updateSummary();
   }
-  group.field.addEventListener('change',toggle);email.field.addEventListener('input',updateSummary);
+  search.addEventListener('input',paintAdvisors);group.field.addEventListener('change',toggle);
   const sameSession=()=>state.user?.uid===actor&&sessionVersion===session&&canAccessAcademic();
-  openForm({title:'Enviar convite',fields:[manageable.length===1?group.field:group.label,groupContext,type,email.label,advisor,guidance,proposalSlot,summary],submit:'Enviar convite',busy:'Enviando convite…',guard:()=>sameSession()&&state.groups.some(canManage),cleanup:()=>proposalEditor?.destroy(),handler:async data=>{
+  openForm({title:'Enviar convite',fields:[manageable.length===1?group.field:group.label,groupContext,type,memberPicker.field,advisor,guidance,proposalSlot,summary],submit:'Enviar convite',busy:'Enviando convite…',guard:()=>sameSession()&&state.groups.some(canInviteToGroup),onUpdate:toggle,cleanup:()=>{memberPicker.destroy();proposalEditor?.destroy();},handler:async data=>{
     if(!sameSession())return;
-    const groupId=String(data.get('groupId'));const inviteType=String(data.get('type'));const current=state.groups.find(item=>item.id===groupId);
-    if(!current||!canManage(current))throw new Error('Você não pode enviar convites para este grupo.');
-    if(!['member','advisor'].includes(inviteType))throw new Error('Escolha aluno ou orientador para enviar o convite.');
-    const toUid=String(data.get('toUid')||'');
-    if(inviteType==='advisor'){
-      if(current.advisorId)throw new Error('Este grupo já tem orientador(a). Novos convites de orientação não estão disponíveis.');
-      const pending=pendingAdvisorInvitations(groupId);
-      if(pending.length>=3)throw new Error('Este grupo já tem 3 convites de orientação aguardando resposta.');
-      if(pending.some(invite=>invite.toUid===toUid))throw new Error('Este orientador já tem um convite pendente para o grupo.');
-      if(!toUid||!state.advisors.some(person=>person.id===toUid))throw new Error('Selecione um orientador aprovado pela coordenação.');
-      if(!current.proposal){
-        if(proposalEditorGroup!==groupId||!proposalEditor)throw new Error('Inclua uma proposta de TCC antes de convidar o orientador.');
-        if(typeof service.saveProposal!=='function')throw new Error('Atualize a página para incluir a proposta.');
-        try{await service.saveProposal(groupId,{...proposalEditor.read(),expectedVersion:null});}catch(error){if(sameSession())throw error;return;}
-        if(!sameSession())return;
-        const latest=state.groups.find(item=>item.id===groupId);if(!latest||!canManage(latest)||latest.advisorId)throw new Error('O acesso ou a orientação deste grupo mudou. Confira a situação antes de convidar.');
-        const refreshed=pendingAdvisorInvitations(groupId);if(refreshed.length>=3||refreshed.some(invite=>invite.toUid===toUid))throw new Error('Os convites deste grupo mudaram. Confira os destinatários pendentes.');
-      }
+    const groupId=String(data.get('groupId')),type=String(data.get('type')),current=state.groups.find(item=>item.id===groupId);
+    if(!current||!canInviteToGroup(current))throw new Error('Você não pode enviar convites para este grupo.');
+    if(!['member','advisor'].includes(type))throw new Error('Escolha aluno ou professor para enviar o convite.');
+    const toUid=type==='advisor'?selectedAdvisorId:memberPicker.selectedIds()[0],person=state.people.find(item=>item.id===toUid);
+    const availability=personInviteAvailability(person,current);
+    if(!person||participantStatus(person).type!==type)throw new Error('Selecione uma pessoa cadastrada para enviar o convite.');
+    if(!availability.available)throw new Error(availability.detail);
+    if(type==='advisor'&&!current.proposal){
+      if(proposalEditorGroup!==groupId||!proposalEditor)throw new Error('Anexe a proposta antes de convidar o professor.');
+      if(typeof service.saveProposal!=='function')throw new Error('Atualize a página para anexar a proposta.');
+      try{await service.saveProposal(groupId,{...proposalEditor.read(),expectedVersion:null});}catch(error){if(sameSession())throw error;return;}
+      if(!sameSession())return;
+      const refreshed=personInviteAvailability(state.people.find(item=>item.id===toUid),state.groups.find(item=>item.id===groupId));if(!refreshed.available)throw new Error(refreshed.detail);
     }
-    const toEmail=String(data.get('toEmail')||'').trim().toLowerCase();
-    if(inviteType==='member'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail))throw new Error('Informe um e-mail válido do aluno ou colega.');
-    const recipient=inviteType==='advisor'?state.advisors.find(person=>person.id===toUid)?.name||'o orientador':toEmail;
-    try{await service.invite({groupId,type:inviteType,...(inviteType==='advisor'?{toUid}:{toEmail})});}catch(error){if(sameSession())throw error;return;}
-    if(sameSession()){invitationFilter='sent';if(currentRoute.view==='invitations')render();notice(`Convite enviado para ${recipient}. A pessoa poderá aceitar na aba Convites do Meu INIC.`,'success',true,{title:'Convite enviado',href:'#convites',label:'Ver convites enviados'});}
+    try{await service.invite({groupId,type,toUid});}catch(error){if(sameSession())throw error;return;}
+    if(sameSession()){invitationFilter='sent';if(currentRoute.view==='invitations')render();notice(`Convite enviado para ${person.name}. A pessoa poderá aceitar na aba Convites do Meu INIC.`,'success',true,{title:'Convite enviado',href:'#convites',label:'Ver convites enviados'});}
   }});toggle();
 }
 
@@ -1493,7 +1580,7 @@ function renderGroup() {
   if(canReplaceGroupAdvisor(group))actions.append(button('Substituir orientador','button secondary compact',()=>showReplaceAdvisor(group)));
   if(canWithdrawGroupAdvisor(group))actions.append(button('Sair da orientação','text-button destructive-action',()=>showWithdrawAdvisor(group)));
   if(canEditGroup(group))actions.append(button('Editar grupo','button secondary compact',()=>showEditGroup(group)));
-  if(canManage(group))actions.append(button('Convidar +','button primary compact',()=>showInviteForm(group.id)));
+  if(canInviteToGroup(group))actions.append(button('Convidar +','button primary compact',()=>showInviteForm(group.id)));
   if(isGroupManager(group))actions.append(button('Excluir grupo','text-button destructive-action',()=>showDeleteGroup(group)));
   const data=groupData.get(group.id);const tasks=data?.tasks||[];const prog=$('#group-progress');prog.replaceChildren(progressBlock(tasks,'Progresso da pesquisa'),node('p','',`${tasks.filter(t=>t.completed).length} de ${tasks.length} entregas concluídas.`));
   const late=tasks.filter(t=>statusOf(t).key==='late').length;prog.append(node('div','due-summary',late?`${late} ${late===1?'etapa precisa':'etapas precisam'} de atenção.`:'Um passo de cada vez. Mantenha o grupo em dia.'));
@@ -1549,7 +1636,7 @@ function renderGroupOverview(group,tasks) {
   }else if(!group.advisorId&&group.advisorRequestPolicy==='first-accept-v1'){
     const pending=pendingAdvisorInvitations(group.id);const waiting=node('section','panel advisor-confirmation is-waiting');
     waiting.append(node('span','badge warning','Escolha de orientação'),node('h3','',pending.length?`${pending.length} convite(s) aguardando resposta`:'Convide um(a) orientador(a)'),node('p','','Envie convites para até 3 orientadores ao mesmo tempo. O primeiro aceite confirma a orientação.'));
-    if(canManage(group))waiting.append(button('Convidar orientador(a)','button secondary compact',()=>showInviteForm(group.id,'advisor')));fragment.append(waiting);
+    if(canInviteToGroup(group))waiting.append(button('Convidar orientador(a)','button secondary compact',()=>showInviteForm(group.id,'advisor')));fragment.append(waiting);
   }
   const proposalPanel=node('section','panel group-proposal-panel');proposalPanel.append(createProposalView({proposal:group.proposal,onDownload:event=>downloadProposal(group.id,group.proposal,event.currentTarget,'',()=>currentRoute.view==='group'&&currentRoute.groupId===group.id&&currentRoute.tab==='overview')}));if(canManage(group))proposalPanel.append(button(group.proposal?'Atualizar proposta':'Adicionar proposta','button secondary compact',()=>showEditProposal(group)));fragment.append(proposalPanel,inicResultPanel(group),columns);
   const next=tasks.filter(t=>!t.completed).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,3);
@@ -1631,7 +1718,7 @@ function paintMessages(messages) {
 }
 
 function renderInvitations() {
-  const fragment=document.createDocumentFragment();const orientationPanel=orientationNoticesPanel();if(orientationPanel)fragment.append(orientationPanel);fragment.append(heading('Convites',state.role==='advisor'?'Envie convites aos estudantes e responda aos convites para orientar grupos.':'Convide pessoas para seu grupo e responda aos convites recebidos.',[button('Enviar convite +','button primary',()=>showInviteForm())]));
+  const fragment=document.createDocumentFragment();const orientationPanel=orientationNoticesPanel();if(orientationPanel)fragment.append(orientationPanel);fragment.append(heading('Convites',state.role==='advisor'?'Você pode orientar vários grupos. Convide alunos disponíveis e acompanhe as respostas.':'Conecte-se com a comunidade e acompanhe seus convites. Cada aluno participa de um grupo.',[link('Encontrar pessoas','#pessoas','button secondary'),button('Enviar convite +','button primary',()=>showInviteForm())]));
   const filters=node('div','filter-pills invite-tabs');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar convites');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=filterButton(label,value,value===invitationFilter,()=>{invitationFilter=value;render();document.querySelector(`[data-invitation-filter="${value}"]`)?.focus({preventScroll:true});},'invitation-results');b.dataset.invitationFilter=value;filters.append(b);});const results=node('div');results.id='invitation-results';fragment.append(filters,results);
   const invitations=state.invitations.filter(i=>invitationFilter==='incoming'?i.status==='pending'&&isRecipient(i):invitationFilter==='sent'?i.senderId===state.user.uid&&i.status==='pending':i.status!=='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   if(!invitations.length){results.append(emptyState(invitationFilter==='incoming'?'Nenhum convite aguardando resposta':invitationFilter==='sent'?'Nenhum convite pendente enviado':'O histórico aparece aqui',invitationFilter==='incoming'?'Quando um orientador ou grupo convidar você, o convite aparecerá aqui. Confira se está usando o mesmo e-mail informado.':'Você poderá acompanhar o grupo, o destinatário e a situação de cada convite.'));return fragment;}
@@ -1640,17 +1727,28 @@ function renderInvitations() {
     const name=invite.groupName||groupName(invite.groupId);
     const card=node('article','invitation-card');const border=node('div','invitation-card__border-top');border.setAttribute('aria-hidden','true');
     const avatar=node('div','invitation-card__avatar',initials(name));avatar.setAttribute('aria-hidden','true');
-    const recipient=invite.toEmail||state.advisors.find(a=>a.id===invite.toUid)?.name||(invite.toUid===state.user.uid?myName():'Orientador(a) convidado(a)');
+    const recipient=state.people.find(person=>person.id===invite.toUid)?.name||invite.toEmail||state.advisors.find(a=>a.id===invite.toUid)?.name||(invite.toUid===state.user.uid?myName():invite.type==='advisor'?'Professor(a) convidado(a)':'Aluno(a) convidado(a)');
     const date=typeof invite.createdAt==='number'?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(invite.createdAt)):'';
     const status={pending:'Aguardando resposta',accepted:'Aceito',declined:'Recusado',cancelled:'Cancelado'}[invite.status]||invite.status;
     card.append(border,avatar,node('h3','invitation-card__name',name),node('p','invitation-card__role',invite.type==='advisor'?'Convite para orientar o grupo':'Convite para participar do grupo'),node('p','invitation-card__details',`De: ${invite.senderName||'Participante'}\nPara: ${recipient}${date?'\nEnviado em '+date:''}`),node('span','invitation-card__status',status));
     if(invite.status==='pending'&&isRecipient(invite)) {
       if(invite.type==='advisor'&&['advisor','coordinator'].includes(state.role)){const read=button('Ler proposta de TCC','button secondary',()=>showInvitationProposal(invite));read.dataset.invitationProposal=invite.id;card.append(read);}
-      const actions=node('div','invitation-card__actions');const accept=button('Aceitar convite','button primary',event=>action(event.currentTarget,()=>service.respondInvitation(invite.id,true),invite.type==='advisor'?'Orientação confirmada. O grupo está disponível em Meus grupos.':'Convite aceito. O grupo está disponível em Meus grupos.',invite.type==='advisor'?'Confirmando orientação…':'Entrando no grupo…'));const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified);const requiresApproval=invite.type==='advisor'&&!['advisor','coordinator'].includes(state.role);if(requiresVerification||requiresApproval){accept.disabled=true;accept.title=requiresApproval?'Aguarde a aprovação da coordenação para orientar.':'Confirme seu e-mail primeiro';}
+      const actions=node('div','invitation-card__actions');
+      const occupied=invite.type==='member'&&state.role==='student'&&Boolean(studentGroupId());
+      const checking=invite.type==='member'&&state.role==='student'&&(!state.peopleReady||Boolean(state.peopleError));
+      const accept=button('Aceitar convite','button primary',event=>{
+        if(invite.type==='member'&&state.role==='student'&&studentGroupId()){notice('Você já participa de um grupo. Cada aluno pode participar de apenas um grupo.','info');return;}
+        action(event.currentTarget,()=>service.respondInvitation(invite.id,true),invite.type==='advisor'?'Orientação confirmada. Você pode orientar outros grupos também.':'Convite aceito. Seu grupo está disponível em Meus grupos.',invite.type==='advisor'?'Confirmando orientação…':'Entrando no grupo…');
+      });
+      const requiresVerification=Boolean(invite.toEmail&&!state.user.emailVerified),requiresApproval=invite.type==='advisor'&&!['advisor','coordinator'].includes(state.role);
+      if(requiresVerification||requiresApproval||occupied||checking){accept.disabled=true;accept.title=occupied?'Você já participa de um grupo.':checking?'Consultando sua participação nos grupos…':requiresApproval?'Aguarde a aprovação da coordenação para orientar.':'Confirme seu e-mail primeiro';}
+      if(occupied)card.append(node('p','invitation-card__notice','Você já aceitou um convite ou criou seu grupo. Cada aluno pode participar de apenas um grupo; este convite não pode ser aceito.'));
+      else if(checking)card.append(node('p','invitation-card__notice',state.peopleError?'Não foi possível consultar sua disponibilidade. Tente novamente em Pessoas.':'Consultando sua participação nos grupos…'));
+
       actions.append(accept,button('Recusar','button secondary',()=>confirmAction('Recusar convite?',`O convite para “${invite.groupName||'este grupo'}” será recusado. Um novo convite poderá ser enviado depois.`,async()=>{await service.respondInvitation(invite.id,false);notice('Convite recusado.');},'Recusar convite')));card.append(actions);
       if(requiresVerification)card.append(node('p','invitation-card__notice','Confirme seu e-mail para aceitar. Use “Enviar confirmação” no aviso acima.'));
       if(requiresApproval)card.append(node('p','invitation-card__notice','A coordenação precisa aprovar seu perfil de professor(a) antes do aceite.'));
-    } else if(invite.status==='pending')card.append(node('p','invitation-card__notice','Aguardando o aceite do destinatário.'));
+    } else if(invite.status==='pending'){const target=state.people.find(person=>person.id===invite.toUid);card.append(node('p','invitation-card__notice',invite.type==='member'&&target?.groupId?'Este aluno já participa de um grupo e não pode aceitar outro convite.':'Aguardando o aceite do destinatário.'));}
     grid.append(card);
   });results.append(grid);return fragment;
 }
@@ -1863,7 +1961,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261112-6');
+  service = await import('./firebase-service.js?v=20261112-8');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {
@@ -1871,4 +1969,4 @@ try {
   const retry=button('Tentar novamente','text-button',()=>location.reload());$('#auth-status').append(document.createTextNode(' '),retry);
 }
 window.addEventListener('beforeunload',event=>{if([...articleEditors.values()].some(({editor})=>editor.hasUnsaved())){event.preventDefault();event.returnValue='';}});
-window.addEventListener('pagehide',event=>{if(!event.persisted){for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();revokeProposalUrls();cleanupDialog();destroyIndicators();sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();revokeProposalUrls();cleanupDialog();destroyIndicators();destroyCommunity();sessionUnsubscribe();appUnsubscribe();agreementsUnsubscribe();for(const unsubscribe of groupListeners.values())unsubscribe();}});
