@@ -80,6 +80,16 @@ function applyFilters(resetLimit = true) {
   const year = $('#year').value;
   const advisor = $('#advisor').value;
   const school = $('#school').value;
+  const activeCount = controls.reduce((count, selector) => {
+    const control = $(selector);
+    const active = selector === '#search' ? Boolean(query) : control.value !== 'all';
+    control.classList.toggle('is-filtered', active);
+    control.closest('label')?.classList.toggle('is-filtered', active);
+    return count + Number(active);
+  }, 0);
+  $('#clear-filters').disabled = activeCount === 0;
+  const filterSummary = $('#article-filter-summary');
+  if (filterSummary) filterSummary.textContent = activeCount ? `${activeCount} ${activeCount === 1 ? 'filtro ativo' : 'filtros ativos'}` : 'Sem filtros ativos';
   const filtered = papers.filter(p => (year === 'all' || p.year === Number(year)) && (advisor === 'all' || getMatches(p).includes(advisor)) && (school === 'all' || p.isMaximus === (school === 'maximus')) && (!query || query.split(/\s+/).every(word => normalize([p.title,p.description,p.students,(p.authors || []).join(' '),(p.supervisors || []).join(' '),p.topic,p.institution,p.note,(p.matchedPeople||[]).join(' '),(p.matchedFullNames||[]).join(' '),JSON.stringify(p.nameMatches||{})].join(' ')).includes(word))));
   $('#articles').replaceChildren(...filtered.slice(0, visibleLimit).map(makeCard));
   const shown = Math.min(visibleLimit, filtered.length);
@@ -100,7 +110,7 @@ function resetFilters() {
 }
 $('#filters').addEventListener('submit', e => e.preventDefault());
 controls.forEach(selector => $(selector).addEventListener(selector === '#search' ? 'input' : 'change', () => applyFilters()));
-$('#clear-filters').addEventListener('click', resetFilters);
+$('#clear-filters').addEventListener('click', () => {resetFilters(); $('#search').focus({preventScroll:true});});
 $('#empty-reset').addEventListener('click', () => {resetFilters(); $('#search').focus({preventScroll:true});});
 $('#load-more').addEventListener('click', () => {
   const oldCount = $('#articles').children.length;

@@ -101,6 +101,7 @@ export function createCalendarView({groups = [],tasks = [],events = [],canManage
   const managed = groups.filter(group => group.status !== 'deleting' && canManageGroup(group));
 
   function changeMonth(year,month) {const target=new Date(year,month,1,12);if(target.getFullYear()<1900||target.getFullYear()>2100)return;ui.date=target;ui.selectedDay='';draw();}
+  function restoreFilterFocus(key) {root.querySelector(`[data-filter-key="${key}"]`)?.focus({preventScroll:true});}
   function selectedGroup() {return ui.groupId !== 'all' && managed.some(group => group.id === ui.groupId) ? ui.groupId : managed.length===1 ? managed[0].id : '';}
   function addEvent(date) {onAddEvent(selectedGroup(),date || ui.selectedDay || `${ui.date.getFullYear()}-${String(ui.date.getMonth()+1).padStart(2,'0')}-01`);}
   function exportAgenda() {
@@ -137,11 +138,11 @@ export function createCalendarView({groups = [],tasks = [],events = [],canManage
     const monthTitle=el('h3','',new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(ui.date));monthTitle.setAttribute('aria-live','polite');navigation.append(previous,monthTitle,next);toolbar.append(navigation);
     const actions=el('div','inic-calendar__quick-actions');
     actions.append(control('Ir para 2027','button secondary compact',()=>changeMonth(2027,0)),control('Hoje','button secondary compact',()=>{const today=parseCalendarDate(brazilToday());changeMonth(today.getFullYear(),today.getMonth());}),control(`Exportar ${year}`,'button secondary compact',exportAgenda));toolbar.append(actions);root.append(toolbar);
-    const filters=el('div','inic-calendar__filters');
-    const monthLabel=el('label','field inic-calendar__month','Mês');const monthInput=el('input');monthInput.type='month';monthInput.value=`${year}-${String(month+1).padStart(2,'0')}`;monthInput.min='1900-01';monthInput.max='2100-12';monthInput.addEventListener('change',()=>{if(/^\d{4}-\d{2}$/.test(monthInput.value)){const [y,m]=monthInput.value.split('-').map(Number);if(m>=1&&m<=12)changeMonth(y,m-1);}});monthLabel.append(monthInput);
-    const groupLabel=el('label','field inic-calendar__group','Grupo');const select=el('select');
-    for(const group of [{id:'all',name:'Todos os meus grupos'},...groups.filter(group=>group.status!=='deleting')]){const option=el('option','',group.name);option.value=group.id;select.append(option);}select.value=ui.groupId;select.addEventListener('change',()=>{ui.groupId=select.value;ui.selectedDay='';draw();});groupLabel.append(select);
-    const holidaysLabel=el('label','inic-calendar__holiday-toggle');const checkbox=el('input');checkbox.type='checkbox';checkbox.checked=ui.showHolidays;checkbox.addEventListener('change',()=>{ui.showHolidays=checkbox.checked;draw();});holidaysLabel.append(checkbox,document.createTextNode('Feriados nacionais'));filters.append(monthLabel,groupLabel,holidaysLabel);root.append(filters);
+    const filters=el('div','inic-calendar__filters');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar calendário');
+    const monthLabel=el('label','field inic-calendar__month','Mês');const monthInput=el('input');monthInput.type='month';monthInput.setAttribute('data-filter-key','month');monthInput.value=`${year}-${String(month+1).padStart(2,'0')}`;monthInput.min='1900-01';monthInput.max='2100-12';monthInput.addEventListener('change',()=>{if(/^\d{4}-\d{2}$/.test(monthInput.value)){const [y,m]=monthInput.value.split('-').map(Number);if(m>=1&&m<=12){changeMonth(y,m-1);restoreFilterFocus('month');}}});monthLabel.append(monthInput);
+    const groupLabel=el('label','field inic-calendar__group','Grupo');const select=el('select');select.setAttribute('data-filter-key','group');
+    for(const group of [{id:'all',name:'Todos os meus grupos'},...groups.filter(group=>group.status!=='deleting')]){const option=el('option','',group.name);option.value=group.id;select.append(option);}select.value=ui.groupId;select.className=ui.groupId==='all'?'':'is-filtered';select.addEventListener('change',()=>{ui.groupId=select.value;ui.selectedDay='';draw();restoreFilterFocus('group');});groupLabel.append(select);
+    const holidaysLabel=el('label','inic-calendar__holiday-toggle');const checkbox=el('input');checkbox.type='checkbox';checkbox.setAttribute('data-filter-key','holidays');checkbox.checked=ui.showHolidays;checkbox.addEventListener('change',()=>{ui.showHolidays=checkbox.checked;draw();restoreFilterFocus('holidays');});holidaysLabel.append(checkbox,document.createTextNode('Feriados nacionais'));filters.append(monthLabel,groupLabel,holidaysLabel);root.append(filters);
 
     const entries=calendarEntries({groups,tasks,events,year,groupId:ui.groupId,includeHolidays:ui.showHolidays});
     const gridEntries=ui.showHolidays?[...entries,...nationalHolidays(year-1),...nationalHolidays(year+1)]:entries;

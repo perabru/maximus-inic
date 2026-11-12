@@ -1,8 +1,8 @@
 'use strict';
 
-import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261105-12';
+import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-7';
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261105-12';
-import { createCalendarView } from './calendar.js?v=20261105-8';
+import { createCalendarView } from './calendar.js?v=20261112-7';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
 import { createArticleEditor } from './article-editor.js?v=20261112-4';
 
@@ -75,6 +75,18 @@ function button(text, className, handler) {
   b.type = 'button';
   if (handler) b.addEventListener('click',handler);
   return b;
+}
+function filterButton(label, icon, selected, handler, controls) {
+  const control=button('','filter-choice',handler);
+  control.setAttribute('aria-pressed',String(selected));
+  if(controls)control.setAttribute('aria-controls',controls);
+  control.append(peopleToolIcon(icon),node('span','filter-label',label));
+  return control;
+}
+function filterSearch(input) {
+  const field=node('label','filter-search');
+  field.append(peopleToolIcon('search'),input);
+  return field;
 }
 function link(text, href, className = '') {
   const a = node('a',className,text);
@@ -726,12 +738,12 @@ function renderAgreements() {
     }else if(state.role==='advisor'){
       fragment.append(heading('Termos para assinar','Documentos conferidos dos estudantes dos seus grupos.'));
       const groups=state.groups.filter(group=>group.status!=='deleting'&&group.advisorId===state.user.uid);
-      if(groups.length){const selector=makeField('Grupo orientado','advisorAgreementGroup',{value:advisorAgreementGroupId,options:groups.map(group=>({value:group.id,label:group.name}))});selector.field.addEventListener('change',()=>{advisorAgreementGroupId=selector.field.value;agreementScope='';syncAgreementSubscription();renderedKey='';render();});fragment.append(selector.label);}
+      if(groups.length){const selector=makeField('Grupo orientado','advisorAgreementGroup',{value:advisorAgreementGroupId,options:groups.map(group=>({value:group.id,label:group.name}))});selector.label.classList.add('filter-field','agreement-group-filter');selector.field.setAttribute('aria-controls','agreement-list');selector.field.addEventListener('change',()=>{advisorAgreementGroupId=selector.field.value;agreementScope='';syncAgreementSubscription();renderedKey='';render();document.querySelector('[name="advisorAgreementGroup"]')?.focus({preventScroll:true});});fragment.append(selector.label);}
     }else{
       const summary=node('div','agreement-summary');summary.id='agreement-summary';summary.setAttribute('aria-live','polite');fragment.append(summary);
-      const search=node('input');search.type='search';search.className='agreement-search';search.placeholder='Buscar estudante, e-mail ou arquivo';search.setAttribute('aria-label','Buscar contratos assinados');search.value=agreementSearch;search.addEventListener('input',()=>{agreementSearch=search.value;paintAgreements();});
-      const filters=node('div','filter-pills agreement-filters');filters.setAttribute('aria-label','Filtrar termos');
-      [['all','Todos'],['pending','Sem envio'],['awaiting','Aguardando conferência'],['approved','Conferidos'],['returned','Devolvidos'],['received','Todos os enviados']].forEach(([value,label])=>{const filter=button(label,'',()=>{agreementFilter=value;paintAgreements();});filter.dataset.agreementFilter=value;filters.append(filter);});fragment.append(search,filters);
+      const search=node('input');search.type='search';search.className='agreement-search';search.placeholder='Buscar estudante, e-mail ou arquivo';search.setAttribute('aria-label','Buscar contratos assinados');search.setAttribute('aria-controls','agreement-list');search.value=agreementSearch;search.addEventListener('input',()=>{agreementSearch=search.value;paintAgreements();});
+      const filters=node('div','filter-pills agreement-filters');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar termos');
+      [['all','Todos','list'],['pending','Sem envio','pending'],['awaiting','Aguardando conferência','clock'],['approved','Conferidos','done'],['returned','Devolvidos','returned'],['received','Todos os enviados','incoming']].forEach(([value,label,icon])=>{const filter=filterButton(label,icon,value===agreementFilter,()=>{agreementFilter=value;paintAgreements();},'agreement-list');filter.dataset.agreementFilter=value;filters.append(filter);});fragment.append(filterSearch(search),filters);
     }
     const list=node('section','agreement-list');list.id='agreement-list';list.setAttribute('aria-label',state.role==='coordinator'?'Situação dos termos dos estudantes':state.role==='advisor'?'Termos aprovados do grupo orientado':'Seu arquivo enviado');fragment.append(list);
     $('#view-content').replaceChildren(fragment);
@@ -1015,13 +1027,13 @@ function renderDashboard() {
 function renderGroups() {
   const fragment=document.createDocumentFragment();
   fragment.append(heading(state.role==='coordinator'?'Todos os grupos':'Cada grupo, um espaço de trabalho',state.role==='coordinator'?'Visão completa da escola. Escolha um grupo para acompanhar.':'Organize as pesquisas e mantenha cada conversa no lugar certo.',canCreateGroup()?[button('Novo grupo +','button primary',showCreateGroup)]:[]));
-  const filters=node('div','search-filter');const search=node('input');search.type='search';search.placeholder='Buscar grupo, tema ou integrante';search.setAttribute('aria-label','Buscar grupos');search.value=groupSearch;
-  search.addEventListener('input',event=>{groupSearch=event.target.value;paintFilteredGroups();});filters.append(search);
+  const filters=node('div','search-filter');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar grupos');const search=node('input');search.type='search';search.placeholder='Buscar grupo, tema ou integrante';search.setAttribute('aria-label','Buscar grupos');search.setAttribute('aria-controls','filtered-groups');search.value=groupSearch;
+  search.addEventListener('input',event=>{groupSearch=event.target.value;paintFilteredGroups();});filters.append(filterSearch(search));
   if(state.role==='coordinator'){
-    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');[{value:'all',label:'Todos os orientadores'},{value:'mine',label:'Grupos que eu oriento'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;paintFilteredGroups();});filters.append(select);
+    const select=node('select');select.setAttribute('aria-label','Filtrar por orientador');select.setAttribute('aria-controls','filtered-groups');[{value:'all',label:'Todos os orientadores'},{value:'mine',label:'Grupos que eu oriento'},{value:'none',label:'Sem orientador'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))].forEach(a=>{const o=node('option','',a.label);o.value=a.value;select.append(o);});select.value=groupAdvisorFilter;select.classList.toggle('is-filtered',groupAdvisorFilter!=='all');select.addEventListener('change',event=>{groupAdvisorFilter=event.target.value;select.classList.toggle('is-filtered',groupAdvisorFilter!=='all');paintFilteredGroups();});const field=node('label','filter-field');field.append(node('span','','Orientação'),select);filters.append(field);
   }
   fragment.append(filters,node('div','group-grid'));fragment.lastChild.id='filtered-groups';
-  const count=node('p','count-label');count.id='groups-count';count.style.marginTop='16px';fragment.append(count);
+  const count=node('p','count-label');count.id='groups-count';count.setAttribute('role','status');count.setAttribute('aria-live','polite');count.style.marginTop='16px';fragment.append(count);
   queueMicrotask(paintFilteredGroups);return fragment;
 }
 function paintFilteredGroups() {
@@ -1546,12 +1558,12 @@ function renderGroupOverview(group,tasks) {
   fragment.append(nextPanel,supportCard());$('#group-panel').replaceChildren(fragment);
 }
 function renderGroupTasks(group,tasks) {
-  const fragment=document.createDocumentFragment();const toolbar=node('div','tasks-toolbar');const pills=node('div','filter-pills');
-  [['all','Todas'],['pending','Pendentes'],['late','Em atraso'],['done','Concluídas']].forEach(([value,label])=>{const b=button(label,'',()=>{taskFilter=value;renderGroupTasks(group,groupData.get(group.id)?.tasks||[]);});b.setAttribute('aria-pressed',String(value===taskFilter));pills.append(b);});toolbar.append(pills);
+  const fragment=document.createDocumentFragment();const toolbar=node('div','tasks-toolbar');const pills=node('div','filter-pills task-filters');pills.setAttribute('role','group');pills.setAttribute('aria-label','Filtrar entregas');
+  [['all','Todas','list'],['pending','Pendentes','clock'],['late','Em atraso','late'],['done','Concluídas','done']].forEach(([value,label,icon])=>{const b=filterButton(label,icon,value===taskFilter,()=>{taskFilter=value;renderGroupTasks(group,groupData.get(group.id)?.tasks||[]);document.querySelector(`[data-task-filter="${value}"]`)?.focus({preventScroll:true});},'filtered-task-list');b.dataset.taskFilter=value;pills.append(b);});toolbar.append(pills);
   if(canManageTasks(group))toolbar.append(button('Adicionar entrega +','button secondary compact',()=>showTaskForm(group)));
   fragment.append(toolbar);
   const filtered=tasks.filter(t=>taskFilter==='all'||(taskFilter==='pending'?!t.completed:statusOf(t).key===taskFilter)).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
-  const list=node('div','task-list');
+  const list=node('div','task-list');list.id='filtered-task-list';
   filtered.forEach(task=>{
     const row=node('article',`task-row${task.completed?' completed':''}`);const label=node('label','task-toggle');const check=node('input');check.type='checkbox';check.checked=Boolean(task.completed);check.setAttribute('aria-label',`${task.completed?'Marcar como pendente':'Concluir entrega'}: ${task.title}`);check.addEventListener('change',async()=>{const completed=check.checked;const ok=await action(check,()=>service.updateTask(group.id,task.id,{completed}));if(!ok)check.checked=!completed;});label.append(check);
     const info=node('div','task-info');info.append(node('h3','',task.title),node('p','',`Prazo: ${dateLabel(task.dueDate)}`));const status=statusOf(task);const options=node('div','task-options');options.append(node('span',`badge ${status.className}`,status.text));if(canManageTasks(group)){const edit=button('✎','icon-button',()=>showTaskForm(group,task));edit.setAttribute('aria-label',`Editar entrega: ${task.title}`);options.append(edit);}row.append(label,info,options);list.append(row);
@@ -1620,9 +1632,9 @@ function paintMessages(messages) {
 
 function renderInvitations() {
   const fragment=document.createDocumentFragment();const orientationPanel=orientationNoticesPanel();if(orientationPanel)fragment.append(orientationPanel);fragment.append(heading('Convites',state.role==='advisor'?'Envie convites aos estudantes e responda aos convites para orientar grupos.':'Convide pessoas para seu grupo e responda aos convites recebidos.',[button('Enviar convite +','button primary',()=>showInviteForm())]));
-  const filters=node('div','filter-pills invite-tabs');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=button(label,'',()=>{invitationFilter=value;render();});b.setAttribute('aria-pressed',String(value===invitationFilter));filters.append(b);});fragment.append(filters);
+  const filters=node('div','filter-pills invite-tabs');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar convites');[['incoming','Recebidos'],['sent','Enviados'],['history','Histórico']].forEach(([value,label])=>{const b=filterButton(label,value,value===invitationFilter,()=>{invitationFilter=value;render();document.querySelector(`[data-invitation-filter="${value}"]`)?.focus({preventScroll:true});},'invitation-results');b.dataset.invitationFilter=value;filters.append(b);});const results=node('div');results.id='invitation-results';fragment.append(filters,results);
   const invitations=state.invitations.filter(i=>invitationFilter==='incoming'?i.status==='pending'&&isRecipient(i):invitationFilter==='sent'?i.senderId===state.user.uid&&i.status==='pending':i.status!=='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(!invitations.length){fragment.append(emptyState(invitationFilter==='incoming'?'Nenhum convite aguardando resposta':invitationFilter==='sent'?'Nenhum convite pendente enviado':'O histórico aparece aqui',invitationFilter==='incoming'?'Quando um orientador ou grupo convidar você, o convite aparecerá aqui. Confira se está usando o mesmo e-mail informado.':'Você poderá acompanhar o grupo, o destinatário e a situação de cada convite.'));return fragment;}
+  if(!invitations.length){results.append(emptyState(invitationFilter==='incoming'?'Nenhum convite aguardando resposta':invitationFilter==='sent'?'Nenhum convite pendente enviado':'O histórico aparece aqui',invitationFilter==='incoming'?'Quando um orientador ou grupo convidar você, o convite aparecerá aqui. Confira se está usando o mesmo e-mail informado.':'Você poderá acompanhar o grupo, o destinatário e a situação de cada convite.'));return fragment;}
   const grid=node('div','invite-grid');
   invitations.forEach(invite=>{
     const name=invite.groupName||groupName(invite.groupId);
@@ -1640,7 +1652,7 @@ function renderInvitations() {
       if(requiresApproval)card.append(node('p','invitation-card__notice','A coordenação precisa aprovar seu perfil de professor(a) antes do aceite.'));
     } else if(invite.status==='pending')card.append(node('p','invitation-card__notice','Aguardando o aceite do destinatário.'));
     grid.append(card);
-  });fragment.append(grid);return fragment;
+  });results.append(grid);return fragment;
 }
 
 function renderCalendar() {
@@ -1813,9 +1825,18 @@ function peopleToolIcon(kind) {
     all:'M9 11a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7Z M2.5 21v-2a5 5 0 0 1 5-5h3a5 5 0 0 1 5 5v2 M16 4a3.5 3.5 0 0 1 0 7 M18 14a5 5 0 0 1 3.5 5v2',
     students:'M2 8l10-5 10 5-10 5-10-5Z M6 10v6c4 3 8 3 12 0v-6 M22 8v8',
     advisors:'M3 3h18v12H3V3Z M12 15v6 M8 21l4-4 4 4 M7 7h5 M7 11h10',
-    archived:'M6 10h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Z M8 10V7a4 4 0 0 1 8 0v3 M12 14v2'
+    archived:'M6 10h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Z M8 10V7a4 4 0 0 1 8 0v3 M12 14v2',
+    list:'M8 5h13 M8 12h13 M8 19h13 M3 5h.01 M3 12h.01 M3 19h.01',
+    incoming:'M4 4h16v16H4V4Z M4 14h5l2 3h2l2-3h5 M12 7v5 M9 10l3 3 3-3',
+    sent:'m3 3 19 9-19 9 4-9-4-9Z M7 12h15',
+    history:'M3 11a9 9 0 1 1 2.5 7.2 M3 4v7h7 M12 7v5l3 2',
+    clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7v5l3 2',
+    pending:'M6 3h9l4 4v14H6V3Z M14 3v5h5 M9 13h7 M9 17h4',
+    done:'M9 12l2 2 4-4 M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z',
+    late:'M12 3 2 21h20L12 3Z M12 9v5 M12 17h.01',
+    returned:'M9 10 4 5l5-4 M4 5h10a6 6 0 0 1 0 12h-3'
   };
-  const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('class','admin-filter-icon');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
+  const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('class','admin-filter-icon filter-icon');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
   const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',paths[kind]||paths.search);icon.append(path);return icon;
 }
 function renderAdmin() {
