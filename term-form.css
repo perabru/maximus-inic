@@ -1,0 +1,55 @@
+.instructions .actions{flex:0 0 260px;max-width:100%;align-items:stretch}
+.instructions .actions :is(button,a){min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1.45;text-align:center;text-decoration:none;border-radius:9px;padding:11px 14px}
+.instructions .actions button.secondary{background:var(--surface);border:1px solid var(--purple);color:var(--purple);font-weight:650}
+.instructions .actions .plain{text-decoration:underline;text-underline-offset:3px;background:transparent}
+.instructions .actions :disabled{opacity:.65;cursor:wait}
+.instructions .actions .term-status{font-size:12px;line-height:1.55;margin:4px 0 0;max-width:260px;min-height:3em}
+.instructions .actions .term-status.is-error{color:#a32d38}
+[data-theme=dark] .instructions .actions .term-status.is-error{color:#ffbdc5}
+.signature-section-help{margin:24px 0 10px;padding:12px 14px;border:1px solid #deddec;border-radius:9px;background:#f2f1fa;color:#3d4094;font-size:13px;line-height:1.6;scroll-margin-top:24px}
+.sheet .signatures{margin-top:10px;gap:28px 24px}
+.sheet .signatures>div{min-width:0;justify-content:flex-start}
+.sheet .signature-editor{width:100%;margin-bottom:16px;text-align:left;color:#27283f}
+.sheet .signature-editor-title{font-size:15px;font-weight:700;line-height:1.5;margin:0 0 5px;color:#3d4094}
+.sheet .signature-editor-help{font-size:12px;line-height:1.6;color:#5e6076;margin:0 0 10px}
+.signature-canvas-wrap{position:relative;width:100%;border:1px dashed #7d80b5;border-radius:10px;background:#fff;overflow:hidden}
+.signature-canvas-wrap canvas{display:block;width:100%;height:auto;aspect-ratio:3/1;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;border:0;background:#fff}
+.signature-canvas-wrap:focus-within{outline:3px solid #e97621;outline-offset:3px}
+.sheet .signature-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;color:#777a93;font-size:12px;line-height:1.5;text-align:center;pointer-events:none}
+.sheet .signature-placeholder[hidden]{display:none}
+.sheet .signature-tools{display:flex;gap:8px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}
+.sheet .signature-tools button{min-height:44px;padding:9px 12px;border:1px solid #d6d8e8;border-radius:8px;background:#f5f5fb;color:#3d4094;font:600 12px/1.4 "Segoe UI",Arial,sans-serif;cursor:pointer}
+.sheet .signature-tools button:hover:not(:disabled){background:#eaeaf7;border-color:#9da0ca}
+.sheet .signature-tools button:disabled{opacity:.55;cursor:default}
+.sheet .signature-state{display:block!important;min-height:2.6em;margin-top:8px;text-align:left;font-size:11px!important;line-height:1.45!important;color:#5e6076!important}
+.sheet .signature-print-ink{display:none;width:100%;height:50px;align-items:center;justify-content:center}
+.sheet [data-term-signature=teacher] .signature-print-ink,.sheet [data-term-signature=coordinator] .signature-print-ink{display:flex}
+.sheet .signature-print-ink img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.sheet .signature-print-ink img[hidden]{display:none}
+.sheet .signature-person-input{display:block;width:100%;max-width:100%;min-height:34px;margin:5px 0;padding:5px 6px;border:0;border-bottom:1px solid #b2b3ca;background:#fcfbff;color:#27283f;text-align:center;font-size:12px;line-height:1.4;border-radius:0}
+.sheet .signature-owner-print{display:none}
+.sheet .signature-caption{font-size:10px!important;line-height:1.5!important}
+#compliance-form[aria-busy=true] .signature-editor{pointer-events:none;opacity:.65}
+.signature-editor-unavailable .signature-canvas-wrap,.signature-editor-unavailable .signature-tools{display:none}
+.term-noscript{max-width:760px;padding:20px;margin:20px auto;color:#3d4094;background:#f2f1fa;border:1px solid #deddec}
+.term-print-error-message{display:none}
+@media(max-width:680px){
+  .instructions .actions{flex-basis:auto;width:100%;max-width:420px}
+  .instructions .actions .term-status{max-width:none}
+  .sheet .signatures{grid-template-columns:1fr;gap:24px}
+  .sheet .signature-tools button{font-size:13px}
+  .sheet .signature-editor-title{font-size:16px}
+}
+@media print{
+  .signature-section-help,.signature-editor,.term-noscript{display:none!important}
+  .sheet .signatures{grid-template-columns:1fr 1fr;gap:20pt 32pt;margin-top:14pt;margin-bottom:14pt;break-inside:avoid}
+  .sheet .signatures>div{justify-content:flex-start;break-inside:avoid}
+  .sheet .signature-print-ink{display:flex!important;height:34pt;margin-bottom:3pt}
+  .sheet .signature-print-ink img{max-height:34pt;max-width:100%}
+  .sheet .signature-person-input{display:none!important}
+  .sheet .signature-owner-print{display:block;min-height:11pt;max-width:100%;font-size:8pt;line-height:1.35;color:#27283f;overflow-wrap:anywhere;margin-top:3pt}
+  .sheet .signature-caption{font-size:7.3pt!important;line-height:1.4!important}
+  .sheet .signature-line{margin-bottom:4pt}
+  body.has-term-print-error #compliance-form{display:none!important}
+  body.has-term-print-error .term-print-error-message{display:block!important;font-size:12pt;color:#222;line-height:1.6;margin:24pt}
+}

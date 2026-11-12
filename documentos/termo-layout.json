@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "template": "Termo_Compromisso_INIC_2027_Maximus.pdf",
+  "pageCount": 2,
+  "pages": [
+    {
+      "width": 595.2755905511812,
+      "height": 841.8897637795277
+    },
+    {
+      "width": 595.2755905511812,
+      "height": 841.8897637795277
+    }
+  ],
+  "fields": {
+    "student": {
+      "page": 0,
+      "x": 46,
+      "y": 599.8897637795277,
+      "width": 503.27559055118115,
+      "height": 14,
+      "fontSize": 10,
+      "minFontSize": 6.5,
+      "maxLength": 120,
+      "maxLines": 1,
+      "align": "left"
+    },
+    "class": {
+      "page": 0,
+      "x": 46,
+      "y": 565.8897637795277,
+      "width": 236.13779527559058,
+      "height": 14,
+      "fontSize": 10,
+      "minFontSize": 6.5,
+      "maxLength": 40,
+      "maxLines": 1,
+      "align": "left"
+    },
+    "group": {
+      "page": 0,
+      "x": 46,
+      "y": 531.8897637795277,
+      "width": 503.27559055118115,
+      "height": 14,
+      "fontSize": 10,
+      "minFontSize": 6.5,
+      "maxLength": 180,
+      "maxLines": 1,
+      "align": "left"
+    },
+    "advisor": {
+      "page": 0,
+      "x": 46,
+      "y": 497.8897637795277,
+      "width": 503.27559055118115,
+      "height": 14,
+      "fontSize": 10,
+      "minFontSize": 6.5,
+      "maxLength": 120,
+      "maxLines": 1,
+      "align": "left"
+    },
+    "date": {
+      "page": 1,
+      "x": 158.464111328125,
+      "y": 363.58976377952774,
+      "width": 390.81147922305615,
+      "height": 13,
+      "fontSize": 9.5,
+      "minFontSize": 6.5,
+      "maxLength": 45,
+      "maxLines": 1,
+      "align": "left"
+    },
+    "guardian": {
+      "page": 1,
+      "x": 319.6377952755906,
+      "y": 278.58976377952774,
+      "width": 227.63779527559058,
+      "height": 20,
+      "fontSize": 8.5,
+      "minFontSize": 6.5,
+      "maxLength": 120,
+      "maxLines": 2,
+      "align": "center"
+    }
+  },
+  "signatures": {
+    "student": {
+      "page": 1,
+      "x": 51,
+      "y": 322.58976377952774,
+      "width": 221.63779527559058,
+      "height": 35
+    },
+    "guardian": {
+      "page": 1,
+      "x": 322.6377952755906,
+      "y": 322.58976377952774,
+      "width": 221.63779527559058,
+      "height": 35
+    }
+  },
+  "templateSha256": "45016f2752e25a51cb8157ca2b710578e55e6fb6d7fb7834a3976c375db7e1dc"
+}

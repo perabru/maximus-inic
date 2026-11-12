@@ -4,6 +4,8 @@
 Run from any directory: python3 scripts/build-term-template.py
 Requires ReportLab and the DejaVu Sans regular/bold fonts. An alternative font
 directory can be provided with --font-dir. Use --output for a preview copy.
+Writes the matching field/signature positions and PDF hash to termo-layout.json
+(or --layout-output). Both files must be published together.
 The HTML is the source of all clauses, names, signature labels and references.
 This only generates the blank student template; it never reads account data.
 """
@@ -11,6 +13,8 @@ This only generates the blank student template; it never reads account data.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
@@ -36,6 +40,8 @@ INK = colors.HexColor('#27283f')
 MUTED = colors.HexColor('#66687a')
 LINE = colors.HexColor('#deddec')
 SOFT = colors.HexColor('#f2f1fa')
+FIELD_LIMITS = {'student': 120, 'class': 40, 'group': 180, 'advisor': 120,
+                'guardian': 120, 'date': 45}
 
 
 @dataclass
@@ -131,6 +137,23 @@ class TermPdf:
         self.canvas.setAuthor('Escola Máximu’s')
         self.canvas.setSubject('Modelo escolar para preenchimento e assinatura - INIC 2027')
         self.canvas.setCreator('scripts/build-term-template.py')
+        self.layout = {
+            'version': 1,
+            'template': 'Termo_Compromisso_INIC_2027_Maximus.pdf',
+            'pageCount': 2,
+            'pages': [{'width': PAGE_W, 'height': PAGE_H} for _ in range(2)],
+            'fields': {},
+            'signatures': {},
+        }
+
+    def anchor(self, name, x, y, width, height, *, size=10, minimum=6.5,
+               lines=1, align='left'):
+        self.layout['fields'][name] = {
+            'page': self.canvas.getPageNumber() - 1,
+            'x': x, 'y': y, 'width': width, 'height': height,
+            'fontSize': size, 'minFontSize': minimum,
+            'maxLength': FIELD_LIMITS[name], 'maxLines': lines, 'align': align,
+        }
 
     def paragraph(self, content, y, *, x=MARGIN, width=WIDTH, size=9.7,
                   leading=14.2, color=INK, bold=False, align=TA_LEFT):
@@ -167,7 +190,7 @@ class TermPdf:
         canvas.drawString(MARGIN, 29, 'Escola Máximu’s · Planejamento escolar para 2027')
         canvas.drawRightString(PAGE_W - MARGIN, 29, f'{page} / 2')
 
-    def field(self, label, value, x, y, width):
+    def field(self, label, value, x, y, width, *, name=None):
         self.paragraph(escape(label), y, x=x, width=width, size=7.3, leading=10, color=MUTED)
         if value:
             self.paragraph(escape(value), y - 12, x=x + 3, width=width - 6,
@@ -175,6 +198,8 @@ class TermPdf:
         self.canvas.setStrokeColor(colors.HexColor('#a6a6bd'))
         self.canvas.setLineWidth(.55)
         self.canvas.line(x, y - 27, x + width, y - 27)
+        if name:
+            self.anchor(name, x + 3, y - 25, width - 6, 14)
 
     def heading(self, section, y):
         heading = section.first('h3')
@@ -184,22 +209,34 @@ class TermPdf:
         return self.paragraph(escape(title), y, x=MARGIN + 22, width=WIDTH - 22,
                               size=10.3, leading=14, color=PURPLE, bold=True) - 6
 
-    def signature(self, element, x, y, width):
+    def signature(self, element, x, y, width, *, role):
+        line_y = y
         self.canvas.setStrokeColor(colors.HexColor('#9292a7'))
         self.canvas.setLineWidth(.6)
         self.canvas.line(x, y, x + width, y)
         y = self.paragraph(element.first('strong').markup(), y - 6, x=x, width=width,
                            size=9.2, leading=13, bold=True, align=TA_CENTER)
+        if role in ('student', 'guardian'):
+            self.layout['signatures'][role] = {
+                'page': self.canvas.getPageNumber() - 1,
+                'x': x + 8, 'y': line_y + 4, 'width': width - 16, 'height': 35,
+            }
+        if role == 'guardian':
+            self.anchor('guardian', x + 5, line_y - 40, width - 10, 20,
+                        size=8.5, lines=2, align='center')
+            self.canvas.setLineWidth(.35)
+            self.canvas.line(x + 10, line_y - 42, x + width - 10, line_y - 42)
+            y = line_y - 44
         people = list(element.elements(cls='signature-person'))
         if people:
             y = self.paragraph(people[0].markup(), y - 2, x=x, width=width,
                                size=8.7, leading=12.5, align=TA_CENTER)
-        caption = [child for child in element.children if isinstance(child, Element)][-1]
+        caption = element.first(cls='signature-caption')
         return self.paragraph(caption.markup(), y - 2, x=x, width=width,
                               size=7.5, leading=10.5, color=MUTED, align=TA_CENTER)
 
 
-def build(output, font_dir=None):
+def build(output, font_dir=None, layout_output=None):
     register_fonts(font_dir)
     parser = TemplateParser()
     parser.feed((ROOT / 'conformidade.html').read_text(encoding='utf-8'))
@@ -211,6 +248,13 @@ def build(output, font_dir=None):
     signature_fields = [child for child in signatures.children if isinstance(child, Element)]
     if len(signature_fields) != 4:
         raise ValueError('The template must contain student, guardian and two school signature fields.')
+    signature_roles = [field.attrs.get('data-term-signature') for field in signature_fields]
+    if signature_roles != ['student', 'guardian', 'teacher', 'coordinator']:
+        raise ValueError('The four signature fields must identify their roles in template order.')
+    inputs = {field.attrs.get('name'): field for field in document.elements('input')}
+    for name, limit in FIELD_LIMITS.items():
+        if name not in inputs or int(inputs[name].attrs.get('maxlength') or 0) != limit:
+            raise ValueError(f'The HTML and PDF field limits disagree for {name}.')
     output.parent.mkdir(parents=True, exist_ok=True)
     pdf = TermPdf(output)
     pdf.header(1)
@@ -228,14 +272,14 @@ def build(output, font_dir=None):
         input_element = label.first('input')
         fields[input_element.attrs['name']] = (label.text(), input_element.attrs.get('value') or '')
     half = (WIDTH - 25) / 2
-    pdf.field(*fields['student'], MARGIN, y, WIDTH)
+    pdf.field(*fields['student'], MARGIN, y, WIDTH, name='student')
     y -= 34
-    pdf.field(*fields['class'], MARGIN, y, half)
+    pdf.field(*fields['class'], MARGIN, y, half, name='class')
     pdf.field(*fields['teacher'], MARGIN + half + 25, y, half)
     y -= 34
-    pdf.field(*fields['group'], MARGIN, y, WIDTH)
+    pdf.field(*fields['group'], MARGIN, y, WIDTH, name='group')
     y -= 34
-    pdf.field(*fields['advisor'], MARGIN, y, WIDTH)
+    pdf.field(*fields['advisor'], MARGIN, y, WIDTH, name='advisor')
     y -= 43
 
     for section in clauses[:3]:
@@ -289,17 +333,24 @@ def build(output, font_dir=None):
 
     declaration = document.first(cls='declaration')
     y = pdf.paragraph(declaration.first('p').markup(), y, size=9.7, leading=14.6) - 13
-    y = pdf.paragraph('São José dos Campos, ______ de ________________________ de 2027.',
-                      y, size=9.5, leading=14) - 39
+    date_prefix = 'São José dos Campos, '
+    date_x = MARGIN + pdfmetrics.stringWidth(date_prefix, 'TermRegular', 9.5) + 5
+    date_width = PAGE_W - MARGIN - date_x
+    pdf.paragraph(escape(date_prefix), y, width=date_x - MARGIN, size=9.5, leading=14)
+    pdf.canvas.setStrokeColor(colors.HexColor('#a6a6bd'))
+    pdf.canvas.setLineWidth(.55)
+    pdf.canvas.line(date_x, y - 14, PAGE_W - MARGIN, y - 14)
+    pdf.anchor('date', date_x + 3, y - 13, date_width - 6, 13, size=9.5)
+    y -= 58
 
     column_gap = 34
     column_width = (WIDTH - column_gap) / 2
-    pdf.signature(signature_fields[0], MARGIN, y, column_width)
-    pdf.signature(signature_fields[1], MARGIN + column_width + column_gap, y, column_width)
-    y -= 67
+    pdf.signature(signature_fields[0], MARGIN, y, column_width, role='student')
+    pdf.signature(signature_fields[1], MARGIN + column_width + column_gap, y, column_width, role='guardian')
+    y -= 82
     bottom = min(
-        pdf.signature(signature_fields[2], MARGIN, y, column_width),
-        pdf.signature(signature_fields[3], MARGIN + column_width + column_gap, y, column_width),
+        pdf.signature(signature_fields[2], MARGIN, y, column_width, role='teacher'),
+        pdf.signature(signature_fields[3], MARGIN + column_width + column_gap, y, column_width, role='coordinator'),
     )
     y = pdf.paragraph(document.first(cls='signature-disclaimer').markup(), bottom - 12,
                       size=7.2, leading=10.5, color=MUTED, align=TA_CENTER) - 12
@@ -317,7 +368,13 @@ def build(output, font_dir=None):
     if pdf.canvas.getPageNumber() != 2:
         raise ValueError('The generated term must have exactly two pages.')
     pdf.canvas.save()
+    pdf.layout['templateSha256'] = hashlib.sha256(output.read_bytes()).hexdigest()
+    if layout_output is None:
+        layout_output = output.with_name('termo-layout.json') if output.name == pdf.layout['template'] else output.with_suffix('.layout.json')
+    layout_output.parent.mkdir(parents=True, exist_ok=True)
+    layout_output.write_text(json.dumps(pdf.layout, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(f'Built two-page school term: {output}')
+    print(f'Built matching PDF layout: {layout_output}')
 
 
 if __name__ == '__main__':
@@ -325,5 +382,7 @@ if __name__ == '__main__':
     arguments.add_argument('--output', type=Path,
                            default=ROOT / 'documentos/Termo_Compromisso_INIC_2027_Maximus.pdf')
     arguments.add_argument('--font-dir')
+    arguments.add_argument('--layout-output', type=Path)
     options = arguments.parse_args()
-    build(options.output.resolve(), options.font_dir)
+    build(options.output.resolve(), options.font_dir,
+          options.layout_output.resolve() if options.layout_output else None)

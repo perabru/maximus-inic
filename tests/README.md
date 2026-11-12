@@ -218,3 +218,24 @@ node --test pwa-install.test.mjs push-client.test.mjs sw-push.test.mjs
 ```
 
 A validação desta atualização terminou com **41 testes aprovados**: 25 de instalação, 10 do cliente de avisos e 6 do service worker. O teste de ativação verifica a remoção do cache anterior e a preservação da versão `20261112-10` e de caches de outros sites. Os cenários não instalam aplicativos em aparelhos reais, não pedem permissão real de notificações e não acessam dados de produção.
+
+
+## Assinaturas desenhadas e arquivo único — 12/11/2026
+
+Validação desta atualização: **37 cenários aprovados**, sem acessar dados de produção nem enviar documentos reais:
+
+- **12** em `signature-pad.test.mjs`: canvas real, recorte/transparência do PNG, caneta/dedo/mouse, traço ativo, desfazer/limpar, múltiplos ponteiros, cancelamento, captura alternativa e mudança de orientação durante o traço.
+- **9** em `term-pdf.test.mjs`: PDF real de duas páginas, texto integral, nomes acentuados longos, duas assinaturas de proporções distintas e matrizes que comprovam seu encaixe nos campos corretos. Arquivo, mapa, hash, tamanho e imagens inválidas são recusados.
+- **8** em `term-form.test.mjs`: controlador e HTML reais, inicialização, estado do desenho, bloqueio durante geração, nomes obrigatórios, falhas sem perda de tinta, limpeza preservando Bruno, impressão com uma única captura e retorno pelo histórico.
+- **2** cenários do portal: download do modelo preservado e envio de um único PDF gerado com ambos os desenhos, sem alterar os bytes antes de chamar o serviço.
+- **6** regressões do service worker, incluindo descarte da versão anterior e ausência de cache de dados privados.
+
+```sh
+# Execute na pasta tests para instalar as dependências de validação.
+npm install
+npm run test:signatures
+node --test sw-push.test.mjs
+QA_FILTER='one completed PDF|term page highlights' node portal-ui.test.cjs
+```
+
+Os testes usam dependências locais primeiro e `CODEX_PRIMARY_RUNTIME_NODE_MODULES` como alternativa quando disponível. As chamadas `fetchImpl` de teste leem somente o modelo e o mapa locais. As imagens são figuras geométricas de teste; nenhuma assinatura real foi gerada. As duas páginas do modelo e do PDF preenchido também foram renderizadas e conferidas visualmente. O gerador do PDF mantém o original escolar e acrescenta somente os campos e os desenhos fornecidos; o envio ao Firebase continua sendo o fluxo existente de arquivo único.

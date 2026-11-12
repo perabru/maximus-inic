@@ -40,7 +40,7 @@ O código da página é separado dos direitos sobre as fotografias, a marca da e
 ## Plataforma de acompanhamento (INIC 2027)
 
 - `portal.html`: login/cadastro, grupos, convites, cronograma, mensagens, calendário e coordenação.
-- `conformidade.html`: termo com preenchimento local, assinaturas desenhadas opcionais de aluno e pai/responsável e impressão/PDF; modelo em PDF em `documentos/`, com os responsáveis da escola identificados.
+- `conformidade.html`: termo com preenchimento local, assinaturas desenhadas opcionais e impressão; modelo em PDF em `documentos/`, com os responsáveis da escola identificados.
 - `instalar.html`: instruções Android e iOS.
 - `manifest.webmanifest`, `pwa.js`, `pwa-install.css`, `sw.js`: convite de instalação e cache público. Autenticação e dados privados exigem conexão e não entram no cache do service worker.
 - `theme.js`: tema claro/escuro; guarda apenas a preferência de aparência no navegador.
@@ -71,11 +71,23 @@ O calendário destaca os nove feriados nacionais federais de 2027 e reúne as en
 
 O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, inclusive contas já cadastradas. Antes de usar os grupos, o aluno é direcionado a **Meu termo** para enviar um PDF, JPG ou PNG de até 3 MiB. Um termo válido já enviado continua atendendo à exigência. O acesso é liberado após a confirmação do servidor; falha, espera ou envio offline não liberam o uso. As regras também exigem o termo nas gravações acadêmicas. Professores pendentes aguardam aprovação e não conseguem usar essa escolha de perfil para pular a exigência.
 
-A página destaca o download direto do PDF em branco, o preenchimento com assinaturas na tela e o envio do arquivo assinado. No formulário `conformidade.html`, aluno e pai/responsável escolhem individualmente entre assinar no papel e desenhar com mouse, dedo ou caneta. Cada desenho é recortado, ajustado proporcionalmente e posicionado automaticamente na linha correspondente do termo ao imprimir ou salvar como PDF. Os campos e desenhos permanecem apenas na memória da página, sem envio automático nem armazenamento; a limpeza individual remove apenas a assinatura escolhida e a limpeza geral reinicia todo o formulário. Depois, o estudante envia o arquivo final pelo fluxo de **Meu termo**. Os desenhos integram o documento enviado; não criam registros autenticados em nome de aluno ou responsável. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Criar grupo e enviar convites**; a confirmação do termo não dispara convites sozinha.
+A página destaca o download direto do PDF e o envio do arquivo assinado. Em **Montar meu grupo**, o aluno pode preparar a proposta, os colegas e os orientadores antes de enviar o termo. Esse rascunho fica apenas na memória da sessão e é apagado ao sair ou trocar de conta. Depois da confirmação do termo, o aluno revisa e clica em **Criar grupo e enviar convites**; a confirmação do termo não dispara convites sozinha.
 
 Um novo envio substitui o arquivo anterior. Em **Termos assinados**, a coordenação acompanha **Pendentes** e **Enviados**, pesquisa estudantes e baixa os arquivos recebidos. Outros alunos não têm acesso. Orientadores acessam somente os termos aprovados dos integrantes dos grupos sob sua orientação. O serviço valida o formato e a integridade do arquivo; a conferência das assinaturas cabe à coordenação. A coordenação marca o arquivo como **Conferido** ou o **Devolve** com uma pendência obrigatória. O aluno consulta o resultado em um cartão no aplicativo. Cada parecer se refere à versão conferida: reenviar uma cópia volta a **Aguardando conferência**, sem reaproveitar um check anterior. Professores não podem consultar nem registrar pareceres de outros alunos. O envio válido continua liberando o trabalho acadêmico enquanto a coordenação confere o termo.
 
 O modelo do termo identifica **Prof. Esp. Bruno Michel Pera** como **Professor da disciplina** e **Profa. Esp. Mariana Carmona** como **Professora / Coordenadora**. O campo do orientador do grupo continua separado. O nome do professor da disciplina é fixo no formulário, inclusive depois de limpar os campos. Os nomes impressos não registram uma assinatura; os espaços para assinatura são mantidos. O script `scripts/build-term-template.py` gera as duas páginas A4 do PDF a partir das cláusulas do HTML, preservando o alinhamento entre as versões.
+
+### Assinaturas desenhadas do aluno e do responsável
+
+Em **Meu termo → Preencher e assinar na tela**, cada pessoa desenha a própria assinatura com dedo, caneta ou mouse. Os dois campos têm **Desfazer** e **Limpar assinatura**. O desenho é preservado quando o tamanho da tela muda; mudanças durante um traço encerram esse traço sem conectar pontos distantes.
+
+**Baixar PDF preenchido** reúne os dados, o texto integral do termo e os dois desenhos em **um único PDF de duas páginas A4**. As assinaturas são recortadas ao conteúdo, mantêm a proporção e ficam automaticamente acima das linhas de **Aluno** e **Responsável**. É possível gerar uma cópia parcial ou deixar os espaços para assinar no papel. O nome do aluno é obrigatório quando houver desenho; a assinatura do responsável exige também seu nome.
+
+A geração captura uma única versão do formulário e bloqueia alterações enquanto prepara o arquivo. O aluno seleciona esse PDF em **Meu termo** e confirma **Enviar para a coordenação**. O envio existente recebe um arquivo único, com os mesmos bytes; não há upload separado dos desenhos. A coordenação e o orientador autorizado consultam o documento enviado pelas permissões existentes. Reenviar uma cópia segue a regra já existente de substituição e nova conferência.
+
+Preenchimento e desenhos ficam somente na aba até o usuário baixar o arquivo; a página avisa antes de sair com alterações. Não há gravação dos desenhos em localStorage, envio automático nem acesso a dados de outros usuários. A impressão usa as mesmas imagens validadas; falhas de preparação impedem gerar uma cópia silenciosamente sem a assinatura. **Limpar preenchimento e assinaturas** remove os dados editáveis e preserva a identificação institucional de Bruno e Mariana.
+
+`term-form.js`, `term-form.css`, `signature-pad.js` e `term-pdf.js` implementam o fluxo. O mapa `documentos/termo-layout.json` é gerado com o modelo por `python3 scripts/build-term-template.py` e vinculado ao PDF por SHA-256. Modelo e mapa devem ser publicados juntos. As imagens desenhadas não são certificados e não criam registros autenticados em nome do aluno ou do responsável; o fluxo de assinaturas da equipe escolar abaixo permanece separado.
 
 ### Assinaturas eletrônicas da equipe escolar
 
@@ -101,8 +113,6 @@ Em **Calendário → Ativar avisos**, cada aluno autoriza o recebimento neste ap
 O remetente também acompanha confirmações de orientação. Envia o aviso de aceite apenas ao aluno proponente que ainda pertence ao grupo, sem nome do orientador na tela bloqueada. Convites recusados não entram no remetente e não produzem aviso.
 
 ### Validação
-
-O formulário de assinaturas desenhadas tem nove testes comportamentais com canvas raster real: recorte e transparência do PNG, escala de toque, independência das pessoas, alternância com papel, limpeza, cancelamento de ponteiro, nomes e preparação para impressão. Para reproduzir, instale as dependências de `tests/package.json` e execute `npm run test:signatures` na pasta `tests`. A paginação e o resultado visual de impressão exigem também uma conferência do documento renderizado.
 
 851 cenários aprovados no Firebase Realtime Database Emulator, mais 19 testes adicionais das APIs de proposta, com o serviço real: privacidade, contratos, convites, gestão recuperável, conflitos de orientação, Bruno automático, resultados e propostas. Também passaram 210 regressões da interface, sete testes de calendário, 28 do dashboard, 13 do editor da proposta e 46 de Web Push/service worker sem envios reais. A geração do PDF e a preservação do original passaram em 18 testes. Onze verificações independentes conferiram a limpeza dos streams após perda de acesso e outros estados de sessão. Instruções reproduzíveis em `tests/README.md` e `scripts/notifications/README.md`. Dados privados e credenciais não entram no repositório.
 
@@ -189,5 +199,4 @@ O utilitário em [`scripts/school-years`](scripts/school-years/README.md) oferec
 
 `maximusInic/peopleDirectory` contém apenas a projeção de nome, série, papel, solicitação de perfil, disponibilidade e identificação do cadastro. Os perfis privados, e-mails, notas, termos e arquivos continuam nas coleções com acesso restrito. Cadastros bloqueados, contas técnicas e perfis Google ainda incompletos ficam fora da comunidade. Alterações de nome/papel, entrada/remoção e exclusão atualizam a projeção no mesmo lote.
 
-A coordenação sincroniza automaticamente os cadastros existentes ao acessar o portal. Novos cadastros concluídos publicam sua própria projeção. A interface aguarda a sincronização da coordenação antes de mostrar a lista. A publicação desta versão exige primeiro as regras atualizadas do Firebase e depois o cliente; o service worker usa a versão `20261112-signatures-1` e remove os caches antigos da comunidade.
-
+A coordenação sincroniza automaticamente os cadastros existentes ao acessar o portal. Novos cadastros concluídos publicam sua própria projeção. A interface aguarda a sincronização da coordenação antes de mostrar a lista. A publicação desta versão exige primeiro as regras atualizadas do Firebase e depois o cliente; o service worker usa a versão `20261112-12` e remove os caches antigos da comunidade.
