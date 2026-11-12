@@ -116,7 +116,6 @@ function requireManagedGroup(groupId, allowDeleting = false) {
 }
 function memberName(group,uid) { return group.memberNames?.[uid]||(uid===state.user?.uid?myName():'Integrante do grupo'); }
 function isPendingAdvisor() { return state.role === 'student' && state.profile?.requestedRole === 'advisor'; }
-function hasAutomaticAdvisor() {return state.role==='student'&&/^[12](?:[º°oaª])?\s*(?:ano|serie|em|ensino medio)\b/.test(normalize(state.profile?.year).trim());}
 function requiresAgreement() { return Boolean(state.user && state.profile && state.role === 'student' && !isPendingAdvisor() && state.profile.onboardingRequired !== true); }
 function agreementSatisfied() { return agreementsReady && !agreementsError && agreementRequirement.ready === true && agreementRequirement.fulfilled === true; }
 function canAccessAcademic() {
@@ -706,7 +705,7 @@ function proposalCallout() {
 function paintProposalCallout() {
   const control=$('#proposal-callout-button'),status=$('#proposal-callout-status');if(!control||!status)return;
   const draft=proposalDraft?.uid===state.user?.uid;
-  const automatic=hasAutomaticAdvisor();const copy=$('#proposal-callout .proposal-callout-copy');if(copy){copy.querySelector('h3').textContent=automatic?'Monte sua equipe e convide os colegas.':'Monte sua equipe e envie os convites.';copy.querySelector('p').textContent=automatic?'Para estudantes do 1º e 2º ano, Bruno Michel Pera será o orientador automaticamente. Informe os e-mails dos colegas para convidá-los com a proposta.':'Informe os e-mails dos colegas e escolha até 3 orientadores. Os convites são enviados juntos com a proposta.';}
+  const copy=$('#proposal-callout .proposal-callout-copy');if(copy){copy.querySelector('h3').textContent='Monte sua equipe e envie os convites.';copy.querySelector('p').textContent='Estudantes de todos os anos podem escolher até 3 orientadores. Informe os e-mails dos colegas e envie os convites junto com a proposta.';}
   control.textContent=canCreateGroup()?(draft?'Enviar proposta e convites':'Montar meu grupo'):(draft?'Revisar meu grupo':'Montar meu grupo');
   status.textContent=canCreateGroup()?(draft?'Rascunho pronto. Revise e confirme o envio.':'Opcional · você também pode entrar por convite.'):(draft?'Rascunho salvo nesta sessão. Envie o termo para concluir.':'Você pode preparar agora. Envie o termo antes de concluir.');
 }
@@ -1075,21 +1074,20 @@ function proposalMemberEmails(value) {
 }
 function openProposalForm(draftOnly) {
   const uid=state.user?.uid,session=sessionVersion;
-  const student=state.role==='student',automatic=hasAutomaticAdvisor();const saved=student&&proposalDraft?.uid===uid?proposalDraft:{};
+  const student=state.role==='student';const saved=student&&proposalDraft?.uid===uid?proposalDraft:{};
   const name=makeField('Nome do grupo','name',{value:saved.name||'',required:true,minLength:2,maxLength:100,placeholder:'Ex.: Equipe EcoPlant'});
   const topic=makeField(student?'Tema da proposta':'Tema da pesquisa','topic',{value:saved.topic||'',required:true,minLength:3,maxLength:240,placeholder:'O que vocês querem investigar?'});
   const description=makeField('Descrição da proposta','description',{type:'textarea',value:saved.description||'',maxLength:3000,placeholder:'Problema, objetivo e ideia inicial da pesquisa.'});
   const year=makeField('Edição do INIC','year',{type:'number',value:saved.year||2027,required:true,min:2027,max:2100});
   const proposalEditor=student?createProposalEditor({value:saved.proposal||null,proposalFile:saved.proposalFile||null}):null;
-  const picker=student&&!automatic?buildAdvisorPicker(saved.advisorIds||[]):null;
-  const automaticCard=automatic?node('section','automatic-advisor-card'):null;if(automaticCard){automaticCard.dataset.automaticAdvisor='true';automaticCard.append(node('span','badge success','Orientação automática'),node('strong','','Orientador: Bruno Michel Pera'),node('p','','Atribuição automática para estudantes do 1º e 2º ano. Você pode convidar os colegas para compor o grupo.'));}
+  const picker=student?buildAdvisorPicker(saved.advisorIds||[]):null;
   const memberEmails=student?makeField('E-mails dos colegas para convidar (opcional)','memberEmails',{type:'textarea',value:(saved.memberEmails||[]).join('\n'),maxLength:6000,placeholder:'colega1@gmail.com\ncolega2@gmail.com',help:'Separe por vírgulas ou linhas. Cada colega recebe o convite no aplicativo ao entrar com esse e-mail.'}):null;
   if(memberEmails)memberEmails.field.rows=3;
   const advisor=student?null:makeField('Orientador(a) desejado(a)','advisorId',{options:[{value:'',label:state.role==='advisor'?'Eu serei o(a) orientador(a)':'Escolher depois'},...state.advisors.map(a=>({value:a.id,label:advisorLabel(a)}))],help:state.role==='coordinator'&&isListedAdvisor()?'Escolha seu nome para orientar este novo grupo. Outros orientadores receberão um convite e precisam aceitar.':'O orientador receberá um convite e será vinculado após aceitar.'});
-  const fields=[name.label,topic.label,description.label,year.label,...(proposalEditor?[proposalEditor.element]:[]),...(memberEmails?[memberEmails.label]:[]),automaticCard||picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':automatic?'Ao confirmar, o grupo recebe Bruno Michel Pera como orientador, um cronograma inicial e os convites para os colegas informados.':student?'Ao confirmar, o grupo, o cronograma e todos os convites são criados juntos.':'O grupo recebe um cronograma inicial editável.')];
+  const fields=[name.label,topic.label,description.label,year.label,...(proposalEditor?[proposalEditor.element]:[]),...(memberEmails?[memberEmails.label]:[]),picker?.field||advisor.label,node('p','dialog-note',draftOnly?'Rascunho nesta sessão. Envie o termo assinado antes de criar o grupo e enviar os convites.':student?'Ao confirmar, o grupo, o cronograma e todos os convites são criados juntos. O orientador será vinculado após aceitar o convite.':'O grupo recebe um cronograma inicial editável.')];
   openForm({title:draftOnly?'Preparar meu grupo':student?'Nova proposta de TCC':'Novo grupo',kicker:draftOnly?'RASCUNHO · INIC 2027':'INIC 2027',access:draftOnly?'draft':'academic',fields,cleanup:()=>proposalEditor?.destroy(),submit:draftOnly?'Salvar rascunho':student?'Enviar proposta e convites':'Criar grupo',busy:draftOnly?'Salvando rascunho…':student?'Criando proposta e enviando convites…':'Criando grupo…',handler:async data=>{
     if(state.user?.uid!==uid||sessionVersion!==session)return;
-    if(student&&(state.role!=='student'||hasAutomaticAdvisor()!==automatic))throw new Error('Sua série ou seu perfil mudou. Abra a proposta novamente para conferir a orientação.');
+    if(student&&(state.role!=='student'||isPendingAdvisor()))throw new Error('Seu perfil mudou. Abra a proposta novamente para conferir a orientação.');
     if(draftOnly&&!canPrepareProposal())throw new Error('Seu perfil mudou. Confira seu cadastro antes de continuar.');
     if(!draftOnly&&!canCreateGroup())throw new Error('Envie o termo assinado e aguarde a confirmação antes de enviar a proposta.');
     const advisorIds=picker?.selectedIds()||[];
@@ -1103,7 +1101,7 @@ function openProposalForm(draftOnly) {
     if(state.user?.uid!==uid||sessionVersion!==session)return;
     proposalDraft=null;
     const count=emails.length+advisorIds.length;
-    notice(automatic?`Proposta criada com Bruno Michel Pera como orientador.${emails.length?` ${emails.length} convite(s) enviado(s) aos colegas.`:''}`:student?(count?`Proposta criada. ${count} convite(s) enviado(s) para os colegas e orientadores selecionados.`:'Proposta criada. Você pode enviar convites na área do grupo.'):'Grupo criado. Convide os integrantes e organize as entregas.');navigate('group',typeof id==='string'?id:id.id);
+    notice(student?(count?`Proposta criada. ${count} convite(s) enviado(s) para os colegas e orientadores selecionados.`:'Proposta criada. Você pode enviar convites na área do grupo.'):'Grupo criado. Convide os integrantes e organize as entregas.');navigate('group',typeof id==='string'?id:id.id);
   }});
 }
 function revokeProposalUrls() {for(const url of proposalUrls)URL.revokeObjectURL(url);proposalUrls.clear();}
@@ -1771,7 +1769,7 @@ function paintManagedUsers() {
   }
   if(!state.usersReady){count.textContent='Carregando…';list.replaceChildren(loadingPanel('Carregando cadastros…'));return;}
   const query=normalize(userSearch).trim();
-  const people=state.users.filter(person=>(userFilter==='archived'?personArchived(person):!personArchived(person)&&(userFilter==='all'||(userFilter==='students'?(person.role||'student')==='student'&&person.requestedRole!=='advisor':person.role==='advisor'||(person.role!=='coordinator'&&person.requestedRole==='advisor'))))&&(!query||normalize(`${person.name||''} ${person.email||''} ${person.year||''}`).includes(query))).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR'));
+  const people=state.users.filter(person=>(userFilter==='archived'?personArchived(person):!personArchived(person)&&(userFilter==='all'||(userFilter==='students'?(person.role||'student')==='student'&&person.requestedRole!=='advisor':person.role==='advisor'||(person.role==='coordinator'&&isListedAdvisor(person.id))||(person.role!=='coordinator'&&person.requestedRole==='advisor'))))&&(!query||normalize(`${person.name||''} ${person.email||''} ${person.year||''}`).includes(query))).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR'));
   count.textContent=`${fmtNumber(people.length)} ${people.length===1?'cadastro':'cadastros'}`;
   const pages=Math.max(1,Math.ceil(people.length/USERS_PER_PAGE));userPage=Math.min(Math.max(1,userPage),pages);
   const start=(userPage-1)*USERS_PER_PAGE,end=Math.min(start+USERS_PER_PAGE,people.length);
@@ -1809,6 +1807,17 @@ function paintPendingAdvisors() {
   });
   if(!pending.length)list.append(node('p','empty-small','Nenhum professor aguardando aprovação.'));
 }
+function peopleToolIcon(kind) {
+  const paths={
+    search:'M11 18a7 7 0 1 1 0-14a7 7 0 0 1 0 14Z M16 16l5 5',
+    all:'M9 11a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7Z M2.5 21v-2a5 5 0 0 1 5-5h3a5 5 0 0 1 5 5v2 M16 4a3.5 3.5 0 0 1 0 7 M18 14a5 5 0 0 1 3.5 5v2',
+    students:'M2 8l10-5 10 5-10 5-10-5Z M6 10v6c4 3 8 3 12 0v-6 M22 8v8',
+    advisors:'M3 3h18v12H3V3Z M12 15v6 M8 21l4-4 4 4 M7 7h5 M7 11h10',
+    archived:'M6 10h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Z M8 10V7a4 4 0 0 1 8 0v3 M12 14v2'
+  };
+  const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('class','admin-filter-icon');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',paths[kind]||paths.search);icon.append(path);return icon;
+}
 function renderAdmin() {
   const fragment=document.createDocumentFragment();
   if(!canManagePeople())return fragment;
@@ -1816,8 +1825,8 @@ function renderAdmin() {
   const panel=node('section','panel');const head=node('div','panel-heading');head.append(node('h3','','Professores aguardando aprovação'),node('span','badge'));head.lastChild.id='admin-advisor-count';panel.append(head);
   const pendingList=node('div');pendingList.id='admin-advisor-list';panel.append(pendingList);fragment.append(panel);
   const usersPanel=node('section','panel mt-24'),usersHead=node('div','panel-heading');usersHead.append(node('h3','','Pessoas cadastradas'),node('span','count-label'));usersHead.lastChild.id='admin-user-count';usersPanel.append(usersHead);
-  const tools=node('div','admin-user-tools');const search=node('input');search.type='search';search.name='userSearch';search.placeholder='Buscar nome, e-mail ou série';search.setAttribute('aria-label','Buscar cadastros');search.value=userSearch;search.addEventListener('input',()=>{userSearch=search.value;userPage=1;paintManagedUsers();});tools.append(search);
-  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Cadastros bloqueados']].forEach(([value,label])=>{const filter=button(label,'',()=>{userFilter=value;userPage=1;paintManagedUsers();});filter.dataset.userFilter=value;filters.append(filter);});tools.append(filters);usersPanel.append(tools);
+  const tools=node('div','admin-user-tools'),searchField=node('label','admin-user-search');const search=node('input');search.type='search';search.name='userSearch';search.placeholder='Buscar nome, e-mail ou série';search.setAttribute('aria-label','Buscar cadastros');search.value=userSearch;search.addEventListener('input',()=>{userSearch=search.value;userPage=1;paintManagedUsers();});searchField.append(peopleToolIcon('search'),search);tools.append(searchField);
+  const filters=node('div','filter-pills admin-user-filters');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrar cadastros');[['all','Todos os ativos'],['students','Alunos'],['advisors','Professores'],['archived','Cadastros bloqueados']].forEach(([value,label])=>{const filter=button('','admin-user-filter',()=>{userFilter=value;userPage=1;paintManagedUsers();});filter.dataset.userFilter=value;filter.setAttribute('aria-pressed',String(value===userFilter));filter.setAttribute('aria-controls','admin-user-list');filter.append(peopleToolIcon(value),node('span','',label));filters.append(filter);});tools.append(filters);usersPanel.append(tools);
   const pagination=node('div','admin-user-pagination');pagination.id='admin-user-pagination';pagination.hidden=true;
   const range=node('p','admin-user-range');range.id='admin-user-range';range.setAttribute('role','status');range.setAttribute('aria-live','polite');range.setAttribute('aria-atomic','true');
   const controls=node('nav','admin-page-controls');controls.setAttribute('aria-label','Páginas dos cadastros');
@@ -1833,7 +1842,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261112-5');
+  service = await import('./firebase-service.js?v=20261112-6');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

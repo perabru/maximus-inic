@@ -35,7 +35,7 @@ A suíte `user-management.test.mjs` cobre edição global de estudantes e profes
 
 A suíte `orientation-transitions.test.mjs` verifica atribuição e substituição pela coordenação, saída somente pelo orientador atual, motivo da troca, comparação da versão e auditoria imutável. Uma operação concorrente não sobrescreve uma orientação mais recente. O professor anterior perde imediatamente os acessos ao grupo, enquanto os integrantes, conteúdos e notas dos alunos são preservados. Os avisos de substituição, atribuição e indisponibilidade pertencem somente aos respectivos destinatários e têm confirmação de leitura. O coordenador que também orienta mantém seu acesso global.
 
-A suíte `automatic-orientation.test.mjs` verifica o vínculo direto com Bruno para estudantes do 1º e 2º anos, inclusive quando selecionam outro professor, mantendo os convites para colegas e o cronograma. O 3º ano continua aguardando o aceite dos candidatos. Tentativas diretas de contornar a regra, cadastro de Bruno ausente ou inativo não deixam grupos ou tarefas parciais. As outras suítes usam estudantes do 3º ano nos cenários de escolha livre.
+A suíte `automatic-orientation.test.mjs` mantém seu caminho histórico e agora verifica a escolha de até três candidatos em todas as séries, por meio de `runAdvisorChoiceTests`. Nenhum estudante recebe orientador automaticamente; o primeiro aceite vincula o professor e cancela os demais pedidos. Grupos anteriormente atribuídos ao Bruno continuam preservados. A atribuição direta pelo estudante, candidatos inativos/não aprovados e convites sem proposta continuam recusados, e o termo permanece obrigatório.
 
 As suítes `inic-results.test.mjs` e `inic-results-runtime.test.mjs` separam os resultados do INIC das notas escolares e das bancas cadastradas pela coordenação. Verificam identidade e horário de quem alterou, controle de versão, exclusão lógica das bancas, validação de datas, privacidade entre estudantes e bloqueio de alvos inativos. O serviço real também é testado nos formulários e nas atualizações ao vivo: estudante lê somente a própria declaração; orientador lê somente os integrantes atuais; perda do grupo, do vínculo ou do papel de coordenador limpa os dados em memória. Indicadores excluem bancas removidas, alunos inativos, grupos em exclusão e outras edições.
 
@@ -127,3 +127,28 @@ npm run test:ui
 node people-loading-runtime.test.mjs
 node sw-push.test.mjs
 ```
+
+
+## Escolha de orientadores em todas as séries — 12/11/2026
+
+Estudantes do 1º, 2º e 3º ano usam o mesmo fluxo: proposta e termo obrigatórios para convidar até três orientadores aprovados; o grupo aguarda um aceite. A criação sem candidatos continua disponível para enviar convites depois. Não há dependência da disponibilidade de Bruno para criar grupos ou convidar outros professores. Os grupos e vínculos já existentes são mantidos.
+
+Somente as condições de criação em `groups/$gid/.write` e `groups/$gid/.validate` mudaram no arquivo de regras. As validações de aceite, transições de orientação, privacidade, exclusão definitiva e o namespace legado `items` permanecem intactos. Uma tentativa de atribuir diretamente Bruno por um cliente antigo é recusada integralmente.
+
+A correção de nomes em `saveProfile` e `updateUser` preserva a distinção entre coordenação e orientação: coordenadores que não estão no diretório de professores não são adicionados automaticamente; coordenadores já listados mantêm nome e vínculo atualizados. Aprovação explícita por `approveAdvisor` ou `setUserRole(uid, 'coordinator')` continua permitindo os dois papéis.
+
+Verificações aprovadas nesta revisão:
+
+- **887** cenários da suíte principal de regras e serviço.
+- **51** verificações isoladas de escolha de orientador, incluindo as três séries, aceite/cancelamento, limites, termo/proposta, candidatos inativos e grupos legados.
+- **16** cenários de gestão de pessoas em memória, incluindo as quatro novas regressões de coordenação com ou sem orientação.
+
+```sh
+npm test
+npx firebase emulators:exec --project demo-maximus-inic --only database "node advisor-choice-security.mjs"
+node user-deletion-runtime.test.mjs
+```
+
+As verificações usam exclusivamente dados fictícios e o emulador local. SHA-256 do arquivo de regras validado: `8281364e72243edfb8c1f644cfe24f54b1ff02a260c7f5672875171aaeac6830`.
+
+Na interface, 229 cenários DOM/VM foram aprovados: seleção de até três orientadores em todos os anos, rascunhos com escolhas preservadas, mudança de série sem alterar candidatos e bloqueio após mudança de perfil. O filtro Professores inclui a coordenação somente quando também consta no diretório de orientação.

@@ -86,6 +86,39 @@ await test('coordination name correction reaches every current group, including 
   assert.equal(value(data,'groups/solo/memberNames/student'),'Nome corrigido');assert.equal(value(data,'messages/group/message/senderName'),'student');
   assert.equal(value(data,'users/student/email'),'student@example.com');assert.equal(value(data,'users/student/createdAt'),1);
 });
+await test('managed coordinator name edits preserve whether the coordinator already advises',async()=>{
+  for(const listed of [false,true]){
+    const data=fixture();if(listed)data.maximusInic.advisorDirectory.otherCoord={uid:'otherCoord',name:'Nome anterior'};
+    const client=runtime(data);await client.call('updateUser','otherCoord',{name:'Nome corrigido'});
+    assert.equal(value(data,'users/otherCoord/name'),'Nome corrigido');assert.equal(value(data,'roles/otherCoord'),'coordinator');
+    if(listed)assert.deepEqual(value(data,'advisorDirectory/otherCoord'),{uid:'otherCoord',name:'Nome corrigido'});
+    else{assert.equal(value(data,'advisorDirectory/otherCoord'),null);assert.equal(Object.hasOwn(client.calls[0].patch,'advisorDirectory/otherCoord'),false);}
+  }
+});
+await test('self profile edits preserve coordination-only access and existing advisor listings',async()=>{
+  for(const [uid,listed]of [['coord',false],['coord',true],['teacher',true],['student',false]]){
+    const data=fixture();if(listed)data.maximusInic.advisorDirectory[uid]={uid,name:'Nome anterior'};
+    const client=runtime(data,uid);await client.call('saveProfile',{name:'Nome atualizado'});
+    assert.equal(value(data,`users/${uid}/name`),'Nome atualizado');
+    if(listed)assert.deepEqual(value(data,`advisorDirectory/${uid}`),{uid,name:'Nome atualizado'});
+    else assert.equal(value(data,`advisorDirectory/${uid}`),null);
+  }
+});
+await test('explicit coordinator advising approvals remain available without changing coordinator access',async()=>{
+  for(const method of ['approveAdvisor','setUserRole']){
+    const data=fixture(),client=runtime(data);await client.call(method,'otherCoord','coordinator');
+    assert.equal(value(data,'roles/otherCoord'),'coordinator');assert.deepEqual(value(data,'advisorDirectory/otherCoord'),{uid:'otherCoord',name:'otherCoord'});
+    assert.equal(value(data,'users/otherCoord/email'),'otherCoord@example.com');
+  }
+});
+await test('an ordinary coordinator rename does not erase an advising approval made concurrently',async()=>{
+  const data=fixture(),client=runtime(data,'coord',{beforeUpdate:(_,patch)=>{
+    assert.equal(Object.hasOwn(patch,'advisorDirectory/otherCoord'),false);
+    data.maximusInic.advisorDirectory.otherCoord={uid:'otherCoord',name:'Aprovação concorrente'};
+  }});
+  await client.call('updateUser','otherCoord',{name:'Nome corrigido'});
+  assert.deepEqual(value(data,'advisorDirectory/otherCoord'),{uid:'otherCoord',name:'Aprovação concorrente'});
+});
 await test('student and advisor cannot invoke global management or permanent deletion',async()=>{
   for(const uid of ['student','teacher']){
     const data=fixture(),before=clone(data),client=runtime(data,uid);

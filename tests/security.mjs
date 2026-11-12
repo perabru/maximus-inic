@@ -7,7 +7,7 @@ import {runAgreementReviewTests} from './agreement-review.test.mjs';
 import {runAgreementSignatureTests} from './agreement-signatures.test.mjs';
 import {runUserManagementTests} from './user-management.test.mjs';
 import {runOrientationTransitionTests} from './orientation-transitions.test.mjs';
-import {runAutomaticOrientationTests} from './automatic-orientation.test.mjs';
+import {runAdvisorChoiceTests} from './automatic-orientation.test.mjs';
 import {runInicResultsTests} from './inic-results.test.mjs';
 import {runInicResultsRuntimeTests} from './inic-results-runtime.test.mjs';
 import {runProposalTests} from './proposal.test.mjs';
@@ -15,8 +15,8 @@ import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/ru
 import {ref,set,get,update,query,orderByChild,equalTo,serverTimestamp} from 'firebase/database';
 const env=await initializeTestEnvironment({projectId:'demo-maximus-inic',database:{host:'127.0.0.1',port:9000,rules:readFileSync(new URL('../database.rules.json', import.meta.url),'utf8')}});
 const stamp=Date.now();
-// Third-year fixtures exercise freely selected advisors; first/second-year
-// automatic orientation has a dedicated scenario suite.
+// Advisor selection is available in every grade; the dedicated choice suite
+// exercises each school year and the legacy automatically assigned groups.
 const person=(name,email)=>({name,email,requestedRole:'student',year:'3º ano',createdAt:stamp});
 const group=(id,student,advisor)=>({name:id,topic:'Tema de pesquisa',description:'Descrição',year:2027,advisorId:advisor,members:{[student]:true},memberNames:{[student]:'Estudante'},createdBy:student,createdAt:stamp,status:'active',advisorRequestPolicy:'first-accept-v1'});
 const task={title:'Artigo',dueDate:'2027-07-31',completed:false,completedBy:'',weight:1,createdBy:'a1',createdAt:stamp};
@@ -233,7 +233,7 @@ try{
  await runAgreementSignatureTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runUserManagementTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runOrientationTransitionTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
- await runAutomaticOrientationTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
+ await runAdvisorChoiceTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runInicResultsTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runInicResultsRuntimeTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});
  await runProposalTests({env,db,ok,no,count:name=>{passed++;console.log('PASS',name);}});

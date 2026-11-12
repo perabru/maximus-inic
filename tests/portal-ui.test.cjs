@@ -412,9 +412,47 @@ function invitedProfessor(patch={}){const q=make();q.ui.sessionChanged({uid:'pro
  await test('member loss or a later result stream error blocks a retained result form submit',async()=>{for(const change of ['membership','error']){const q=make().student(valid);joinedGroup(q);emitGroup(q,'g',{inicResultsReady:true});q.document.querySelector('[data-inic-result]').click();const form=q.document.querySelector('#dialog-form');if(change==='membership')q.ui.state.groups[0].members={};else q.mock.groupCallbacks.get('g')({inicResultsReady:true,inicResultsError:Error('indisponível')});dispatchForm(q,form);await flush();assert.equal(q.mock.inicPayload,undefined);q.close();}});
  await test('coordination dashboard is private and is destroyed when leaving the route',async()=>{const q=await unassignedCoord();q.route('indicators');assert.ok(q.document.querySelector('#qa-private-dashboard'));assert.equal(q.mock.dashboardCreated,1);assert.equal(q.mock.dashboardOptions.year,2027);q.ui.resetRender();q.ui.render();assert.ok(q.mock.dashboardUpdated>=1);q.route('groups');assert.equal(q.mock.dashboardDestroyed,1);q.route('indicators');assert.equal(q.mock.dashboardCreated,2);q.close();for(const role of ['student','advisor']){const other=role==='student'?make().student(valid):staffGroup('advisor');other.route('indicators');assert.equal(other.mock.dashboardCreated,undefined);assert.equal(other.document.querySelector('#qa-private-dashboard'),null);other.close();}});
  await test('coordinator role loss archive and logout immediately remove dashboard data',async()=>{for(const change of ['role','archive','logout']){const q=await unassignedCoord();q.route('indicators');if(change==='logout')q.ui.sessionChanged(null);else q.mock.appCallback(assignmentAppData(undefined,change==='role'?{role:'advisor'}:{archived:true,profile:null}));assert.equal(q.mock.dashboardDestroyed,1,change);if(change!=='logout')assert.equal(Boolean(q.document.querySelector('#qa-private-dashboard')),false,change);assert.doesNotMatch(body(q),/Indicadores privados da coordenação/,change);q.close();}});
- await test('first and second year proposal forms show Bruno and send only colleague invitations',async()=>{for(const year of ['1º ano','2º ano','1ª série','2 EM']){const q=make().student(valid);q.ui.state.profile.year=year;const form=openProposal(q);assert.match(q.document.querySelector('[data-automatic-advisor]').textContent,/Bruno Michel Pera/);assert.equal(q.document.querySelector('[name=advisorIds]'),null);form.querySelector('[name=memberEmails]').value='colega@example.invalid';dispatchForm(q);await flush();assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),[]);assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),['colega@example.invalid']);assert.equal(q.mock.invitePayload,undefined);assert.match(q.document.querySelector('#app-notice').textContent,/Bruno Michel Pera.*1 convite/);q.close();}});
- await test('a first-year draft retains colleagues and highlights automatic orientation without creating a group',async()=>{const q=make().student();q.ui.state.profile.year='1º ano';q.ui.showProposalDraft();assert.ok(q.document.querySelector('[data-automatic-advisor]'));const form=q.document.querySelector('#dialog-form');for(const [key,value] of Object.entries({name:'Meu grupo',topic:'Minha pesquisa',year:'2027',memberEmails:'colega@example.invalid'}))form.querySelector('[name='+key+']').value=value;dispatchForm(q);await flush();assert.equal(q.mock.createPayload,undefined);q.term(valid);openProposal(q);assert.ok(q.document.querySelector('[data-automatic-advisor]'));assert.equal(q.document.querySelector('[name=memberEmails]').value,'colega@example.invalid');q.close();});
- await test('changing between automatic and invited orientation invalidates an old proposal before submission',async()=>{for(const [before,after] of [['1º ano','3º ano'],['3º ano','2º ano']]){const q=make().student(valid);q.ui.state.profile.year=before;const form=openProposal(q);q.ui.state.profile.year=after;dispatchForm(q,form);await flush();assert.equal(q.mock.createPayload,undefined);assert.match(q.document.querySelector('#dialog-status').textContent,/série ou seu perfil mudou/);q.close();}});
+ await test('students in every year choose advisors and send their proposal with invitations',async()=>{
+  for(const year of ['1º ano','2º ano','3º ano','1ª série','2 EM']){
+   const q=make().student(valid);q.ui.state.profile.year=year;const form=openProposal(q);
+   assert.equal(q.document.querySelector('[data-automatic-advisor]'),null);
+   selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');selectAdvisor(q,'prof-3');
+   assert.equal([...q.document.querySelectorAll('[name=advisorIds]')].find(input=>input.value==='prof-4').disabled,true);
+   form.querySelector('[name=memberEmails]').value='colega@example.invalid';dispatchForm(q);await flush();
+   assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-1','prof-2','prof-3']);
+   assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),['colega@example.invalid']);
+   assert.equal(q.mock.invitePayload,undefined);assert.match(q.document.querySelector('#app-notice').textContent,/4 convite/);q.close();
+  }
+ });
+ await test('first and second year drafts retain chosen advisors and colleagues until the term is ready',async()=>{
+  for(const year of ['1º ano','2º ano']){
+   const q=make().student();q.ui.state.profile.year=year;q.ui.state.advisors=advisorFixtures.map(person=>({...person}));q.ui.showProposalDraft();
+   assert.equal(q.document.querySelector('[data-automatic-advisor]'),null);selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');
+   const form=q.document.querySelector('#dialog-form');for(const [key,value]of Object.entries({name:'Meu grupo',topic:'Minha pesquisa',year:'2027',memberEmails:'colega@example.invalid'}))form.querySelector('[name='+key+']').value=value;
+   dispatchForm(q);await flush();assert.equal(q.mock.createPayload,undefined);q.term(valid);openProposal(q);
+   assert.deepEqual([...q.document.querySelectorAll('[name=advisorIds]')].filter(input=>input.checked).map(input=>input.value),['prof-1','prof-2']);
+   assert.equal(q.document.querySelector('[name=memberEmails]').value,'colega@example.invalid');q.close();
+  }
+ });
+ await test('changing school year preserves the chosen advisors under the common invitation flow',async()=>{
+  for(const [before,after]of [['1º ano','3º ano'],['3º ano','2º ano']]){
+   const q=make().student(valid);q.ui.state.profile.year=before;const form=openProposal(q);selectAdvisor(q,'prof-1');selectAdvisor(q,'prof-2');q.ui.state.profile.year=after;
+   dispatchForm(q,form);await flush();assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-1','prof-2']);q.close();
+  }
+ });
+ await test('a changed or pending teacher profile cannot submit an old student proposal',async()=>{
+  for(const role of ['advisor','pending']){
+   const q=make().student(valid);const form=openProposal(q);selectAdvisor(q,'prof-1');
+   if(role==='pending')q.ui.state.profile.requestedRole='advisor';else q.ui.state.role='advisor';
+   dispatchForm(q,form);await flush();assert.equal(q.mock.createPayload,undefined);assert.match(q.document.querySelector('#dialog-status').textContent,/perfil mudou/);q.close();
+  }
+ });
+ await test('the teachers filter includes coordinators listed as advisors and excludes coordination-only accounts',async()=>{
+  const q=make();q.ui.setUser('coord-bruno','coordinator',{name:'Coordenação e orientação',requestedRole:'advisor'});
+  q.ui.state.users=[{id:'coord-bruno',name:'Bruno Teste',role:'coordinator',requestedRole:'advisor'},{id:'coord-school',name:'Coordenação Teste',role:'coordinator',requestedRole:'advisor'},{id:'student-test',name:'Estudante Teste',role:'student',requestedRole:'student'}];
+  q.ui.state.advisors=[{id:'coord-bruno',name:'Bruno Teste'}];q.route('admin');await flush();q.document.querySelector('[data-user-filter=advisors]').click();
+  assert.deepEqual(managedPageIds(q),['coord-bruno']);assert.match(q.document.querySelector('#admin-user-list').textContent,/Coordenação e orientação/);q.close();
+ });
 
  await test('a missing coordinator profile or renewed onboarding destroys private indicator state immediately',async()=>{for(const patch of [{profile:null},{profile:{name:'Coordenação',onboardingRequired:true}}]){const q=await unassignedCoord();q.route('indicators');q.mock.appCallback(assignmentAppData(undefined,patch));assert.equal(q.mock.dashboardDestroyed,1);assert.doesNotMatch(body(q),/Indicadores privados da coordenação/);q.close();}});
  await test('student creation sends the written proposal in the same group request as all invitations',async()=>{const q=make().student(valid);const form=openProposal(q);q.mock.proposalEditorPayload={proposal:proposalText({version:undefined}),proposalFile:null};form.querySelector('[name=memberEmails]').value='miguel@example.invalid';selectAdvisor(q,'prof-2');dispatchForm(q);await flush();assert.equal(q.mock.createPayload.proposal.mode,'text');assert.equal(q.mock.createPayload.proposal.topics.method,'Pesquisa e testes');assert.deepEqual(Array.from(q.mock.createPayload.advisorIds),['prof-2']);assert.deepEqual(Array.from(q.mock.createPayload.memberEmails),['miguel@example.invalid']);assert.equal(q.mock.invitePayload,undefined);assert.equal(q.mock.proposalEditorDestroyed,1);q.close();});

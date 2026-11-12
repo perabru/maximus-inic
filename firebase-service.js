@@ -345,10 +345,16 @@ export async function saveProfile(patch) {
   if(patch.name !== undefined) changes.name=clean(patch.name,100);
   if(patch.year !== undefined) changes.year=clean(patch.year,30);
   if(patch.requestedRole !== undefined) changes.requestedRole=patch.requestedRole === 'advisor' ? 'advisor' : 'student';
+  let listedAdvisor=false;
+  if(changes.name){
+    const [role,directory]=await Promise.all([get(path(`roles/${user.uid}`)),get(path(`advisorDirectory/${user.uid}`))]);
+    listedAdvisor=role.val()==='advisor'||role.val()==='coordinator'&&directory.exists();
+  }
+  if(auth.currentUser?.uid!==user.uid)throw new Error('Sua conta mudou. Entre novamente.');
   await update(path(`users/${user.uid}`),changes);
   if(changes.name) {
     await updateProfile(user,{displayName:changes.name});
-    if(roleCache==='advisor'||roleCache==='coordinator') await set(path(`advisorDirectory/${user.uid}`),{uid:user.uid,name:changes.name});
+    if(listedAdvisor) await set(path(`advisorDirectory/${user.uid}`),{uid:user.uid,name:changes.name});
   }
 }
 function pendingForUser(invitation,uid,email){return invitation.status==='pending'&&(invitation.senderId===uid||invitation.toUid===uid);}
@@ -360,9 +366,9 @@ function releaseAdvisorChanges(group,uid,changes){
   changes[`admissions/${group.id}/${uid}`]=null;
   changes[`memberRevocations/${group.id}/${uid}`]=serverTimestamp();
 }
-export async function updateUser(uid,{name,year,role}={}) {
+export async function updateUser(uid,{name,year,role}={},{approveCoordinatorAsAdvisor=false}={}) {
   const actor=await coordinatorUser();checkIdentifier(uid);
-  const [personSnapshot,roleSnapshot,inactiveSnapshot,groupsSnapshot,invitationsSnapshot]=await Promise.all([get(path(`users/${uid}`)),get(path(`roles/${uid}`)),get(path(`inactiveUsers/${uid}`)),get(path('groups')),get(path('invitations'))]);
+  const [personSnapshot,roleSnapshot,inactiveSnapshot,groupsSnapshot,invitationsSnapshot,directorySnapshot]=await Promise.all([get(path(`users/${uid}`)),get(path(`roles/${uid}`)),get(path(`inactiveUsers/${uid}`)),get(path('groups')),get(path('invitations')),get(path(`advisorDirectory/${uid}`))]);
   const person=personSnapshot.val(),previousRole=roleSnapshot.val()||'student';
   if(!person)throw new Error('Cadastro não encontrado.');
   if(inactiveSnapshot.val()===true)throw new Error('Restaure este cadastro antes de editar.');
@@ -371,7 +377,9 @@ export async function updateUser(uid,{name,year,role}={}) {
   if((uid===actor.uid||previousRole==='coordinator')&&nextRole!==previousRole)throw new Error('O acesso da coordenação está protegido.');
   const nextName=name===undefined?person.name:clean(name,100),nextYear=year===undefined?person.year:clean(year,30);
   if(!nextName)throw new Error('Informe o nome do cadastro.');
-  const changes={[`users/${uid}/name`]:nextName,[`users/${uid}/year`]:nextYear,[`roles/${uid}`]:nextRole,[`advisorDirectory/${uid}`]:['advisor','coordinator'].includes(nextRole)?{uid,name:nextName}:null};
+  const changes={[`users/${uid}/name`]:nextName,[`users/${uid}/year`]:nextYear,[`roles/${uid}`]:nextRole};
+  if(nextRole==='advisor'||nextRole==='coordinator'&&(directorySnapshot.exists()||approveCoordinatorAsAdvisor===true))changes[`advisorDirectory/${uid}`]={uid,name:nextName};
+  else if(nextRole!=='coordinator')changes[`advisorDirectory/${uid}`]=null;
   if(nextRole!==previousRole){changes[`users/${uid}/requestedRole`]=nextRole==='student'?'student':'advisor';changes[`users/${uid}/onboardingRequired`]=false;}
   for(const group of collection(groupsSnapshot)){
     if(group.status==='deleting'){if(previousRole==='advisor'&&nextRole==='student'&&group.advisorId===uid)throw new Error('Conclua a exclusão do grupo '+group.name+' antes de alterar este acesso.');continue;}
@@ -382,7 +390,7 @@ export async function updateUser(uid,{name,year,role}={}) {
   if(auth.currentUser?.uid!==actor.uid)throw new Error('Sua conta mudou. Entre novamente.');
   await update(path(),changes);
 }
-export async function setUserRole(uid,role) {return updateUser(uid,{role});}
+export async function setUserRole(uid,role) {return updateUser(uid,{role},{approveCoordinatorAsAdvisor:role==='coordinator'});}
 async function changeOrientation(groupId,newAdvisorUid,{action,reason='',expectedAdvisorUid,expectedRevision,invitationId=''}={}) {
   const actor=await requireActiveUser();checkIdentifier(groupId);if(newAdvisorUid)checkIdentifier(newAdvisorUid);
   const [groupSnapshot,roleSnapshot,profileSnapshot,requestsSnapshot]=await Promise.all([get(path(`groups/${groupId}`)),get(path(`roles/${actor.uid}`)),get(path(`users/${actor.uid}`)),get(path(`advisorRequests/${groupId}`))]);
@@ -574,12 +582,8 @@ export async function createGroup({name,topic,description='',year=2027,advisorId
   const groupName=clean(name,100),groupTopic=clean(topic,240);
   if(!groupName||!groupTopic)throw new Error('Informe o nome do grupo e o tema da pesquisa.');
   const colleagues=proposalMemberEmails(memberEmails,user.email);
-  const schoolYear=role==='student'?String((await get(path(`users/${user.uid}/year`))).val()||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim():'';
-  const automaticBruno=role==='student'&&/^[12](?:[º°oaª])?\s*(?:ano|serie|em|ensino medio)\b/.test(schoolYear);
-  const brunoUid='GZv2JuQ7JJg2G4ErhdOEKQOzM3z2';
-  if(automaticBruno){const directory=await get(path(`advisorDirectory/${brunoUid}`));if(!directory.exists())throw new Error('O cadastro do professor Bruno Michel Pera precisa estar ativo e aprovado. Avise a coordenação para liberar a criação do grupo.');}
-  const candidates=automaticBruno?[]:await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
-  const directAdvisor=automaticBruno?brunoUid:(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
+  const candidates=await approvedAdvisorIds(role==='student'?(advisorIds.length?advisorIds:advisorId?[advisorId]:[]):advisorId&&advisorId!==user.uid?[advisorId]:[]);
+  const directAdvisor=(role==='advisor'&&(!advisorId||advisorId===user.uid))||(role==='coordinator'&&advisorId===user.uid)?user.uid:'';
   const groupId=push(path('groups')).key;
   const preparedProposal=proposal?await prepareProposal(groupId,{proposal,proposalFile,user}):null;
   if(role==='student'&&candidates.length&&!preparedProposal)throw new Error('Preencha ou envie a proposta antes de convidar os orientadores.');
