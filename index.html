@@ -11,7 +11,7 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://perabru.github.io/maximus-inic/assets/photos/photo-31.jpg">
   <link rel="icon" href="assets/logo-mark.png">
-  <link rel="stylesheet" href="styles.css?v=20261112-1"><link rel="stylesheet" href="public-platform.css?v=20261109-2">
+  <link rel="stylesheet" href="styles.css?v=20261112-2"><link rel="stylesheet" href="public-platform.css?v=20261109-2">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,6 +24,7 @@
   <script src="experience.js?v=20261105-3" defer></script>
   <script src="pwa.js" defer></script>
   <script src="app.js?v=20261112-1" defer></script>
+  <script src="hero-cover.js?v=20261112-2" defer></script>
 <link rel="preload" href="assets/fonts/montserrat-latin-800-italic.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="header-login.css?v=20261109-2"><link rel="stylesheet" href="responsive.css?v=20261109-2"><link rel="stylesheet" href="brand-typography.css?v=20261109-2"><link rel="stylesheet" href="readability.css?v=20261109-2"></head>
 <body>
 <a class="skip" href="#conteudo">Pular para o conteúdo</a>
@@ -43,11 +44,23 @@
       <div class="hero-actions"><a class="button primary" href="#artigos">Ler artigos </a><a class="text-link" href="#momentos">Ver fotos </a></div>
 
     </div>
-    <div class="hero-visual hero-visual--portrait">
+    <div class="hero-visual hero-cover" data-hero-carousel role="region" aria-roledescription="carrossel" aria-label="Fotos de capa do INIC" tabindex="0">
       <div class="photo-topline"><span>APRESENTAÇÕES NA UNIVAP</span><span aria-hidden="true">✳︎</span></div>
-      <img class="hero-photo" style="aspect-ratio:auto;object-fit:contain" src="assets/photos/photo-31.jpg" width="960" height="1280" fetchpriority="high" alt="Seis participantes reunidos diante do painel da Univap de Tecnologia da Informação e Comunicação.">
-      <div class="photo-bottomline"><span>Nossa equipe na Univap.</span><a href="#momentos" aria-label="Conheça a galeria de fotos">Ver galeria</a></div>
-
+      <div class="hero-cover__viewport">
+        <div class="hero-cover__slide" data-cover-slide data-caption="Nossa equipe na Univap." role="group" aria-roledescription="foto" aria-label="1 de 2: Nossa equipe na Univap" aria-hidden="false">
+          <img class="hero-photo hero-photo--team" src="assets/photos/photo-31.jpg" width="960" height="1280" fetchpriority="high" alt="Seis participantes reunidos diante do painel da Univap de Tecnologia da Informação e Comunicação.">
+        </div>
+        <div class="hero-cover__slide" data-cover-slide data-caption="Uma conquista no INIC 2025." role="group" aria-roledescription="foto" aria-label="2 de 2: Uma conquista no INIC 2025" aria-hidden="true" hidden>
+          <img class="hero-photo" src="assets/photos/photo-28.webp" width="1600" height="1200" decoding="async" alt="Três participantes no palco diante do painel INIC 2025; uma delas segura um certificado.">
+        </div>
+      </div>
+      <div class="hero-cover__controls" data-cover-controls hidden>
+        <button type="button" data-cover-previous aria-label="Capa anterior"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="hero-cover__counter" data-cover-counter role="status" aria-live="off" aria-atomic="true">1 de 2</span>
+        <button type="button" data-cover-next aria-label="Próxima capa"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="hero-cover__play" data-cover-play aria-label="Pausar troca automática das capas">Pausar</button>
+      </div>
+      <div class="photo-bottomline"><span data-cover-caption>Nossa equipe na Univap.</span><a href="#momentos" aria-label="Conheça a galeria de fotos">Ver galeria</a></div>
     </div>
   </section>
   <div class="quick-facts"><div class="container"><a href="#momentos">31 fotos</a><a href="#artigos" id="quick-article-count">49 artigos</a><a href="portal.html">Grupos INIC 2027</a><span>Escola Máximu’s · São José dos Campos</span></div></div>
