@@ -40,3 +40,5 @@ Adaptado às cores da Máximu’s, aos modos claro/escuro e a mensagens reais da
 Tipografia dos botões: Montserrat ExtraBold Italic, SIL Open Font License 1.1. Fontes e licença em assets/fonts/SOURCE.txt e assets/fonts/OFL-Montserrat.txt. Maximus Interface é um alias CSS; os glifos originais foram preservados.
 
 Geração dos PDFs com assinaturas: pdf-lib 1.17.1, MIT. Copyright Andrew Dillon. Código hospedado em assets/vendor/pdf-lib-1.17.1.esm.min.js; licença integral em assets/vendor/pdf-lib-1.17.1.LICENSE.md. Projeto: https://github.com/Hopding/pdf-lib.
+
+Calendário INIC: referência visual fornecida pelo usuário no arquivo `Texto colado.txt`, que menciona https://advent.wellingtonnz.com/. A implementação própria adapta a ideia de portinhas, bordas tracejadas e cores de papel a uma grade mensal cronológica, sem incorporar os conteúdos ou imagens do site de referência.

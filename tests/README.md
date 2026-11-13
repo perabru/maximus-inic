@@ -250,3 +250,7 @@ QA_FILTER='one completed PDF|term page highlights' node portal-ui.test.cjs
 ```
 
 Os testes usam dependências locais primeiro e `CODEX_PRIMARY_RUNTIME_NODE_MODULES` como alternativa quando disponível. As chamadas `fetchImpl` de teste leem somente o modelo e o mapa locais. As imagens são figuras geométricas de teste; nenhuma assinatura real foi gerada. As duas páginas do modelo e do PDF preenchido também foram renderizadas e conferidas visualmente. O gerador do PDF mantém o original escolar e acrescenta somente os campos e os desenhos fornecidos; o envio ao Firebase continua sendo o fluxo existente de arquivo único.
+
+## Calendário com dias interativos
+
+`node --test calendar.test.mjs calendar-ui.test.mjs sw-push.test.mjs` verifica datas civis, ano bissexto, filtros, permissões, navegação por teclado, atualização dos dados e exportação ICS. A prévia visual em `tests/visual/inic-preview.html` inclui a opção **Calendário**, com dados fictícios e ações sem gravação no aplicativo.

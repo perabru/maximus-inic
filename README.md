@@ -67,6 +67,9 @@ Ao criar um grupo, oito marcos de planejamento são gerados para o ano escolhido
 
 O calendário destaca os nove feriados nacionais federais de 2027 e reúne as entregas e os eventos dos grupos acessíveis à conta. Orientadores e coordenação podem criar, editar e excluir eventos dos grupos que gerenciam. Alterar uma entrega atualiza sua data no calendário. A exportação ICS inclui feriados, eventos e entregas conforme o ano e o filtro escolhido. Fontes oficiais em `research/calendar-2027.md`.
 
+O calendário oferece as visualizações **Mês** e **Agenda**, com dias em tons suaves e uma animação discreta de abertura ao interagir. Toque em um dia para consultar todos os seus compromissos; os resumos e filtros por grupo, mês e tipo acompanham os registros acessíveis à conta. As preferências e a data selecionada são mantidas nas atualizações de dados e reiniciadas ao trocar de conta. A exportação ICS respeita também o tipo selecionado. Teclado: setas movem a data, Home/End percorrem a semana e PageUp/PageDown trocam de mês; a preferência por movimento reduzido é respeitada.
+
+
 ### Contratos assinados
 
 O envio do termo assinado de 2027 é **obrigatório para todos os estudantes**, inclusive contas já cadastradas. Antes de usar os grupos, o aluno é direcionado a **Meu termo** para enviar um PDF, JPG ou PNG de até 3 MiB. Um termo válido já enviado continua atendendo à exigência. O acesso é liberado após a confirmação do servidor; falha, espera ou envio offline não liberam o uso. As regras também exigem o termo nas gravações acadêmicas. Professores pendentes aguardam aprovação e não conseguem usar essa escolha de perfil para pular a exigência.

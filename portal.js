@@ -2,7 +2,7 @@
 
 import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-13';
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261112-8';
-import { createCalendarView } from './calendar.js?v=20261112-7';
+import { createCalendarView } from './calendar.js?v=20261113-1';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
 import { createArticleEditor } from './article-editor.js?v=20261112-4';
 import { createCommunityView, participantStatus } from './community.js?v=20261112-9';
@@ -62,6 +62,7 @@ let userPage = 1;
 const USERS_PER_PAGE = 10;
 let coordinationDashboard = null;
 let communityView = null;
+let calendarViewState = {};
 let orientationNoticeBaselineReady=false;
 const seenOrientationNotices=new Set();
 const proposalUrls=new Set();
@@ -439,6 +440,7 @@ function verificationNotice() {
   }
 }
 function sessionChanged(user) {
+  calendarViewState = {};
   for(const {editor}of articleEditors.values())editor.destroy();articleEditors.clear();
   destroyIndicators();destroyCommunity();revokeProposalUrls();orientationNoticeBaselineReady=false;seenOrientationNotices.clear();
   const sessionId=++sessionVersion;invitationSchoolYears.clear();seenAdvisorConfirmations.clear();seenAgreementReviews.clear();agreementReviewsReady=false;agreementReviewError=null;agreementReviewBaselineReady=false;agreementSignaturesReady=false;agreementSignatureError=null;advisorAgreementGroupId='';groupAdvisorFilter='all';userSearch='';userFilter='all';userPage=1;
@@ -1822,7 +1824,7 @@ function renderInvitations() {
 function renderCalendar() {
   const fragment=document.createDocumentFragment();
   const events=state.groups.flatMap(group=>(groupData.get(group.id)?.events||[]).map(event=>({...event,groupId:group.id,groupName:group.name})));
-  const calendar=createCalendarView({groups:state.groups.filter(group=>group.status!=='deleting'),tasks:allTasks(),events,canManageGroup:group=>canManageTasks(group),onAddEvent:(groupId,date)=>showEventForm(groupId,date),onEditEvent:event=>showEventForm(event.groupId,event.date,event),onTask:showCalendarTask,onNotice:notice,initialDate:new Date(2027,0,1,12)});
+  const calendar=createCalendarView({groups:state.groups.filter(group=>group.status!=='deleting'),tasks:allTasks(),events,canManageGroup:group=>canManageTasks(group),onAddEvent:(groupId,date)=>showEventForm(groupId,date),onEditEvent:event=>showEventForm(event.groupId,event.date,event),onTask:showCalendarTask,onNotice:notice,initialDate:new Date(2027,0,1,12),viewState:calendarViewState});
   fragment.append(calendar,buildNotificationPanel());
   return fragment;
 }
