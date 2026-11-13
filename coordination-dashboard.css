@@ -338,6 +338,16 @@ html[data-theme="dark"] .coordination-dashboard {
   .cd-dialog-top h3 { font-size: 21px; }
   .cd-dialog-actions .button { padding: 11px 14px; font-size: 14px; }
 }
+/* Keep the compact monthly chart legible without horizontal scrolling.
+   Every month remains available through its focusable point and accessible name. */
+@media (max-width: 480px) {
+  .cd-timeline .cd-svg-label { font-size: 28px; }
+  .cd-timeline .cd-svg-value { font-size: 28px; letter-spacing: -.025em; }
+  .cd-timeline .cd-month-label { font-size: 30px; }
+  .cd-timeline .cd-month-label--minor { display: none; }
+  .cd-timeline .cd-month-label:last-child { display: block; transform: translateX(16px); }
+  .cd-timeline .cd-svg-value:nth-last-child(2) { transform: translateX(16px); }
+}
 @media (max-width: 390px) {
   .cd-header-actions { align-items: stretch; }
   .cd-live { align-self: center; }
