@@ -7,10 +7,18 @@ Componentes adaptados às cores e às funções da Escola Máximu’s.
 - rishichawda: https://uiverse.io/rishichawda/fluffy-robin-48
 - Nawsome: https://uiverse.io/Nawsome/blue-dragon-70
 - alexmaracinaru: https://uiverse.io/alexmaracinaru/white-octopus-62
+- Pravins01, variação de gharsh11032000 (Harsh Gupta): https://uiverse.io/Pravins01/odd-fly-66
 
 MIT
 
 Os direitos autorais dos componentes pertencem aos respectivos autores acima.
+
+Cards da comunidade INIC: Copyright - 2026 gharsh11032000 (Harsh Gupta).
+Copyright - 2026 Pravins01. O fundo escuro, o degradê magenta/ciano e o halo
+foram adaptados do componente `odd-fly-66`. A animação da borda usa um ângulo
+variável para acomodar nomes e informações com alturas diferentes. Os controles
+de convite, o foco pelo teclado e a preferência por movimento reduzido são
+preservados. A licença MIT abaixo aplica-se a esse componente.
 
 MIT License
 

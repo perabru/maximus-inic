@@ -39,6 +39,17 @@ A suíte `automatic-orientation.test.mjs` mantém seu caminho histórico e agora
 
 As suítes `inic-results.test.mjs` e `inic-results-runtime.test.mjs` separam os resultados do INIC das notas escolares e das bancas cadastradas pela coordenação. Verificam identidade e horário de quem alterou, controle de versão, exclusão lógica das bancas, validação de datas, privacidade entre estudantes e bloqueio de alvos inativos. O serviço real também é testado nos formulários e nas atualizações ao vivo: estudante lê somente a própria declaração; orientador lê somente os integrantes atuais; perda do grupo, do vínculo ou do papel de coordenador limpa os dados em memória. Indicadores excluem bancas removidas, alunos inativos, grupos em exclusão e outras edições.
 
+### Indicadores animados e cards de pessoas
+
+```bash
+node --test tests/coordination-dashboard.test.mjs tests/coordination-dashboard-live.test.mjs tests/coordination-metrics-connection.test.mjs tests/social-directory-ui.test.mjs tests/sw-push.test.mjs
+QA_FILTER='coordination dashboard|coordinator role loss archive|missing coordinator profile' node tests/portal-ui.test.cjs
+```
+
+Execute estes comandos na raiz do repositório após instalar as dependências de `tests/`. São 89 testes das suítes focadas e três cenários da integração do portal. Os nove testes de renderização ao vivo usam DOM, relógio e RAF controlados: preservam busca/foco/seleção, mantêm o DOM em emissões idênticas, verificam duas atualizações sucessivas, horário correto e limpeza na revogação. Os oito testes do serviço executam a função real com SDK em memória: conexão informativa independente das cinco fontes, desconexão, erros, mudança de geração e descarte dos listeners. Nenhum deles escreve na base real.
+
+`tests/visual/inic-preview.html` é uma bancada de verificação visual com perfis, grupos e registros **explicitamente fictícios**, sem Firebase e sem envio de convites. Ela carrega os módulos e estilos reais e permite conferir os layouts de computador, 390 px e 320 px, o tema escuro, a desconexão e uma atualização controlada dos gráficos. Não é ligada pela navegação do aplicativo e não integra o cache offline.
+
 A suíte `proposal.test.mjs` verifica proposta por tópicos ou arquivo privado, consistência entre metadados e bytes, controle de versão, criação atômica com convite e acesso do candidato pendente. Recusa revoga o acesso à proposta e ao arquivo. Novos convites do estudante exigem proposta válida; convites legados já pendentes continuam podendo ser respondidos. Os testes anteriores de criação e convite usam propostas válidas quando esse é um pré-requisito do cenário.
 
 ## Registro da execução

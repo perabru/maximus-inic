@@ -1,6 +1,6 @@
 'use strict';
 
-import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-7';
+import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-13';
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261112-8';
 import { createCalendarView } from './calendar.js?v=20261112-7';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
@@ -2027,7 +2027,7 @@ window.addEventListener('online',()=>{$('#connection-banner').hidden=true;});
 
 readRoute();
 try {
-  service = await import('./firebase-service.js?v=20261112-9');
+  service = await import('./firebase-service.js?v=20261112-13');
   authStatus('Verificando acesso…','',true);
   sessionUnsubscribe = service.onSession(sessionChanged) || (() => {});
 } catch(error) {

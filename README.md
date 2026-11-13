@@ -154,6 +154,12 @@ No grupo, cada estudante informa o próprio resultado do INIC; o professor regis
 
 **Indicadores INIC** é uma área exclusiva da coordenação. A coordenação cadastra e atualiza as bancas, avaliadores, datas, situação e ajustes necessários. Seis gráficos mostram grupos por orientador, situação das bancas, resultados declarados por orientação, bancas por mês, progresso das entregas e correções/atrasos. Filtros por edição, orientador, grupo e resultado cruzam os registros reais. Alunos distintos e participações em grupos aparecem com contagens separadas; dados ausentes são apresentados como pendentes, sem criar resultados de exemplo.
 
+**Painel visual atualizado:** oito cartões resumem os dados; barras, anel, curva mensal e mapa de pendências recebem as alterações do Firebase sem recriar o painel inteiro. Os contadores e os gráficos fazem transições de 600 ms a partir do valor anterior. Filtros, busca de bancas, foco e seleção são preservados durante a atualização. Os gráficos também filtram por orientador, grupo ou situação, e os filtros ativos podem ser removidos individualmente.
+
+O selo **Ao vivo** exige que as cinco fontes de dados estejam prontas e que `.info/connected` confirme a conexão. Ao desconectar, o painel conserva o último conjunto recebido e informa que aguarda conexão. O horário só avança quando muda um conjunto completo de dados, não a cada quadro da animação. Falhas de carregamento mostram mensagem e tentativa novamente. Animações respeitam movimento reduzido, terminam imediatamente em abas ocultas e são canceladas ao sair ou perder acesso.
+
+Os cards de **Pessoas** seguem a referência [odd-fly-66, de Pravins01 no Uiverse](https://uiverse.io/Pravins01/odd-fly-66): fundo escuro, borda magenta/ciano e brilho na interação. Os controles ficam sempre visíveis no celular; foco pelo teclado e movimento reduzido são respeitados. As regras de disponibilidade e convites permanecem no serviço e na interface. A atribuição MIT está em `THIRD_PARTY_NOTICES.md`.
+
 ### Proposta antes do convite de orientação
 
 A proposta é enviada **somente como anexo**: PDF, JPG ou PNG de até 3 MiB. O formulário mantém apenas os dados de identificação do grupo e da pesquisa; os campos de redação da proposta foram removidos. O professor pode abrir o anexo no convite antes de aceitar ou recusar. Arquivos existentes podem ser mantidos sem novo upload. Propostas antigas em texto continuam disponíveis para leitura; sua substituição exige um anexo e só acontece ao salvar.

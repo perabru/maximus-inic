@@ -1257,8 +1257,8 @@ export async function deleteInicBoard(groupId,id,{year=2027,expectedUpdatedAt}={
 }
 export function subscribeCoordinationMetrics(year=2027,callback){
   const user=needUser(),edition=inicEdition(year);let stopped=false,activeVersion=0,roleStop=()=>{},privateStops=[];
-  const state={ready:false,boards:[],results:[],tasks:[]};
-  function detach(){activeVersion++;privateStops.forEach(stop=>stop());privateStops=[];state.ready=false;state.boards=[];state.results=[];state.tasks=[];}
+  const state={ready:false,connected:null,boards:[],results:[],tasks:[]};
+  function detach(){activeVersion++;privateStops.forEach(stop=>stop());privateStops=[];state.ready=false;state.connected=null;state.boards=[];state.results=[];state.tasks=[];}
   const emit=error=>{if(!stopped)callback({...state,...(error?{error}:{} )});};
   const inactiveStop=onValue(path(`inactiveUsers/${user.uid}`),flag=>{
     if(stopped)return;roleStop();roleStop=()=>{};detach();
@@ -1275,6 +1275,17 @@ export function subscribeCoordinationMetrics(year=2027,callback){
         state.tasks=Object.entries(raw.tasks||{}).flatMap(([groupId,records])=>groups[groupId]?Object.entries(records||{}).map(([id,item])=>({...item,id,groupId})):[]);
         state.ready=loaded.size===5;emit();
       };
+      // Connection state belongs to this authorized subscription, but is not
+      // one of the five data sources required for a complete metrics snapshot.
+      // A failure of this informational listener must not erase valid data.
+      let connectionLive=true;
+      try{
+        const connectionStop=onValue(ref(db,'.info/connected'),snapshot=>{
+          if(stopped||!connectionLive||version!==activeVersion)return;
+          const value=snapshot.val();state.connected=typeof value==='boolean'?value:null;emit();
+        },()=>{if(stopped||!connectionLive||version!==activeVersion)return;state.connected=null;emit();});
+        privateStops.push(()=>{connectionLive=false;connectionStop();});
+      }catch{connectionLive=false;state.connected=null;}
       for(const [key,target]of Object.entries({groups:path('groups'),boards:path(`inicBoards/${edition}`),results:path(`inicResults/${edition}`),tasks:path('tasks'),inactive:path('inactiveUsers')})){
         let live=true;const rawStop=onValue(target,snapshot=>{if(stopped||!live||version!==activeVersion)return;raw[key]=snapshot.val()||{};loaded.add(key);paint();},error=>{if(stopped||!live||version!==activeVersion)return;roleStop();roleStop=()=>{};detach();emit(error);});
         privateStops.push(()=>{live=false;rawStop();});
