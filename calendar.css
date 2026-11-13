@@ -211,13 +211,9 @@ html[data-theme="dark"] .inic-calendar__day-today { color: #20233e; background: 
 html[data-theme="dark"] .inic-calendar__day-shadow { background: #0007; }
 
 @media (min-width: 1200px) {
-  .inic-calendar__workspace { grid-template-columns: minmax(0, 1fr) minmax(260px, 300px); }
+  .inic-calendar__workspace { grid-template-columns: minmax(0, 1fr) 280px; }
   .inic-calendar__selection { padding: 20px; }
   .inic-calendar__selection .inic-calendar__list-heading h3 { font-size: 20px; }
-}
-@media (min-width: 1600px) {
-  .inic-calendar__workspace { grid-template-columns: minmax(0, 1fr) 330px; }
-  .inic-calendar .inic-calendar__day { min-height: 130px; }
 }
 @media (max-width: 1100px) {
   .inic-calendar__stat { padding: 15px 13px; gap: 10px; }
@@ -308,6 +304,74 @@ html[data-theme="dark"] .inic-calendar__day-shadow { background: #0007; }
   .inic-calendar__legend { column-gap: 11px; }
   .inic-calendar__selection,
   .inic-calendar__list { padding: 14px; }
+}
+/* Compact desktop proportions; retain the touch layout on smaller screens. */
+@media (min-width: 1000px) {
+  .inic-calendar { width: 100%; max-width: 1180px; margin-inline: auto; }
+  .workspace:has(.inic-calendar) > .app-header { min-height: 88px; padding-block: 18px; }
+  .workspace:has(.inic-calendar) > .app-header h1 { font-size: 26px; }
+  .app-main:has(.inic-calendar) { padding-top: 22px; }
+  .inic-calendar .inic-calendar__heading { gap: 14px; margin-bottom: 16px; }
+  .inic-calendar .inic-calendar__eyebrow { font-size: 10px; margin-bottom: 6px; }
+  .inic-calendar .inic-calendar__heading h2 { font-size: 28px; }
+  .inic-calendar .inic-calendar__heading p:not(.inic-calendar__eyebrow) { font-size: 14px; line-height: 1.6; margin-top: 7px; }
+  .inic-calendar__header-actions { gap: 7px; }
+  .inic-calendar .inic-calendar__header-actions .button { min-height: 42px; padding: 9px 12px; font-size: 13px; gap: 7px; }
+  .inic-calendar__summary { gap: 10px; margin-bottom: 16px; }
+  .inic-calendar__stat { padding: 12px 14px; gap: 10px; border-radius: 13px; }
+  .inic-calendar__stat-icon { width: 32px; height: 32px; flex-basis: 32px; border-radius: 10px; }
+  .inic-calendar__stat-icon svg { width: 19px; height: 19px; }
+  .inic-calendar__stat strong { font-size: 24px; }
+  .inic-calendar__stat span:not(.inic-calendar__stat-icon) { margin-top: 3px; }
+  .inic-calendar__toolbar { gap: 10px; margin-bottom: 12px; }
+  .inic-calendar__navigation { gap: 8px; }
+  .inic-calendar .inic-calendar__navigation h3 { min-width: 160px; font-size: 20px; }
+  .inic-calendar .inic-calendar__navigation .button { min-width: 40px; min-height: 40px; padding: 8px 10px; }
+  .inic-calendar .inic-calendar__quick-actions .button { min-height: 40px; padding: 8px 11px; font-size: 13px; }
+  .inic-calendar__view-switch { gap: 3px; padding: 3px; border-radius: 11px; }
+  .inic-calendar__view-switch button { min-height: 32px; padding: 6px 11px; font-size: 13px; }
+  .inic-calendar .inic-calendar__filters { gap: 12px; padding: 12px 14px; margin-bottom: 10px; border-radius: 13px; }
+  .inic-calendar .inic-calendar__filters .field { gap: 5px; }
+  .inic-calendar .inic-calendar__filters input[type="month"],
+  .inic-calendar .inic-calendar__filters select { min-height: 40px; padding: 8px 10px; font-size: 14px; }
+  .inic-calendar .inic-calendar__filters select { padding-right: 38px; }
+  .inic-calendar .inic-calendar__holiday-toggle { min-height: 40px; padding-block: 7px; }
+  .inic-calendar__type-filters { gap: 7px; margin-bottom: 14px; }
+  .inic-calendar__type-filters button { min-height: 36px; padding: 7px 12px; }
+  .inic-calendar__workspace { gap: 16px; }
+  .inic-calendar__month-pane { padding: 12px; border-radius: 16px; }
+  .inic-calendar__grid { gap: 4px; }
+  .inic-calendar__weekday { padding: 5px 2px 8px; font-size: 11px; }
+  .inic-calendar .inic-calendar__day { min-height: 80px; border-radius: 6px; }
+  .inic-calendar__day-door { padding: 5px; gap: 1px; }
+  .inic-calendar__day.is-today .inic-calendar__day-door { padding: 4px; }
+  .inic-calendar__day-top { min-height: 14px; }
+  .inic-calendar__day-count { padding: 0 3px; line-height: 1.2; }
+  .inic-calendar .inic-calendar__day-number { font-size: 30px; }
+  .inic-calendar__day-preview { min-height: 13px; line-height: 1.2; }
+  .inic-calendar__day-markers { min-height: 4px; }
+  .inic-calendar__day-markers > i { width: 4px; height: 4px; flex-basis: 4px; }
+  .inic-calendar__legend { gap: 7px 13px; margin-top: 12px; }
+  .inic-calendar__grid-help { margin-top: 7px; line-height: 1.5; }
+  .inic-calendar__selection { padding: 16px; border-radius: 16px; }
+  .inic-calendar__list-heading { gap: 8px 10px; margin-bottom: 12px; }
+  .inic-calendar .inic-calendar__selection .inic-calendar__list-heading h3 { font-size: 18px; }
+  .inic-calendar__items { gap: 9px; }
+  .inic-calendar__selection .inic-calendar__items { max-height: 444px; overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; padding: 2px 4px 2px 0; }
+  .inic-calendar .inic-calendar__selection .inic-calendar__item { gap: 6px; padding: 11px; }
+  .inic-calendar .inic-calendar__selection .inic-calendar__item-copy h4 { font-size: 14px; }
+  .inic-calendar .inic-calendar__selection .inic-calendar__item-copy p { line-height: 1.6; margin-top: 4px; }
+  .inic-calendar .inic-calendar__item > .button { min-height: 38px; padding: 7px 10px; }
+  .inic-calendar .inic-calendar__selection > .button { min-height: 40px; margin-top: 12px; }
+  .inic-calendar__list { padding: 16px; border-radius: 16px; }
+  .inic-calendar__list > h3 { font-size: 21px; margin-bottom: 14px; }
+  .inic-calendar__agenda-date { margin: 18px 0 10px; }
+  .inic-calendar__item { padding: 13px 14px; gap: 12px; }
+  .inic-calendar__sync-note,
+  .inic-calendar .schedule-note { margin-top: 16px; padding: 11px 14px; }
+}
+@media (min-width: 1000px) and (max-width: 1100px) {
+  .inic-calendar .inic-calendar__holiday-toggle { min-height: 28px; padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .inic-calendar *,
