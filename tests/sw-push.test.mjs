@@ -51,7 +51,7 @@ test('private Firebase and authenticated requests bypass the public cache',()=>{
 });
 test('activation removes outdated community assets and preserves the current and unrelated caches',async()=>{
   const removed=[];
-  const w=worker([],{caches:{keys:async()=>['maximus-inic-public-20261112-7','maximus-inic-community-20261112-8','maximus-inic-community-20261112-9','maximus-inic-community-20261112-10','maximus-inic-community-20261112-signatures-1','maximus-inic-community-20261112-12','maximus-inic-community-20261112-13','maximus-inic-community-20261112-14','maximus-inic-community-20261113-1','another-site-cache'],delete:async key=>{removed.push(key);return true;}}});
+  const w=worker([],{caches:{keys:async()=>['maximus-inic-public-20261112-7','maximus-inic-community-20261112-8','maximus-inic-community-20261112-9','maximus-inic-community-20261112-10','maximus-inic-community-20261112-signatures-1','maximus-inic-community-20261112-12','maximus-inic-community-20261112-13','maximus-inic-community-20261112-14','maximus-inic-community-20261113-1','maximus-inic-community-20261113-2','another-site-cache'],delete:async key=>{removed.push(key);return true;}}});
   await fire(w.handlers.get('activate'),{});
-  assert.deepEqual(removed.sort(),['maximus-inic-community-20261112-10','maximus-inic-community-20261112-12','maximus-inic-community-20261112-13','maximus-inic-community-20261112-14','maximus-inic-community-20261112-8','maximus-inic-community-20261112-9','maximus-inic-community-20261112-signatures-1','maximus-inic-public-20261112-7']);
+  assert.deepEqual(removed.sort(),['maximus-inic-community-20261112-10','maximus-inic-community-20261112-12','maximus-inic-community-20261112-13','maximus-inic-community-20261112-14','maximus-inic-community-20261112-8','maximus-inic-community-20261112-9','maximus-inic-community-20261112-signatures-1','maximus-inic-community-20261113-1','maximus-inic-public-20261112-7']);
 });

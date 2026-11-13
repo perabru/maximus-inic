@@ -224,7 +224,7 @@ export function createCalendarView({groups=[],tasks=[],events=[],canManageGroup=
       const legend=el('div','inic-calendar__legend');for(const [type,label]of [['task','Entregas'],['event','Eventos'],['holiday','Feriados']]){const item=el('span');item.append(el('i',`inic-calendar__dot inic-calendar__dot--${type}`),document.createTextNode(label));legend.append(item);}pane.append(legend,el('p','inic-calendar__grid-help','Toque em um dia para abrir os compromissos.'));
       const selection=el('section','inic-calendar__selection'),listHeading=el('div','inic-calendar__list-heading'),selected=ui.selectedDay?(byDate.get(ui.selectedDay)||[]):records;
       selection.setAttribute('aria-label',ui.selectedDay?`Compromissos de ${longDate(ui.selectedDay)}`:`Compromissos de ${monthText}`);
-      if(ui.selectedDay){listHeading.append(el('h3','',longDate(ui.selectedDay)),control('Ver mês inteiro','text-button',()=>{ui.selectedDay='';draw();}));selection.append(el('p','inic-calendar__day-caption',new Intl.DateTimeFormat('pt-BR',{weekday:'long'}).format(parseCalendarDate(ui.selectedDay))));}
+      if(ui.selectedDay){listHeading.append(el('h3','',longDate(ui.selectedDay)),control('Ver mês inteiro','text-button',()=>{const previousSelection=ui.selectedDay;ui.selectedDay='';draw();focusDay(previousSelection);}));selection.append(el('p','inic-calendar__day-caption',new Intl.DateTimeFormat('pt-BR',{weekday:'long'}).format(parseCalendarDate(ui.selectedDay))));}
       else{listHeading.append(el('h3','','Neste mês'),el('span','inic-calendar__day-caption',`${records.length} compromisso(s)`));}
       selection.append(listHeading);
       if(selected.length){const items=el('div','inic-calendar__items');items.append(...(ui.selectedDay?selected:selected.slice(0,6)).map(item=>entryCard(item,today)));selection.append(items);if(!ui.selectedDay&&selected.length>6)selection.append(control(`Ver agenda completa (${selected.length})`,'button secondary compact',()=>changeView('agenda')));}
@@ -236,7 +236,7 @@ export function createCalendarView({groups=[],tasks=[],events=[],canManageGroup=
       else list.append(emptyMessage('Sua agenda está livre neste mês','Mude o mês ou os filtros para consultar outros compromissos.'));root.append(list);
     }
     root.append(el('p','inic-calendar__sync-note','As entregas acompanham o cronograma dos seus grupos. Eventos e alterações são sincronizados com os participantes e orientadores. Feriados locais e recessos podem ser cadastrados como eventos.'));
-    const live=el('p','inic-calendar__live-region');live.setAttribute('role','status');live.setAttribute('aria-live','polite');live.textContent=ui.selectedDay?`${longDate(ui.selectedDay)}: ${(byDate.get(ui.selectedDay)||[]).length} compromisso(s).`:`${monthText}: ${records.length} compromisso(s) nos filtros escolhidos.`;root.append(live);
+    const live=el('p','inic-calendar__live-region');live.setAttribute('role','status');live.setAttribute('aria-live','polite');live.textContent=ui.view==='month'&&ui.selectedDay?`${longDate(ui.selectedDay)}: ${(byDate.get(ui.selectedDay)||[]).length} compromisso(s).`:`${monthText}: ${records.length} compromisso(s) nos filtros escolhidos.`;root.append(live);
     return root;
   }
   return draw();

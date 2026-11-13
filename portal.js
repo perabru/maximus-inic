@@ -2,7 +2,7 @@
 
 import { createCoordinationDashboard } from './coordination-dashboard.js?v=20261112-13';
 import { createProposalEditor, createProposalView } from './tcc-proposal.js?v=20261112-8';
-import { createCalendarView } from './calendar.js?v=20261113-1';
+import { createCalendarView } from './calendar.js?v=20261113-2';
 import { getNotificationState, enableNotifications, disableNotifications } from './notifications.js?v=20261105-8';
 import { createArticleEditor } from './article-editor.js?v=20261112-4';
 import { createCommunityView, participantStatus } from './community.js?v=20261112-9';

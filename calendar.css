@@ -163,10 +163,10 @@
 .inic-calendar__description { white-space: pre-wrap; }
 .inic-calendar .inic-calendar__item > .button { flex-shrink: 0; border-radius: 9px; font-size: 13px; min-height: 42px; padding: 9px 12px; }
 .inic-calendar__source { color: var(--primary); font-size: 13px; line-height: 1.5; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
-.inic-calendar__selection .inic-calendar__item { align-items: flex-start; flex-direction: column; gap: 8px; padding: 15px; background: var(--surface-soft); }
-.inic-calendar__selection .inic-calendar__item-meta { flex: 0 1 auto; flex-direction: row; flex-wrap: wrap; gap: 4px 10px; }
-.inic-calendar__selection .inic-calendar__item-copy { width: 100%; }
-.inic-calendar__selection .inic-calendar__item > .button { margin-top: 3px; }
+.inic-calendar .inic-calendar__selection .inic-calendar__item { align-items: flex-start; flex-direction: column; flex-wrap: nowrap; gap: 8px; padding: 15px; background: var(--surface-soft); }
+.inic-calendar__selection .inic-calendar__item-meta { flex: 0 1 auto; flex-direction: row; flex-wrap: wrap; gap: 4px 10px; width: 100%; max-width: 100%; }
+.inic-calendar__selection .inic-calendar__item-copy { flex: 0 0 auto; width: 100%; max-width: 100%; }
+.inic-calendar__selection .inic-calendar__item > .button { max-width: 100%; margin-top: 3px; overflow-wrap: anywhere; }
 .inic-calendar .inic-calendar__selection > .button { display: inline-flex; width: 100%; min-height: 44px; border-radius: 10px; font-size: 13px; margin-top: 17px; gap: 8px; }
 .inic-calendar__selection > .button svg { width: 17px; height: 17px; flex: 0 0 17px; }
 .inic-calendar__empty { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 28px 18px; border: 1px dashed var(--border); border-radius: 14px; background: var(--surface-soft); color: var(--muted); text-align: center; }
