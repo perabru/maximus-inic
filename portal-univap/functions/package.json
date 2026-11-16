@@ -1,0 +1,10 @@
+{
+  "name": "univap-pixel-academy-functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend Firebase callable da correção Gemini com credencial privada",
+  "main": "index.js",
+  "engines": {"node": "22"},
+  "scripts": {"lint": "node --check index.js"},
+  "dependencies": {"firebase-admin": "^13.0.0", "firebase-functions": "^6.3.0"}
+}

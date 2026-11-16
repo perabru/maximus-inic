@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#092a64"/>
+<meta name="description" content="Portal de estudos do curso técnico em Informática: 8 disciplinas, aulas semanais, projetos, apostilas e entregas via GitHub."/>
+<title>UNIVAP // Pixel Academy — Portal de Aulas</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Pixel Academy"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body data-theme="dark">
+<div id="splash" class="splash"><div class="splash-inner"><div class="loading-pixel">▣</div><h2>PIXEL<span>ACADEMY</span></h2><p>Carregando o laboratório de ideias...</p><div class="loading-bar"><i></i></div></div></div>
+<div id="login-screen" class="login-screen is-hidden">
+  <div class="login-glow"></div>
+  <div class="login-card">
+    <div class="pixel-shape logo-shape" aria-hidden="true"><span>U<span class="red">.</span></span></div>
+    <div class="eyebrow">COLÉGIOS UNIVAP • INFORMÁTICA</div>
+    <h1>Seu próximo <em>level up</em> começa aqui.</h1>
+    <p>Entre com sua conta Google para consultar disciplinas, aulas semanais, apostilas, exercícios e projetos.</p>
+    <button class="primary-btn full" id="login-btn"><span class="google-mark">G</span> Entrar com Google</button>
+    <div id="login-help" class="login-help"></div>
+    <small>Ambiente didático independente, inspirado nas cores da UNIVAP. A autenticação utiliza o Firebase.</small>
+  </div>
+  <div class="login-art"><div class="pixel-monitor"><div class="monitor-screen"><span>HELLO, WORLD!</span><div class="code-row a"></div><div class="code-row b"></div><div class="code-row c"></div><b>▣</b></div><div class="monitor-base"></div></div><div class="pixel-star s1">✦</div><div class="pixel-star s2">+</div><div class="pixel-star s3">✧</div></div>
+</div>
+<div id="app-shell" class="shell is-hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-pixel" aria-hidden="true">U<span>.</span></span><div><strong>PIXEL ACADEMY</strong><small>UNIVAP // TÉCNICO</small></div></div>
+    <span class="menu-caption">SEU LABORATÓRIO</span>
+    <nav id="main-nav" class="main-nav" aria-label="Menu principal">
+       <button data-page="home" class="nav-item active"><span>▦</span> Visão geral</button>
+       <button data-page="courses" class="nav-item"><span>▤</span> Disciplinas</button>
+       <button data-page="tcc" class="nav-item"><span>▣</span> TCC &amp; Monografia</button>
+       <button data-page="tasks" class="nav-item"><span>☑</span> Atividades &amp; Projetos</button>
+       <button data-page="submissions" class="nav-item"><span>↗</span> Minhas entregas</button>
+       <button data-page="notes" class="nav-item"><span>▥</span> Meu dashboard de notas</button><button data-page="profile" class="nav-item"><span>♙</span> Meu perfil</button>
+    </nav>
+    <span class="menu-caption">EXPLORAR</span>
+    <nav class="main-nav">
+       <button data-page="extras" class="nav-item"><span>✦</span> Cursos extras</button>
+       <button data-page="tools" class="nav-item"><span>⌘</span> Downloads &amp; ferramentas</button><button data-page="materials" class="nav-item"><span>↓</span> Arquivos originais</button>
+       <button data-page="guide" class="nav-item"><span>?</span> Guia do GitHub</button>
+       <button data-page="teacher" class="nav-item is-hidden" id="teacher-nav"><span>♛</span> Painel administrador</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="github-rule"><b>GITHUB FIRST_</b><span>Todos os exercícios e projetos devem estar no GitHub.</span></div><button id="install-hint" class="soft-button">⬇ Como instalar o app</button><button id="theme-btn" class="soft-button"><span id="theme-ico">☾</span> Alternar tema</button><button id="logout-btn" class="soft-button"><span>↩</span> Sair da conta</button></div>
+  </aside>
+  <div class="main-column">
+    <header class="topbar"><button class="mobile-menu" id="menu-toggle" aria-label="Abrir menu">☰</button><div class="breadcrumb" id="breadcrumb">INÍCIO <span>/</span> DASHBOARD</div><div class="top-actions"><button class="install-button is-hidden" id="install-btn" type="button">⬇ Instalar app</button><div class="top-conn"><span class="status-dot"></span><span id="conn-state">Conectando...</span></div><div class="user-profile"><span id="user-avatar" class="user-avatar">U</span><span id="user-name">Estudante</span></div></div></header>
+    <main id="view" class="view" tabindex="-1"></main>
+    <footer class="site-footer"><span>© 2026 • Portal didático UNIVAP // Feito para aprender na prática.</span><span>Prof. Bruno Michel Pera <b>♥</b> Tecnologia</span></footer>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="submit-modal" class="modal"><form id="submit-form" method="dialog"><div class="modal-heading"><div><small>ENTREGA OFICIAL</small><h2>Enviar link do GitHub</h2></div><button class="icon-btn" type="button" id="modal-close" aria-label="Fechar">✕</button></div><p>Obrigatório: seu código, exercícios, capturas e README devem estar em um repositório GitHub.</p><label>Disciplina<select id="sub-course" required></select></label><label>Tipo de atividade<select id="sub-type" required><option value="semanal">Exercícios da semana</option><option value="pratica">Lista prática (até 2 pontos)</option><option value="projeto">Projeto da disciplina (0–10)</option></select></label><label id="week-wrap">Semana<select id="sub-week"></select></label><label id="sub-activity-wrap" class="is-hidden">Atividade publicada pelo professor<select id="sub-activity"></select></label><label>Link público do repositório GitHub<input type="url" id="sub-url" placeholder="https://github.com/seu-usuario/seu-projeto" required></label><label>Comentário ao professor<textarea id="sub-note" rows="3" placeholder="Descreva o que foi realizado e onde encontrar a atividade no repositório."></textarea></label><p id="form-message" class="form-message" role="alert"></p><div class="dialog-actions"><button type="button" class="outline-btn" id="cancel-submit">Cancelar</button><button type="submit" class="primary-btn" id="submit-btn">↗ Enviar atividade</button></div></form></dialog>
+<script type="module" src="app.js"></script>
+</body>
+</html>

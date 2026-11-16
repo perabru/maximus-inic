@@ -1,0 +1,1762 @@
+[
+  {
+    "id": "bd",
+    "nome": "Banco de Dados",
+    "sigla": "BANCO DE DADOS",
+    "ano": "2º ano",
+    "icone": "database",
+    "descricao": "SQL, modelagem e administração de dados",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Introdução à Banco de Dados Relacionais. Normalizações: 1fn/2fn/3fn. Anomalias: Inclusão / Alteração / Exclusão / Inconsistências",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Modelo Conceitual, Lógico e físico",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Apresentação do ambiente de desenvolvimento MySQL WORKBENCH",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Componentes de um banco de dados SQL: Tabelas / Diagramas / Stored Procedures / Visões / Trigger",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Criação de bancos de dados através de assistentes",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Transportando banco de dados para outros computadores (Attach). Criação de tabelas com assistentes",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Chaves primárias simples e compostas. Tipos de relacionamentos de tabelas. Relacionando tabelas com diagramas",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Inserção de registros (Tuplas) em tabelas pelo assistente. Testes de integridades de dados",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Criando e executando Query no  MySQL Workbench. Executando query no MySQL Workbench",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "Painel de resultados. Gravando registros do painel de resultados",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "O DDL e o DML. Manipulando Visões com linhas de comandos; Manipulando Banco de dados, Tabelas, Relacionamentos entre tabelas, através da DDL",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Criação de campos auto-incrementáreis através da DDL. Comandos da DML: (Insert / Delete / Update / Select), e suas diversas sintaxes",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Funções da DML.  Criação de Subconsulta",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "STORED PROCEDURES: Manipulando Strored Procedures com o  Object Explorer. Manipulando Stored Procedures através de linhas de comandos. Stored Procedures sem passagem de parâmetros",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Stored Procedures com passagem de parâmetros. Stored Procedures com passagem de parâmetros e valores padrões para variáveis",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "TRIGGER: Utilidade de Trigger",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Manipulando Trigger através de linhas de comandos",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Teste de Trigger ao executar uma operações em tabelas do banco de dados",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Tabelas Inserted e Deleted",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Inner Join",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Left Join",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Right Join e UNION",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Introdução a banco de dados não relacionais",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "instalação do MongoDB Compass",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Arquivos JSON e CSV",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "CREATE, READ, UPDADE E DELETE UTILIZANDO MONGODB SHELL",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Conectando Python com MongoDB",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "CRUD com python e MongoDB",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Estrutura de Dados em forma de árvore",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Backup no mongo DB",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Exportando um banco do MongoDB para outro",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Gerando gráficos a partir de dados no mongoDB",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Introdução sistemas BAAS (Backend as a Service)",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Apresentação do RealTime Database e do MongoATLAS",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Criando Cluster no Atlas",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "CRUD utilizando ATLASDB",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Conectando Python com Atlas MongoDB",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "CRUD com python e Atlas MongoDB",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Cloud Computing",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Processamento em Cloud Computing",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento BANCO DE DADOS 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "cldi",
+    "nome": "Circuitos Lógicos Digitais I",
+    "sigla": "CLDI",
+    "ano": "1º ano",
+    "icone": "cpu",
+    "descricao": "Álgebra booleana e circuitos combinacionais",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Numero binario : Conversões Binario, octal, hexadecimal, decimal",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Funções lógicas AND , OR  NOR, NAND, INVERTER",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Funções lógicas OR-EX E NOR-EX",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Expressão Booleanas  obtidas de circuitos lógicos",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Tabelas Verdades obtidas de expressões booleanas",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Circuitos lógicos obtidos de expressões  Booleanas",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Equivalência entre blocos lógicos",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Álgebra de Boole",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Postulados – Complementação , Adição, Multiplicação",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "Propriedades comutativa, distributiva, associativa, 1º e 2º teorema de Morgan",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Mapa de Karnaugh de 4 variáveis",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Analise Combinacional",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Álgebra de Boole",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Postulados – Complementação , Adição, Multiplicação",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Propriedades comutativa, distributiva, associativa, 1º e 2º teorema de Morgan",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Mapa de Karnaugh de 5 variáveis",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Analise Combinacional",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Soma Binária",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Complemento de 2",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Subtração Binaria",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Prática de Circuitos Integrados com lab",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Meio Somador",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Somador Completo",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "Meio Subtrator",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Subtrator Completo",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Montagem meio Somador no Panda",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Montagem meio Subtrator no Panda",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Montagem meio Somador na prática",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Montagem meio Subtrator na prática",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Circuitos combinacionais de 2 variáveis",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Circuitos combinacionais de 3 e 4 variáveis",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Montagem de Circuitos Combinacionais de 2 variáveis no WiredPanada",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Montagem de Circuitos Combinacionais de 3 e 4 variáveis no WiredPanada",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Montagem de Circuitos Combinacionais de 2 variáveis na prática",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Montagem de Circuitos Combinacionais de 3 e 4 variáveis na prática",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Montagem processador de 4 bits no WiredPanda",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Montagem processador de 4 bits na prática",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "Descrição de memórias e flip flops",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Introdução ao flip flop jk",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Introdução a sistemas de armazenamento",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento CLDI 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "cldii",
+    "nome": "Circuitos Lógicos Digitais II",
+    "sigla": "CLDII",
+    "ano": "2º ano",
+    "icone": "microchip",
+    "descricao": "Circuitos sequenciais, registradores e automação",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Flip-Flop RS",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "FF com clock, FF JK, Clear, preset, Mestre-Escravo, FF T e FF D",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Diagrama de temporização",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Registradores de Deslocamento",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Latch",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Contadores Assíncronos",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Contador Assíncrono Crescente",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Contador Assíncrono Decrescente",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Gerador de Produtos Canonicos",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "Divisior de Frequencia",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Clock",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Circuito Integrado 555",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Cronômetro Digital",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Laboratório de Contadores Assíncronos (Simulador panda)",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Laboratório de Contadores Assíncronos (Simulador Tinkercad)",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Laboratório de Contadores Assíncronos (Prática)",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Laboratório de Contadores síncronos (Simulador panda)",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Laboratório de Contadores síncronos (Simulador Tinkercad)",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Laboratório de Contadores síncronos (Prática)",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Gerador de Produtos Canonicos Prática no Laboratório",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Revisão de Mapa de Karnaugh 2,3 e 4 variáveis",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Montagem do divisor de frequencia",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Multiplexadores",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "Demultiplexadores",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Memórias semicondutoras",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Mapeamento de memória",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Introdução aos microprocessadores",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Sistema mínimo de um sistema computacional",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Introdução aos microcontroladores",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Diferenças entre microcontroladores e microprocessadores",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Projetos para Arduino ou MSP430",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Programação em C para microcontroladores",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Projeto de Armazenamento de valores em flip-flops e Arduino",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Introdução a memória ROM",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Prática de memporia ROM no Tinkercad",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Prática de Memória ROM com transistores no laboratório",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Introdução a processamento de sinais",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "Introdução ao osciloscópio",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Desenvolvimento de um filto RC",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Desenvolvimento de um filto RLC",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento CLDII 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "eai",
+    "nome": "Eletrônica Aplicada à Informática",
+    "sigla": "EAI",
+    "ano": "1º ano",
+    "icone": "zap",
+    "descricao": "Eletricidade, componentes e laboratório",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Introdução à Eletro/Eletrônica",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Medidas Elétricas: Tensão , Corrente  Resistência",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Lei de Ohm",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Associação em Série e Paralelo de Resistores",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Fonte de alimentação DC",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Instrumentos de Medição (Voltímetro, Amperímetro Ohmímetro)",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Simulador PSPICE introdução e aplicações",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Aplicação dos conceitos de Resistência e 2ª Lei de Ohm no Laboratório de Eletrônica utilizando o Protoboard",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Aplicação dos conceitos de Resistência e 2ª Lei de Ohm no Laboratório em Simulador",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "1ª e 2ª Lei de Kirchhoff",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Teorema de Thévenin",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Aplicação de exercícios (Kirchhoff  e Thévenin) utilizando PSPICE",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Simbologia dos componentes eletroeletrônicos",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Diagramação Elétrica",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Layout de Placas",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Confecção de Placas",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Soldagem de componentes Eletrônicos",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Soldagem de componentes Eletrônicos",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Capacitor e Capacitância",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Associação em Série e Paralelo de Capacitores",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Carga e Descarga do Capacitor em um Circuito CC",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Diodo Retificador",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Circuitos Retificadores",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "meia onda e onda completa",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Osciloscópio:",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Tela do osciloscópio",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Canal vertical",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Canal horizontal",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Sistema de disparo",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Pontas de prova",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Compensação da ponta de prova",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Técnicas de Medição",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Medidas de amplitude e tempo",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Medidas do tipo X-Y",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Medidas de fase",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Multisim",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "PCB",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "EasyEDA",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Desenho do PCB",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Visualização 3D do PCB",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento EAI 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "ps",
+    "nome": "Princípios de Sinais",
+    "sigla": "PS",
+    "ano": "2º ano",
+    "icone": "radio",
+    "descricao": "Telecomunicações, sinais e transmissão",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Apresentação introdutória da Telecomunicação, suas áreas de atuação e estudo",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Representação Gráfica de Sinais Elétricos",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Velocidade Angular",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Propagação de OEM",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Conceito de comprimento de onda de uma OEM",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Os canais da comunicação (fio, rádio e fibra óptica)",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Propriedadedos canais de comunicação (atenuação do sinal, limitação da largura de faixa ou largura de banda e retardo)",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Principais distúrbios nos canais de comunicação (o ruído elétrico, a distorção do sinal, sinais interferentes ou espúrios)",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Distúrbios específicos do canal rádio (ondas de multiplopercurso, desvanecimento, ação da chuva sobre as ondas de rádio, efeito Doppler, a formação de dutos no percurso da onda)•Ruído elétrico (conceito de ruído e sua importância, fontes externas de ruído, relação sinal/ruído, fonte interna de ruído, potência do ruído)",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "O decibel (conceitos e cálculos em  dB)•",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Antenas (Tipos de antenas, diagramas de radiação, antena, parâmetros das antenas: banda passante, polariação, radiação-padrão, impedância, diretividade, rendimento, ganho, abertura efetiva)",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Apresentação matemática da série de Fourier (SF)",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Representação de sinal elétrico periódico através da SF",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Espectro de tensão elétrica do sinal",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Espectro de potência e fase",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Representação gráfica das componentes harmônicasEspectro de tensão elétrica do sinal",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Representação gráfica das componentes harmônicas",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "•Conceito básico de modulação",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Teoria de modulação AM-DSB",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Demodulação AM-DSB",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Modulação: AM-DSB/SC, AM-SSB",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Filtro RC “passa-baixa”",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Filtro RC “passa-alta”",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "Filtro RL “passa-baixa”",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Filtro RL “passa-alta”",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Filtro RLC “passa-faixa”",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Filtro RLC “rejeita-faixa”",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Laboratório de modulação AM-DSB",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Laboratório de modulação AM-DSB (“circuito ativo”)",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Teorema de Amostragem (Niquist)",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Definição dos sinais do sistema",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Modulação PAM",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Laboratório de modulação PAM",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Modulação ASK e FSK",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Modulação PWM",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Laboratório de modulação PWM",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Demodulação PWM",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "•Modulação PPM",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Laboratório de modulação PPM",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Demodulação PPM",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento PS 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "redes",
+    "nome": "Redes de Computadores",
+    "sigla": "REDES",
+    "ano": "2º ano",
+    "icone": "network",
+    "descricao": "Protocolos, serviços e segurança de redes",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Histórico da Internet - DARPA e ARPANET",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Definições. Conceito de localidade. Componentes básicos de redes: servidor, terminais e cabos",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Componentes básicos: software, placas, router, gateway, bridge, hub e switch",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Introdução ao Cisco Packet Tracer v8",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Montagem da Primeira Rede utilizando simulador",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Servidores: Servidor DHCP aplicacções mais prática com software",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Servidores: Servidor FTP aplicacções mais prática com software",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Servidores: Servidor DNS aplicacções mais prática com software",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Servidores: Servidor IoT com DHCP aplicacções mais prática com software",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "Servidores: Servidor WEB e HTTP aplicacções mais prática com software",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Cidades inteligentes com IoT: Meio Ambiente Inteligente",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Cidades inteligentes com IoT: Governança Inteligente",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Cidades inteligentes com IoT:Saúde Inteligente",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Cidades inteligentes com IoT: Transporte Inteligente",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Simulação de Cidades Inteligentes no Cisco Packet Tracer",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Topologia de Redes: BARRAMENTO",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Topologia de Redes: ANEL",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Topologia de Redes: ESTRELA",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Topologia de Redes: Árvore",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Topologia de Redes: Híbrida",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Topologia de Redes: Malha",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Protocolos: IPv4 com classe Ips, IPv6, FTP, TELNET e GSM",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Camadas do modelo ISO/OSI: APLICAÇÃO e APRESENTAÇÃO",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "Camadas do modelo ISO/OSI: SESSÃO   e TRANSPORTE",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Camadas do modelo ISO/OSI: REDES   e ENLACE",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Camadas do modelo ISO/OSI: FÍSICA",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Classificação das informações e sua relação com as tecnologias das redes",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Controles de acesso físico e de acesso lógico",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Levantamento de requisitos",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Identificação de serviços e da infra-estrutura física",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Estabelecimento dos critérios de segurança",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Implantação da hierarquia entre usuários",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Layout e distribuição dos nós da rede",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Seleção das tecnologias e dos sistemas operacionais",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Engenharia Social",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Kali Linux",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Sistema de Phishing",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "Vírus e Anti-vírus",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Blockchain pela rede",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Criptomoedas",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento REDES 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "sc",
+    "nome": "Sistemas Computacionais",
+    "sigla": "SC",
+    "ano": "1º ano",
+    "icone": "monitor",
+    "descricao": "Hardware, sistemas operacionais e administração",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Princípios de organização computacional, backup, redundância da informação, armazenamento de dados remoto e em nuvem",
+        "bimestre": 1
+      },
+      {
+        "n": 2,
+        "tema": "Historico de sistemas computacionais",
+        "bimestre": 1
+      },
+      {
+        "n": 3,
+        "tema": "Sistema de numeração binária, hexadecimal e octal",
+        "bimestre": 1
+      },
+      {
+        "n": 4,
+        "tema": "Conversão e operações entre binários hexadecimais e octais",
+        "bimestre": 1
+      },
+      {
+        "n": 5,
+        "tema": "Complemento de 2",
+        "bimestre": 1
+      },
+      {
+        "n": 6,
+        "tema": "Soma binária",
+        "bimestre": 1
+      },
+      {
+        "n": 7,
+        "tema": "Subtração binária",
+        "bimestre": 1
+      },
+      {
+        "n": 8,
+        "tema": "Tabela ASCII",
+        "bimestre": 1
+      },
+      {
+        "n": 9,
+        "tema": "Hardware, software, processadores(cores)",
+        "bimestre": 1
+      },
+      {
+        "n": 10,
+        "tema": "memória, placas, drives e periféricos",
+        "bimestre": 1
+      },
+      {
+        "n": 11,
+        "tema": "Arquitetura de von Neumann. Sistemas fortemente acoplados. Sistemas fracamente acoplados",
+        "bimestre": 2
+      },
+      {
+        "n": 12,
+        "tema": "Conhecimentos básicos da interface Linux e alguns comandos de terminal",
+        "bimestre": 2
+      },
+      {
+        "n": 13,
+        "tema": "Definição de sistemas operacionais",
+        "bimestre": 2
+      },
+      {
+        "n": 14,
+        "tema": "Objetivo dos sistemas operacionais",
+        "bimestre": 2
+      },
+      {
+        "n": 15,
+        "tema": "Tipos de sistemas operacionais",
+        "bimestre": 2
+      },
+      {
+        "n": 16,
+        "tema": "Funcionalidades",
+        "bimestre": 2
+      },
+      {
+        "n": 17,
+        "tema": "Estrutura de um sistema operacional",
+        "bimestre": 2
+      },
+      {
+        "n": 18,
+        "tema": "Interrupções",
+        "bimestre": 2
+      },
+      {
+        "n": 19,
+        "tema": "Proteção do núcleo",
+        "bimestre": 2
+      },
+      {
+        "n": 20,
+        "tema": "Chamadas de sistema",
+        "bimestre": 2
+      },
+      {
+        "n": 21,
+        "tema": "Arquiteturas de Sistemas Operacionais",
+        "bimestre": 2
+      },
+      {
+        "n": 22,
+        "tema": "Sistemas monousuário",
+        "bimestre": 2
+      },
+      {
+        "n": 23,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 24,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 25,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 26,
+        "tema": "Sem conteúdo definido no planejamento original — semana de revisão/orientação",
+        "bimestre": 3,
+        "sem_tema": true
+      },
+      {
+        "n": 27,
+        "tema": "Sistemas multiusuário",
+        "bimestre": 3
+      },
+      {
+        "n": 28,
+        "tema": "Processamento paralelo",
+        "bimestre": 3
+      },
+      {
+        "n": 29,
+        "tema": "Máquinas Virtuais",
+        "bimestre": 3
+      },
+      {
+        "n": 30,
+        "tema": "Gerência de Tarefas",
+        "bimestre": 3
+      },
+      {
+        "n": 31,
+        "tema": "Comunicação entre Tarefas",
+        "bimestre": 3
+      },
+      {
+        "n": 32,
+        "tema": "Coordenação entre Tarefas",
+        "bimestre": 3
+      },
+      {
+        "n": 33,
+        "tema": "Gerência de Memória",
+        "bimestre": 3
+      },
+      {
+        "n": 34,
+        "tema": "Gerência de Arquivos",
+        "bimestre": 3
+      },
+      {
+        "n": 35,
+        "tema": "Gerência de Entrada/Saída",
+        "bimestre": 4
+      },
+      {
+        "n": 36,
+        "tema": "Aspectos de Segurança em sistemas operacionais",
+        "bimestre": 4
+      },
+      {
+        "n": 37,
+        "tema": "Processo",
+        "bimestre": 4
+      },
+      {
+        "n": 38,
+        "tema": "Entidades externas. Fluxo de informações",
+        "bimestre": 4
+      },
+      {
+        "n": 39,
+        "tema": "Bancos de informações. Levantamento de requisitos e diagramação de soluções",
+        "bimestre": 4
+      },
+      {
+        "n": 40,
+        "tema": "Tecnologia na gestão do negócio. Ciclo de vida do sistema",
+        "bimestre": 4
+      },
+      {
+        "n": 41,
+        "tema": "Tipos de organização e métodos de administração",
+        "bimestre": 4
+      },
+      {
+        "n": 42,
+        "tema": "Atendimento a requisitos",
+        "bimestre": 4
+      },
+      {
+        "n": 43,
+        "tema": "Levantamento de requisitos e elaboração do diagrama de fluxo de dados",
+        "bimestre": 4
+      },
+      {
+        "n": 44,
+        "tema": "Métricas para avaliação e certificação",
+        "bimestre": 4
+      }
+    ],
+    "planejamento": "Planejamento SC 23.pdf",
+    "origem": "Planejamento UNIVAP 2023"
+  },
+  {
+    "id": "tcc",
+    "nome": "Trabalho de Conclusão de Curso",
+    "sigla": "TCC",
+    "ano": "3º ano",
+    "icone": "graduation-cap",
+    "descricao": "Monografia, documentação, sistema e defesa conforme manual UNIVAP",
+    "semanas": [
+      {
+        "n": 1,
+        "tema": "Definição do tema, problema e objetivos",
+        "bimestre": 1,
+        "adicionado": true
+      },
+      {
+        "n": 2,
+        "tema": "Levantamento de requisitos e pesquisa bibliográfica",
+        "bimestre": 1,
+        "adicionado": true
+      },
+      {
+        "n": 3,
+        "tema": "Estrutura da monografia e elementos pré-textuais",
+        "bimestre": 1,
+        "adicionado": true
+      },
+      {
+        "n": 4,
+        "tema": "Capa e folha de rosto conforme o manual",
+        "bimestre": 1,
+        "adicionado": true
+      },
+      {
+        "n": 5,
+        "tema": "Dedicatória, agradecimentos, resumo e sumário",
+        "bimestre": 2,
+        "adicionado": true
+      },
+      {
+        "n": 6,
+        "tema": "Redação da introdução e contextualização",
+        "bimestre": 2,
+        "adicionado": true
+      },
+      {
+        "n": 7,
+        "tema": "Métodos, ferramentas e justificativas técnicas",
+        "bimestre": 2,
+        "adicionado": true
+      },
+      {
+        "n": 8,
+        "tema": "Diagramas de caso de uso e projeto do banco de dados",
+        "bimestre": 2,
+        "adicionado": true
+      },
+      {
+        "n": 9,
+        "tema": "Desenvolvimento do sistema e registros de testes",
+        "bimestre": 3,
+        "adicionado": true
+      },
+      {
+        "n": 10,
+        "tema": "Resultados, evidências e discussão crítica",
+        "bimestre": 3,
+        "adicionado": true
+      },
+      {
+        "n": 11,
+        "tema": "Redação da conclusão e trabalhos futuros",
+        "bimestre": 3,
+        "adicionado": true
+      },
+      {
+        "n": 12,
+        "tema": "Referências bibliográficas e citações",
+        "bimestre": 3,
+        "adicionado": true
+      },
+      {
+        "n": 13,
+        "tema": "Manual do usuário com telas e passo a passo",
+        "bimestre": 4,
+        "adicionado": true
+      },
+      {
+        "n": 14,
+        "tema": "Formatação, margens e revisão final da monografia",
+        "bimestre": 4,
+        "adicionado": true
+      },
+      {
+        "n": 15,
+        "tema": "Apresentação, demonstração e banca avaliadora",
+        "bimestre": 4,
+        "adicionado": true
+      },
+      {
+        "n": 16,
+        "tema": "Entrega final: PDF, arquivos-fonte e manual de instalação",
+        "bimestre": 4,
+        "adicionado": true
+      }
+    ],
+    "planejamento": "manualmonografia.pdf",
+    "origem": "Roteiro didático construído com base no Manual de Monografia UNIVAP (16 etapas; não é cronograma oficial)"
+  }
+]
