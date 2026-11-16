@@ -1,3 +1,0 @@
-{
-  "functions": {"source": "functions", "codebase": "portal-univap", "runtime": "nodejs22", "ignore": ["node_modules", ".git", "*.local", ".env", ".env.*"]}
-}
